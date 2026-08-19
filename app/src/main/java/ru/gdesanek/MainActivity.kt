@@ -21,23 +21,24 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        
+
         repository = ProjectRepository(this)
         recyclerView = findViewById(R.id.recyclerView)
         fabAdd = findViewById(R.id.fabAdd)
-        
+
         recyclerView.layoutManager = LinearLayoutManager(this)
         adapter = ProjectAdapter(projects) { project ->
             val intent = android.content.Intent(this, PlanEditorActivity::class.java)
             intent.putExtra("PROJECT_ID", project.id)
+            intent.putExtra("PROJECT_NAME", project.name)
             startActivity(intent)
         }
         recyclerView.adapter = adapter
-        
+
         fabAdd.setOnClickListener { showAddDialog() }
         loadProjects()
     }
-    
+
     override fun onResume() {
         super.onResume()
         loadProjects()
@@ -50,16 +51,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showAddDialog() {
-        val layout = LinearLayout(this).apply { 
+        val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(60, 40, 60, 20) 
+            setPadding(60, 40, 60, 20)
         }
         val nameInput = EditText(this).apply { hint = "Название"; maxLines = 1 }
         val addressInput = EditText(this).apply { hint = "Адрес"; maxLines = 1 }
-        
+
         layout.addView(nameInput)
         layout.addView(addressInput)
-        
+
         AlertDialog.Builder(this)
             .setTitle("Новый проект")
             .setView(layout)

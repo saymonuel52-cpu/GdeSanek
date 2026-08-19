@@ -9,6 +9,7 @@ import android.graphics.PointF
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
+import ru.gdesanek.db.WallRepository
 import ru.gdesanek.model.Wall
 import kotlin.math.pow
 import kotlin.math.sqrt
@@ -17,6 +18,8 @@ class PlanView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
 
+    var projectId: Long = 0
+    var repository: WallRepository? = null
     val walls = mutableListOf<Wall>()
     private var currentWall: Wall? = null
 
@@ -38,6 +41,12 @@ class PlanView @JvmOverloads constructor(
     private var lastFocusX = 0f
     private var lastFocusY = 0f
     private var lastSpan = 0f
+
+    fun loadWalls() {
+        walls.clear()
+        repository?.let { walls.addAll(it.getWalls(projectId)) }
+        invalidate()
+    }
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
@@ -75,7 +84,7 @@ class PlanView @JvmOverloads constructor(
             MotionEvent.ACTION_DOWN -> {
                 if (event.pointerCount == 1) {
                     val pt = screenToCanvas(event.x, event.y)
-                    currentWall = Wall(projectId = 0, x1 = pt.x, y1 = pt.y, x2 = pt.x, y2 = pt.y)
+                    currentWall = Wall(projectId = projectId, x1 = pt.x, y1 = pt.y, x2 = pt.x, y2 = pt.y)
                     touchMode = 1
                     invalidate()
                 }
@@ -104,9 +113,13 @@ class PlanView @JvmOverloads constructor(
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
                 if (touchMode == 1 && currentWall != null) {
-                    val dx = currentWall!!.x2 - currentWall!!.x1
-                    val dy = currentWall!!.y2 - currentWall!!.y1
-                    if (dx * dx + dy * dy > 100) walls.add(currentWall!!)
+                    val w = currentWall!!
+                    val dx = w.x2 - w.x1
+                    val dy = w.y2 - w.y1
+                    if (dx * dx + dy * dy > 100) {
+                        val savedId = repository?.insert(projectId, w.x1, w.y1, w.x2, w.y2) ?: 0L
+                        walls.add(w.copy(id = savedId))
+                    }
                     currentWall = null
                     invalidate()
                 }

@@ -5,11 +5,14 @@ import android.os.Bundle
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import ru.gdesanek.db.WallRepository
 import ru.gdesanek.ui.PlanView
 
 class PlanEditorActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val projectId = intent.getLongExtra("PROJECT_ID", 0)
+        val projectName = intent.getStringExtra("PROJECT_NAME") ?: "План"
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -24,13 +27,12 @@ class PlanEditorActivity : AppCompatActivity() {
         val backBtn = TextView(this).apply {
             text = "  ←  "
             textSize = 24f
-            setTextColor(Color.WHITE)
-            setBackgroundColor(Color.parseColor("#1E1E1E"))
+            setTextColor(Color.WHITE)            setBackgroundColor(Color.parseColor("#1E1E1E"))
             setOnClickListener { finish() }
         }
 
         val title = TextView(this).apply {
-            text = "   План · стена — палец, зум — два пальца"
+            text = "   $projectName · стена — палец, зум — два пальца"
             textSize = 14f
             setTextColor(Color.parseColor("#B0B0B0"))
         }
@@ -39,9 +41,13 @@ class PlanEditorActivity : AppCompatActivity() {
         topBar.addView(title)
 
         val planView = PlanView(this)
+        planView.projectId = projectId
+        planView.repository = WallRepository(this)
+
         root.addView(topBar)
         root.addView(planView, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
-
         setContentView(root)
+
+        planView.loadWalls()
     }
 }
