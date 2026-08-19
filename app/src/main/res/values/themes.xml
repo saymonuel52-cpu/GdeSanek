@@ -1,0 +1,12 @@
+<resources>
+    <style name="Theme.GdeSanek" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">#FF9800</item>
+        <item name="colorPrimaryVariant">#F57C00</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorSecondary">#03DAC5</item>
+        <item name="colorSecondaryVariant">#018786</item>
+        <item name="colorOnSecondary">#000000</item>
+        <item name="android:statusBarColor">#121212</item>
+        <item name="android:windowBackground">#121212</item>
+    </style>
+</resources>
