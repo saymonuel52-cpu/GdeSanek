@@ -98,6 +98,5 @@ class MainActivity : AppCompatActivity() {
 
     private fun openProject(project: Project) {
         Toast.makeText(this, "Открываем: ${project.name}", Toast.LENGTH_SHORT).show()
-        // TODO: Переход на экран редактора (следующий блок)
     }
 }
