@@ -27,10 +27,19 @@ class MainActivity : AppCompatActivity() {
         fabAdd = findViewById(R.id.fabAdd)
         
         recyclerView.layoutManager = LinearLayoutManager(this)
-        adapter = ProjectAdapter(projects)
+        adapter = ProjectAdapter(projects) { project ->
+            val intent = android.content.Intent(this, PlanEditorActivity::class.java)
+            intent.putExtra("PROJECT_ID", project.id)
+            startActivity(intent)
+        }
         recyclerView.adapter = adapter
         
         fabAdd.setOnClickListener { showAddDialog() }
+        loadProjects()
+    }
+    
+    override fun onResume() {
+        super.onResume()
         loadProjects()
     }
 
@@ -45,8 +54,8 @@ class MainActivity : AppCompatActivity() {
             orientation = LinearLayout.VERTICAL
             setPadding(60, 40, 60, 20) 
         }
-        val nameInput = EditText(this).apply { hint = "Название (напр. Квартира)"; maxLines = 1 }
-        val addressInput = EditText(this).apply { hint = "Адрес / Объект"; maxLines = 1 }
+        val nameInput = EditText(this).apply { hint = "Название"; maxLines = 1 }
+        val addressInput = EditText(this).apply { hint = "Адрес"; maxLines = 1 }
         
         layout.addView(nameInput)
         layout.addView(addressInput)
