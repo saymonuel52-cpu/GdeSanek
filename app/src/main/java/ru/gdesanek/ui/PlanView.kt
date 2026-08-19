@@ -19,26 +19,22 @@ class PlanView @JvmOverloads constructor(
 
     val walls = mutableListOf<Wall>()
     private var currentWall: Wall? = null
-    
+
     private val wallPaint = Paint().apply {
-        color = Color.WHITE
-        strokeWidth = 8f
-        style = Paint.Style.STROKE
-        strokeCap = Paint.Cap.ROUND
+        color = Color.WHITE; strokeWidth = 8f; style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND
     }
-    
     private val tempWallPaint = Paint().apply {
-        color = Color.YELLOW
-        strokeWidth = 8f
-        style = Paint.Style.STROKE
-        strokeCap = Paint.Cap.ROUND
-        alpha = 150
+        color = Color.YELLOW; strokeWidth = 8f; style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; alpha = 150
+    }
+    private val gridPaint = Paint().apply { color = Color.parseColor("#222222"); strokeWidth = 2f }
+    private val hintPaint = Paint().apply {
+        color = Color.parseColor("#777777"); textSize = 44f; textAlign = Paint.Align.CENTER
     }
 
     private val matrix = Matrix()
     private val inverseMatrix = Matrix()
-    
-    private var touchMode = 0 // 0=none, 1=draw, 3=zoom/pan
+
+    private var touchMode = 0
     private var lastFocusX = 0f
     private var lastFocusY = 0f
     private var lastSpan = 0f
@@ -46,19 +42,25 @@ class PlanView @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         canvas.drawColor(Color.parseColor("#121212"))
-        
+
         canvas.save()
         canvas.concat(matrix)
-        
+
+        var x = -5000f
+        while (x <= 5000f) { canvas.drawLine(x, -5000f, x, 5000f, gridPaint); x += 250f }
+        var y = -5000f
+        while (y <= 5000f) { canvas.drawLine(-5000f, y, 5000f, y, gridPaint); y += 250f }
+
         for (wall in walls) {
             canvas.drawLine(wall.x1, wall.y1, wall.x2, wall.y2, wallPaint)
         }
-        
-        currentWall?.let {
-            canvas.drawLine(it.x1, it.y1, it.x2, it.y2, tempWallPaint)
-        }
-        
+        currentWall?.let { canvas.drawLine(it.x1, it.y1, it.x2, it.y2, tempWallPaint) }
+
         canvas.restore()
+
+        if (walls.isEmpty() && currentWall == null) {
+            canvas.drawText("Проведи пальцем — нарисуешь стену", width / 2f, height / 2f, hintPaint)
+        }
     }
 
     private fun screenToCanvas(x: Float, y: Float): PointF {
@@ -74,18 +76,13 @@ class PlanView @JvmOverloads constructor(
                 if (event.pointerCount == 1) {
                     val pt = screenToCanvas(event.x, event.y)
                     currentWall = Wall(projectId = 0, x1 = pt.x, y1 = pt.y, x2 = pt.x, y2 = pt.y)
-                    touchMode = 1 // DRAW
+                    touchMode = 1
                     invalidate()
                 }
-                lastFocusX = event.x
-                lastFocusY = event.y
+                lastFocusX = event.x; lastFocusY = event.y
             }
             MotionEvent.ACTION_POINTER_DOWN -> {
-                if (touchMode == 1) {
-                    currentWall = null
-                    touchMode = 3 // ZOOM/PAN
-                    invalidate()
-                }
+                if (touchMode == 1) { currentWall = null; touchMode = 3; invalidate() }
                 lastFocusX = (event.getX(0) + event.getX(1)) / 2
                 lastFocusY = (event.getY(0) + event.getY(1)) / 2
                 lastSpan = sqrt((event.getX(1) - event.getX(0)).toDouble().pow(2) + (event.getY(1) - event.getY(0)).toDouble().pow(2)).toFloat()
@@ -99,16 +96,9 @@ class PlanView @JvmOverloads constructor(
                     val focusX = (event.getX(0) + event.getX(1)) / 2
                     val focusY = (event.getY(0) + event.getY(1)) / 2
                     val span = sqrt((event.getX(1) - event.getX(0)).toDouble().pow(2) + (event.getY(1) - event.getY(0)).toDouble().pow(2)).toFloat()
-
-                    if (lastSpan > 0) {
-                        val scale = span / lastSpan
-                        matrix.postScale(scale, scale, focusX, focusY)
-                    }
+                    if (lastSpan > 0) matrix.postScale(span / lastSpan, span / lastSpan, focusX, focusY)
                     matrix.postTranslate(focusX - lastFocusX, focusY - lastFocusY)
-
-                    lastFocusX = focusX
-                    lastFocusY = focusY
-                    lastSpan = span
+                    lastFocusX = focusX; lastFocusY = focusY; lastSpan = span
                     invalidate()
                 }
             }
@@ -116,9 +106,7 @@ class PlanView @JvmOverloads constructor(
                 if (touchMode == 1 && currentWall != null) {
                     val dx = currentWall!!.x2 - currentWall!!.x1
                     val dy = currentWall!!.y2 - currentWall!!.y1
-                    if (dx * dx + dy * dy > 100) {
-                        walls.add(currentWall!!)
-                    }
+                    if (dx * dx + dy * dy > 100) walls.add(currentWall!!)
                     currentWall = null
                     invalidate()
                 }
