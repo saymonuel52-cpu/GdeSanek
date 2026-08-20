@@ -19,6 +19,8 @@ import ru.gdesanek.db.ObjectRepository
 import ru.gdesanek.db.TrackRepository
 import ru.gdesanek.export.PdfExporter
 import ru.gdesanek.model.Catalog
+import ru.gdesanek.theme.ThemeManager
+import ru.gdesanek.theme.Themes
 import ru.gdesanek.ui.PlanView
 import java.io.File
 
@@ -33,49 +35,52 @@ class PlanEditorActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         projectId = intent.getLongExtra("PROJECT_ID", 0)
         projectName = intent.getStringExtra("PROJECT_NAME") ?: "План"
-        val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(Color.parseColor("#101418")) }
+        val theme = ThemeManager.current(this)
+        val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(theme.canvasBg) }
 
-        val topBar = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setBackgroundColor(Color.parseColor("#008C9E")); setPadding(12, 12, 12, 12) }
-        val backBtn = TextView(this).apply { text = "←"; textSize = 26f; setTextColor(Color.WHITE); setPadding(16, 4, 16, 4); setOnClickListener { finish() } }
-        val title = TextView(this).apply { text = projectName; textSize = 17f; setTextColor(Color.WHITE); typeface = Typeface.DEFAULT_BOLD; layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f) }
+        val topBar = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setBackgroundColor(theme.toolbarBg); setPadding(12, 12, 12, 12) }
+        val menuBtn = TextView(this).apply { text = "☰"; textSize = 26f; setTextColor(theme.textPrimary); setPadding(16, 4, 16, 4); setOnClickListener { showThemeDialog() } }
+        val backBtn = TextView(this).apply { text = "←"; textSize = 26f; setTextColor(theme.textPrimary); setPadding(16, 4, 16, 4); setOnClickListener { finish() } }
+        val title = TextView(this).apply { text = projectName; textSize = 17f; setTextColor(theme.textPrimary); typeface = Typeface.DEFAULT_BOLD; layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f) }
         val underlayBtn = TextView(this).apply {
-            text = " 🖼 "; textSize = 18f; setBackgroundResource(R.drawable.btn_dark); setPadding(12, 8, 12, 8)
+            text = " 🖼 "; textSize = 18f; setBackgroundColor(theme.btnBg); setTextColor(theme.textPrimary); setPadding(12, 8, 12, 8)
             setOnClickListener { pickUnderlay() }
             setOnLongClickListener { removeUnderlay(); true }
         }
         val calibBtn = TextView(this).apply {
-            text = " 📐 "; textSize = 18f; setBackgroundResource(R.drawable.btn_dark); setPadding(12, 8, 12, 8)
+            text = " 📐 "; textSize = 18f; setBackgroundColor(theme.btnBg); setTextColor(theme.textPrimary); setPadding(12, 8, 12, 8)
             val p = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT); p.marginStart = 8; layoutParams = p
             setOnClickListener { planView.startCalibration() }
         }
         val dimBtn = TextView(this).apply {
-            text = " 🌓 "; textSize = 18f; setBackgroundResource(R.drawable.btn_dark); setPadding(12, 8, 12, 8)
+            text = " 🌓 "; textSize = 18f; setBackgroundColor(theme.btnBg); setTextColor(theme.textPrimary); setPadding(12, 8, 12, 8)
             val p = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT); p.marginStart = 8; layoutParams = p
             setOnClickListener { showUnderlayDialog() }
         }
         val estimateBtn = TextView(this).apply {
-            text = " 📊 "; textSize = 18f; setBackgroundResource(R.drawable.btn_dark); setPadding(12, 8, 12, 8)
+            text = " 📊 "; textSize = 18f; setBackgroundColor(theme.btnBg); setTextColor(theme.textPrimary); setPadding(12, 8, 12, 8)
             val p = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT); p.marginStart = 8; layoutParams = p
             setOnClickListener { startActivity(Intent(this@PlanEditorActivity, EstimateActivity::class.java).putExtra("PROJECT_ID", projectId)) }
         }
         val shareBtn = TextView(this).apply {
-            text = " 📤 "; textSize = 18f; setBackgroundResource(R.drawable.btn_dark); setPadding(12, 8, 12, 8)
+            text = " 📤 "; textSize = 18f; setBackgroundColor(theme.btnBg); setTextColor(theme.textPrimary); setPadding(12, 8, 12, 8)
             val p = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT); p.marginStart = 8; layoutParams = p
             setOnClickListener { exportPdf() }
         }
-        topBar.addView(backBtn); topBar.addView(title); topBar.addView(underlayBtn); topBar.addView(calibBtn); topBar.addView(dimBtn); topBar.addView(estimateBtn); topBar.addView(shareBtn)
+        topBar.addView(menuBtn); topBar.addView(backBtn); topBar.addView(title); topBar.addView(underlayBtn); topBar.addView(calibBtn); topBar.addView(dimBtn); topBar.addView(estimateBtn); topBar.addView(shareBtn)
 
         planView = PlanView(this)
         planView.projectId = projectId
         planView.repository = WallRepository(this)
         planView.objectRepository = ObjectRepository(this)
         planView.trackRepository = TrackRepository(this)
+        planView.applyTheme(theme)
 
-        val toolsBar = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setBackgroundColor(Color.parseColor("#14181B")); setPadding(8, 10, 8, 4) }
+        val toolsBar = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setBackgroundColor(theme.panelBg); setPadding(8, 10, 8, 4) }
         val toolParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { setMargins(4, 0, 4, 0) }
         fun makeTool(text: String): TextView = TextView(this@PlanEditorActivity).apply {
-            this.text = text; setTextColor(Color.WHITE); textSize = 13f; typeface = Typeface.DEFAULT_BOLD; gravity = Gravity.CENTER
-            setBackgroundResource(R.drawable.btn_gray); layoutParams = toolParams; setPadding(10, 14, 10, 14)
+            this.text = text; setTextColor(theme.textPrimary); textSize = 13f; typeface = Typeface.DEFAULT_BOLD; gravity = Gravity.CENTER
+            setBackgroundColor(theme.btnBg); layoutParams = toolParams; setPadding(10, 14, 10, 14)
         }
         val btnWall = makeTool("🧱 СТЕНА")
         val btnPan = makeTool("✋ РУКА")
@@ -83,8 +88,8 @@ class PlanEditorActivity : AppCompatActivity() {
         val btnUndo = makeTool("🗑 УБРАТЬ")
         toolButtons.addAll(listOf(btnWall, btnPan, btnTrack, btnUndo))
 
-        fun highlightTool(sel: TextView?) { toolButtons.forEach { it.setBackgroundResource(if (it == sel) R.drawable.btn_active else R.drawable.btn_gray) } }
-        fun highlightCatalog(sel: TextView?) { catalogButtons.forEach { it.setBackgroundResource(if (it == sel) R.drawable.btn_active else R.drawable.btn_dark) } }
+        fun highlightTool(sel: TextView?) { toolButtons.forEach { it.setBackgroundColor(if (it == sel) theme.btnActiveBg else theme.btnBg) } }
+        fun highlightCatalog(sel: TextView?) { catalogButtons.forEach { it.setBackgroundColor(if (it == sel) theme.btnActiveBg else theme.btnBg) } }
 
         btnWall.setOnClickListener { planView.currentTool = PlanView.Tool.DRAW_WALL; planView.placeType = null; highlightTool(btnWall); highlightCatalog(null) }
         btnPan.setOnClickListener { planView.currentTool = PlanView.Tool.PAN; planView.placeType = null; highlightTool(btnPan); highlightCatalog(null) }
@@ -93,12 +98,12 @@ class PlanEditorActivity : AppCompatActivity() {
 
         toolsBar.addView(btnWall); toolsBar.addView(btnPan); toolsBar.addView(btnTrack); toolsBar.addView(btnUndo)
 
-        val catalogScroll = HorizontalScrollView(this).apply { setBackgroundColor(Color.parseColor("#14181B")); setPadding(8, 4, 8, 10) }
+        val catalogScroll = HorizontalScrollView(this).apply { setBackgroundColor(theme.panelBg); setPadding(8, 4, 8, 10) }
         val catalogRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         for (item in Catalog.items) {
             val b = TextView(this).apply {
-                text = item.label; setTextColor(Color.WHITE); textSize = 12f; gravity = Gravity.CENTER
-                setBackgroundResource(R.drawable.btn_dark); setPadding(18, 12, 18, 12)
+                text = item.label; setTextColor(theme.textPrimary); textSize = 12f; gravity = Gravity.CENTER
+                setBackgroundColor(theme.btnBg); setPadding(18, 12, 18, 12)
                 layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginEnd = 6 }
                 setOnClickListener {
                     planView.currentTool = PlanView.Tool.PLACE; planView.placeType = item.type
@@ -120,6 +125,14 @@ class PlanEditorActivity : AppCompatActivity() {
         planView.loadObjects()
         planView.loadTracks()
         loadUnderlay()
+    }
+
+    private fun showThemeDialog() {
+        val names = Themes.all.map { it.name }.toTypedArray()
+        AlertDialog.Builder(this).setTitle("Выбор темы").setItems(names) { _, i ->
+            ThemeManager.set(this, Themes.all[i].id)
+            recreate()
+        }.setNegativeButton("Отмена", null).show()
     }
 
     private fun pickUnderlay() {

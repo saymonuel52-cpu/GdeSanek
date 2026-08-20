@@ -29,6 +29,7 @@ import ru.gdesanek.model.WallMaterials
 import ru.gdesanek.model.WiringTypes
 import ru.gdesanek.render.GostSymbols
 import ru.gdesanek.render.WallRender
+import ru.gdesanek.theme.AppTheme
 import kotlin.math.pow
 import kotlin.math.sqrt
 import kotlin.math.round
@@ -83,6 +84,15 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     fun loadWalls() { walls.clear(); repository?.let { walls.addAll(it.getAll(projectId)) }; invalidate() }
     fun loadObjects() { objects.clear(); objectRepository?.let { objects.addAll(it.getAll(projectId)) }; invalidate() }
     fun loadTracks() { tracks.clear(); trackRepository?.let { tracks.addAll(it.getAll(projectId)) }; invalidate() }
+
+    fun applyTheme(t: AppTheme) {
+        wallPaint.color = t.wallColor
+        gridPaint.color = t.gridColor
+        hintPaint.color = t.hintColor
+        trackPaint.color = t.trackColor
+        setBackgroundColor(t.canvasBg)
+        invalidate()
+    }
 
     fun totalTrackMeters(): Float = tracks.map { trackLength(it.points) }.sum() / 100f * 1.1f
 
