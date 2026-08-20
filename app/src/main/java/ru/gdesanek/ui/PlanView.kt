@@ -1,12 +1,14 @@
 package ru.gdesanek.ui
 import android.app.AlertDialog
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Matrix
 import android.graphics.PointF
 import android.graphics.DashPathEffect
+import android.graphics.RectF
 import android.text.InputType
 import android.util.AttributeSet
 import android.view.MotionEvent
@@ -41,6 +43,16 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     var objectRepository: ObjectRepository? = null
     var trackRepository: TrackRepository? = null
 
+    var underlay: Bitmap? = null
+    var underlayScale = 1f
+    var underlayX = 0f
+    var underlayY = 0f
+    var onUnderlayChanged: (() -> Unit)? = null
+    private var calibrating = false
+    private val calibPoints = mutableListOf<TrackPoint>()
+
+    fun startCalibration() { calibrating = true; calibPoints.clear(); invalidate() }
+
     val walls = mutableListOf<Wall>()
     val objects = mutableListOf<PlanObject>()
     val tracks = mutableListOf<CableTrack>()
@@ -54,6 +66,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     private val hintPaint = Paint().apply { color = Color.parseColor("#777777"); textSize = 40f; textAlign = Paint.Align.CENTER }
     private val trackPaint = Paint().apply { color = Color.parseColor("#4CAF50"); strokeWidth = 5f; style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND }
     private val tempTrackPaint = Paint().apply { color = Color.YELLOW; strokeWidth = 5f; style = Paint.Style.STROKE; pathEffect = DashPathEffect(floatArrayOf(20f, 15f), 0f) }
+    private val calibPaint = Paint().apply { color = Color.parseColor("#FF5252"); strokeWidth = 6f; style = Paint.Style.STROKE }
 
     private val matrix = Matrix()
     private val inverseMatrix = Matrix()
@@ -88,6 +101,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas); canvas.drawColor(Color.parseColor("#121212"))
         canvas.save(); canvas.concat(matrix)
+        underlay?.let { b -> canvas.drawBitmap(b, null, RectF(underlayX, underlayY, underlayX + b.width * underlayScale, underlayY + b.height * underlayScale), null) }
         var x = -5000f; while (x <= 5000f) { canvas.drawLine(x, -5000f, x, 5000f, gridPaint); x += gridSize }
         var y = -5000f; while (y <= 5000f) { canvas.drawLine(-5000f, y, 5000f, y, gridPaint); y += gridSize }
         for (t in tracks) for (i in 0 until t.points.size - 1) canvas.drawLine(t.points[i].x, t.points[i].y, t.points[i+1].x, t.points[i+1].y, trackPaint)
@@ -96,9 +110,11 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         for (i in 0 until currentTrackPoints.size - 1) canvas.drawLine(currentTrackPoints[i].x, currentTrackPoints[i].y, currentTrackPoints[i+1].x, currentTrackPoints[i+1].y, tempTrackPaint)
         if (currentTrackPoints.isNotEmpty() && fingerOn) { val l = currentTrackPoints.last(); canvas.drawLine(l.x, l.y, fingerX, fingerY, tempTrackPaint) }
         for (obj in objects) GostSymbols.draw(canvas, obj.type, obj.x, obj.y, obj.rotation, wallPaint)
+        for (p in calibPoints) { canvas.drawLine(p.x - 20f, p.y, p.x + 20f, p.y, calibPaint); canvas.drawLine(p.x, p.y - 20f, p.x, p.y + 20f, calibPaint) }
         canvas.restore()
-        if (currentTool == Tool.DRAW_TRACK && currentTrackPoints.isEmpty()) canvas.drawText("Трасса: тапай точки, тап по последней — готово", width / 2f, height / 2f, hintPaint)
-        else if (walls.isEmpty() && objects.isEmpty() && currentWall == null) canvas.drawText("Выбери инструмент снизу", width / 2f, height / 2f, hintPaint)
+        if (calibrating) canvas.drawText("Калибровка: отметь 2 точки на подложке", width / 2f, height / 2f, hintPaint)
+        else if (currentTool == Tool.DRAW_TRACK && currentTrackPoints.isEmpty()) canvas.drawText("Трасса: тапай точки, тап по последней — готово", width / 2f, height / 2f, hintPaint)
+        else if (walls.isEmpty() && objects.isEmpty() && currentWall == null && underlay == null) canvas.drawText("Выбери инструмент снизу", width / 2f, height / 2f, hintPaint)
     }
 
     private fun screenToCanvas(x: Float, y: Float): PointF {
@@ -110,6 +126,29 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         for (o in objects) { val d = sqrt((x - o.x).pow(2) + (y - o.y).pow(2)); if (d < bestD) { bestD = d; bx = o.x; by = o.y; found = true } }
         if (found) return TrackPoint(bx, by)
         return TrackPoint(snap(x), snap(y))
+    }
+
+    private fun showCalibDialog(p1: TrackPoint, p2: TrackPoint) {
+        val dWorld = sqrt((p2.x - p1.x).pow(2) + (p2.y - p1.y).pow(2))
+        if (dWorld < 1f) return
+        val edit = EditText(context).apply { inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL; hint = "Расстояние между точками, м" }
+        AlertDialog.Builder(context).setTitle("Калибровка масштаба").setView(edit)
+            .setPositiveButton("ОК") { _, _ ->
+                val meters = edit.text.toString().toFloatOrNull() ?: return@setPositiveButton
+                if (meters <= 0f) return@setPositiveButton
+                val us = underlayScale
+                val i1x = (p1.x - underlayX) / us; val i1y = (p1.y - underlayY) / us
+                val i2x = (p2.x - underlayX) / us; val i2y = (p2.y - underlayY) / us
+                val lPix = sqrt((i2x - i1x).pow(2) + (i2y - i1y).pow(2))
+                if (lPix < 1f) return@setPositiveButton
+                val newUs = meters * 100f / lPix
+                underlayX = p1.x - i1x * newUs
+                underlayY = p1.y - i1y * newUs
+                underlayScale = newUs
+                onUnderlayChanged?.invoke()
+                invalidate()
+            }
+            .setNegativeButton("Отмена", null).show()
     }
 
     private fun showWallDialog(x1: Float, y1: Float, x2: Float, y2: Float) {
@@ -171,6 +210,17 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
+        if (calibrating && event.actionMasked == MotionEvent.ACTION_DOWN && event.pointerCount == 1) {
+            val pt = screenToCanvas(event.x, event.y)
+            calibPoints.add(TrackPoint(pt.x, pt.y))
+            if (calibPoints.size >= 2) {
+                calibrating = false
+                showCalibDialog(calibPoints[0], calibPoints[1])
+                calibPoints.clear()
+            }
+            invalidate()
+            return true
+        }
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 lastTouchX = event.x; lastTouchY = event.y; downX = event.x; downY = event.y
