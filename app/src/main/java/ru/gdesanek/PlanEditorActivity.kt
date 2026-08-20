@@ -88,7 +88,7 @@ class PlanEditorActivity : AppCompatActivity() {
     private fun exportPdf() {
         Toast.makeText(this, "Формируем PDF...", Toast.LENGTH_SHORT).show()
         Thread {
-            val walls = WallRepository(this).getWalls(projectId)
+            val walls = WallRepository(this).getAll(projectId)
             val objects = ObjectRepository(this).getAll(projectId)
             val tracks = TrackRepository(this).getAll(projectId)
             val file = PdfExporter.export(this, projectName, projectId, walls, objects, tracks)

@@ -57,7 +57,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
 
     private fun snap(value: Float): Float = round(value / gridSize) * gridSize
 
-    fun loadWalls() { walls.clear(); repository?.let { walls.addAll(it.getWalls(projectId)) }; invalidate() }
+    fun loadWalls() { walls.clear(); repository?.let { walls.addAll(it.getAll(projectId)) }; invalidate() }
     fun loadObjects() { objects.clear(); objectRepository?.let { objects.addAll(it.getAll(projectId)) }; invalidate() }
     fun loadTracks() { tracks.clear(); trackRepository?.let { tracks.addAll(it.getAll(projectId)) }; invalidate() }
 
