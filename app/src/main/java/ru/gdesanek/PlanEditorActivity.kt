@@ -1,5 +1,6 @@
 package ru.gdesanek
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
@@ -17,6 +18,7 @@ import ru.gdesanek.db.TrackRepository
 import ru.gdesanek.export.PdfExporter
 import ru.gdesanek.model.Catalog
 import ru.gdesanek.ui.PlanView
+import java.io.File
 
 class PlanEditorActivity : AppCompatActivity() {
     private lateinit var planView: PlanView
@@ -34,15 +36,27 @@ class PlanEditorActivity : AppCompatActivity() {
         val topBar = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setBackgroundColor(Color.parseColor("#008C9E")); setPadding(12, 12, 12, 12) }
         val backBtn = TextView(this).apply { text = "←"; textSize = 26f; setTextColor(Color.WHITE); setPadding(16, 4, 16, 4); setOnClickListener { finish() } }
         val title = TextView(this).apply { text = projectName; textSize = 17f; setTextColor(Color.WHITE); typeface = Typeface.DEFAULT_BOLD; layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f) }
-        val estimateBtn = TextView(this).apply { text = " 📊 "; textSize = 18f; setBackgroundResource(R.drawable.btn_dark); setPadding(12, 8, 12, 8); setOnClickListener { startActivity(Intent(this@PlanEditorActivity, EstimateActivity::class.java).putExtra("PROJECT_ID", projectId)) } }
+        val underlayBtn = TextView(this).apply {
+            text = " 🖼 "; textSize = 18f; setBackgroundResource(R.drawable.btn_dark); setPadding(12, 8, 12, 8)
+            setOnClickListener { pickUnderlay() }
+            setOnLongClickListener { removeUnderlay(); true }
+        }
+        val calibBtn = TextView(this).apply {
+            text = " 📐 "; textSize = 18f; setBackgroundResource(R.drawable.btn_dark); setPadding(12, 8, 12, 8)
+            val p = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT); p.marginStart = 8; layoutParams = p
+            setOnClickListener { planView.startCalibration() }
+        }
+        val estimateBtn = TextView(this).apply {
+            text = " 📊 "; textSize = 18f; setBackgroundResource(R.drawable.btn_dark); setPadding(12, 8, 12, 8)
+            val p = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT); p.marginStart = 8; layoutParams = p
+            setOnClickListener { startActivity(Intent(this@PlanEditorActivity, EstimateActivity::class.java).putExtra("PROJECT_ID", projectId)) }
+        }
         val shareBtn = TextView(this).apply {
             text = " 📤 "; textSize = 18f; setBackgroundResource(R.drawable.btn_dark); setPadding(12, 8, 12, 8)
-            val p = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-            p.marginStart = 8
-            layoutParams = p
+            val p = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT); p.marginStart = 8; layoutParams = p
             setOnClickListener { exportPdf() }
         }
-        topBar.addView(backBtn); topBar.addView(title); topBar.addView(estimateBtn); topBar.addView(shareBtn)
+        topBar.addView(backBtn); topBar.addView(title); topBar.addView(underlayBtn); topBar.addView(calibBtn); topBar.addView(estimateBtn); topBar.addView(shareBtn)
 
         planView = PlanView(this)
         planView.projectId = projectId
@@ -98,6 +112,52 @@ class PlanEditorActivity : AppCompatActivity() {
         planView.loadWalls()
         planView.loadObjects()
         planView.loadTracks()
+        loadUnderlay()
+    }
+
+    private fun pickUnderlay() {
+        val i = Intent(Intent.ACTION_OPEN_DOCUMENT).apply { type = "image/*"; addCategory(Intent.CATEGORY_OPENABLE) }
+        startActivityForResult(Intent.createChooser(i, "Подложка"), 42)
+    }
+
+    private fun removeUnderlay() {
+        val f = File(filesDir, "underlay_$projectId.jpg")
+        if (f.exists()) f.delete()
+        planView.underlay = null
+        getSharedPreferences("underlay", MODE_PRIVATE).edit().remove("us_$projectId").remove("ux_$projectId").remove("uy_$projectId").apply()
+        Toast.makeText(this, "Подложка удалена", Toast.LENGTH_SHORT).show()
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == 42 && resultCode == RESULT_OK && data?.data != null) {
+            try {
+                val f = File(filesDir, "underlay_$projectId.jpg")
+                contentResolver.openInputStream(data.data!!)?.use { inp -> f.outputStream().use { out -> inp.copyTo(out) } }
+                loadUnderlay()
+                Toast.makeText(this, "Подложка загружена. Нажми 📐 и отметь 2 точки известного размера", Toast.LENGTH_LONG).show()
+            } catch (e: Exception) {
+                Toast.makeText(this, "Не удалось загрузить подложку", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun loadUnderlay() {
+        val f = File(filesDir, "underlay_$projectId.jpg")
+        if (!f.exists()) return
+        val opts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(f.absolutePath, opts)
+        var sample = 1
+        while (opts.outWidth / sample > 2000 || opts.outHeight / sample > 2000) sample *= 2
+        val bmp = BitmapFactory.decodeFile(f.absolutePath, BitmapFactory.Options().apply { inSampleSize = sample }) ?: return
+        planView.underlay = bmp
+        val prefs = getSharedPreferences("underlay", MODE_PRIVATE)
+        planView.underlayScale = prefs.getFloat("us_$projectId", 1f)
+        planView.underlayX = prefs.getFloat("ux_$projectId", 0f)
+        planView.underlayY = prefs.getFloat("uy_$projectId", 0f)
+        planView.onUnderlayChanged = {
+            prefs.edit().putFloat("us_$projectId", planView.underlayScale).putFloat("ux_$projectId", planView.underlayX).putFloat("uy_$projectId", planView.underlayY).apply()
+        }
     }
 
     private fun exportPdf() {
