@@ -46,34 +46,43 @@ class PlanEditorActivity : AppCompatActivity() {
             setPadding(8, 16, 8, 16)
         }
 
-        fun makeButton(text: String, onClick: () -> Unit): TextView {
-            return TextView(this).apply {
-                this.text = text
-                setTextColor(Color.WHITE)
-                textSize = 18f
-                typeface = Typeface.DEFAULT_BOLD
-                gravity = Gravity.CENTER
-                setBackgroundColor(Color.parseColor("#333333"))
-                val params = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                params.setMargins(8, 0, 8, 0)
-                layoutParams = params
-                val paddingPx = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 12f, resources.displayMetrics).toInt()
-                setPadding(paddingPx, paddingPx, paddingPx, paddingPx)
-                setOnClickListener { onClick() }
-            }
+        val paddingPx = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 12f, resources.displayMetrics).toInt()
+        val params = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { setMargins(8, 0, 8, 0) }
+
+        val btnWall = TextView(this).apply {
+            text = "🧱 СТЕНА"; setTextColor(Color.WHITE); textSize = 18f
+            typeface = Typeface.DEFAULT_BOLD; gravity = Gravity.CENTER
+            setBackgroundColor(Color.parseColor("#FF9800"))
+            layoutParams = params; setPadding(paddingPx, paddingPx, paddingPx, paddingPx)
         }
 
-        val btnWall = makeButton("🧱 СТЕНА") { 
+        val btnPan = TextView(this).apply {
+            text = "✋ РУКА"; setTextColor(Color.WHITE); textSize = 18f
+            typeface = Typeface.DEFAULT_BOLD; gravity = Gravity.CENTER
+            setBackgroundColor(Color.parseColor("#333333"))
+            layoutParams = params; setPadding(paddingPx, paddingPx, paddingPx, paddingPx)
+        }
+
+        val btnUndo = TextView(this).apply {
+            text = "🗑 УБРАТЬ"; setTextColor(Color.WHITE); textSize = 18f
+            typeface = Typeface.DEFAULT_BOLD; gravity = Gravity.CENTER
+            setBackgroundColor(Color.parseColor("#333333"))
+            layoutParams = params; setPadding(paddingPx, paddingPx, paddingPx, paddingPx)
+        }
+
+        btnWall.setOnClickListener {
             planView.currentTool = PlanView.Tool.DRAW_WALL
             btnWall.setBackgroundColor(Color.parseColor("#FF9800"))
             btnPan.setBackgroundColor(Color.parseColor("#333333"))
         }
-        val btnPan = makeButton("✋ РУКА") { 
+
+        btnPan.setOnClickListener {
             planView.currentTool = PlanView.Tool.PAN
             btnPan.setBackgroundColor(Color.parseColor("#FF9800"))
             btnWall.setBackgroundColor(Color.parseColor("#333333"))
         }
-        val btnUndo = makeButton("🗑 УБРАТЬ") { planView.undo() }
+
+        btnUndo.setOnClickListener { planView.undo() }
 
         bottomBar.addView(btnWall)
         bottomBar.addView(btnPan)
@@ -84,7 +93,6 @@ class PlanEditorActivity : AppCompatActivity() {
         root.addView(bottomBar)
         setContentView(root)
 
-        btnWall.performClick() // Активируем стену по умолчанию
         planView.loadWalls()
     }
 }
