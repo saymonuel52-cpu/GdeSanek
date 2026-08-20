@@ -1,4 +1,5 @@
 package ru.gdesanek.ui
+import android.app.AlertDialog
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
@@ -6,9 +7,14 @@ import android.graphics.Paint
 import android.graphics.Matrix
 import android.graphics.PointF
 import android.graphics.DashPathEffect
+import android.text.InputType
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
+import android.widget.EditText
+import android.widget.HorizontalScrollView
+import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import ru.gdesanek.db.WallRepository
 import ru.gdesanek.db.ObjectRepository
@@ -17,7 +23,10 @@ import ru.gdesanek.model.Wall
 import ru.gdesanek.model.PlanObject
 import ru.gdesanek.model.CableTrack
 import ru.gdesanek.model.TrackPoint
+import ru.gdesanek.model.WallMaterials
+import ru.gdesanek.model.WiringTypes
 import ru.gdesanek.render.GostSymbols
+import ru.gdesanek.render.WallRender
 import kotlin.math.pow
 import kotlin.math.sqrt
 import kotlin.math.round
@@ -27,7 +36,6 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     enum class Tool { DRAW_WALL, PAN, PLACE, DRAW_TRACK }
     var currentTool = Tool.DRAW_WALL
     var placeType: String? = null
-
     var projectId: Long = 0
     var repository: WallRepository? = null
     var objectRepository: ObjectRepository? = null
@@ -83,7 +91,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         var x = -5000f; while (x <= 5000f) { canvas.drawLine(x, -5000f, x, 5000f, gridPaint); x += gridSize }
         var y = -5000f; while (y <= 5000f) { canvas.drawLine(-5000f, y, 5000f, y, gridPaint); y += gridSize }
         for (t in tracks) for (i in 0 until t.points.size - 1) canvas.drawLine(t.points[i].x, t.points[i].y, t.points[i+1].x, t.points[i+1].y, trackPaint)
-        for (wall in walls) canvas.drawLine(wall.x1, wall.y1, wall.x2, wall.y2, wallPaint)
+        for (wall in walls) WallRender.draw(canvas, wall, wallPaint)
         currentWall?.let { canvas.drawLine(it.x1, it.y1, it.x2, it.y2, tempWallPaint) }
         for (i in 0 until currentTrackPoints.size - 1) canvas.drawLine(currentTrackPoints[i].x, currentTrackPoints[i].y, currentTrackPoints[i+1].x, currentTrackPoints[i+1].y, tempTrackPaint)
         if (currentTrackPoints.isNotEmpty() && fingerOn) { val l = currentTrackPoints.last(); canvas.drawLine(l.x, l.y, fingerX, fingerY, tempTrackPaint) }
@@ -104,12 +112,59 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         return TrackPoint(snap(x), snap(y))
     }
 
+    private fun showWallDialog(x1: Float, y1: Float, x2: Float, y2: Float) {
+        val box = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL; setPadding(40, 20, 40, 10) }
+        val thick = EditText(context).apply { setText("100"); inputType = InputType.TYPE_CLASS_NUMBER; hint = "Толщина, мм" }
+        val scroll = HorizontalScrollView(context)
+        val row = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
+        scroll.addView(row); box.addView(thick); box.addView(scroll)
+        val dlg = AlertDialog.Builder(context).setTitle("Материал стены").setView(box).setNegativeButton("Отмена", null).create()
+        for ((code, name) in WallMaterials.list) {
+            val b = TextView(context).apply {
+                text = name; setTextColor(Color.WHITE); textSize = 14f
+                setBackgroundColor(Color.parseColor("#1E1E1E")); setPadding(20, 16, 20, 16)
+                setOnClickListener {
+                    val t = thick.text.toString().toFloatOrNull() ?: 100f
+                    val id = repository?.insert(projectId, x1, y1, x2, y2, code, t) ?: 0L
+                    walls.add(Wall(id, projectId, x1, y1, x2, y2, code, t))
+                    invalidate(); dlg.dismiss()
+                }
+            }
+            val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginEnd = 8 }
+            row.addView(b, lp)
+        }
+        dlg.show()
+    }
+
+    private fun showWiringDialog(pts: List<TrackPoint>) {
+        val names = WiringTypes.list.map { it.second }.toTypedArray()
+        AlertDialog.Builder(context).setTitle("Способ прокладки").setItems(names) { _, i ->
+            val code = WiringTypes.list[i].first
+            val id = trackRepository?.insert(projectId, "power", pts, code) ?: 0L
+            tracks.add(CableTrack(id, projectId, "power", pts, code))
+            invalidate()
+        }.setNegativeButton("Отмена", null).show()
+    }
+
+    private fun showObjectDialog(obj: PlanObject) {
+        AlertDialog.Builder(context).setTitle("Объект").setItems(arrayOf("Повернуть на 45°", "Удалить")) { _, i ->
+            when (i) {
+                0 -> { val upd = obj.copy(rotation = obj.rotation + 45f); objectRepository?.update(upd); val idx = objects.indexOfFirst { it.id == obj.id }; if (idx >= 0) objects[idx] = upd }
+                1 -> { objectRepository?.delete(obj.id); objects.removeAll { it.id == obj.id } }
+            }
+            invalidate()
+        }.show()
+    }
+
+    private fun hitObject(wx: Float, wy: Float): PlanObject? =
+        objects.lastOrNull { (it.x - wx) * (it.x - wx) + (it.y - wy) * (it.y - wy) < 45f * 45f }
+
     private fun finishTrack() {
         if (currentTrackPoints.size >= 2) {
             val meters = trackLength(currentTrackPoints) / 100f
-            val savedId = trackRepository?.insert(projectId, "power", currentTrackPoints.toList()) ?: 0L
-            tracks.add(CableTrack(savedId, projectId, "power", currentTrackPoints.toList()))
-            Toast.makeText(context, String.format("Трасса: %.1f м (с запасом x1.1 = %.1f м)", meters, meters * 1.1f), Toast.LENGTH_LONG).show()
+            val pts = currentTrackPoints.toList()
+            Toast.makeText(context, String.format("Трасса: %.1f м (запас x1.1 = %.1f м)", meters, meters * 1.1f), Toast.LENGTH_LONG).show()
+            showWiringDialog(pts)
         }
         currentTrackPoints.clear(); fingerOn = false
         invalidate()
@@ -164,14 +219,20 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
             MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
                 if (touchMode == 1 && currentTool == Tool.DRAW_WALL && currentWall != null) {
                     val w = currentWall!!; val dx = w.x2 - w.x1; val dy = w.y2 - w.y1
-                    if (dx * dx + dy * dy > 100) { val savedId = repository?.insert(projectId, w.x1, w.y1, w.x2, w.y2) ?: 0L; walls.add(w.copy(id = savedId)) }
-                    currentWall = null; invalidate()
+                    currentWall = null
+                    if (dx * dx + dy * dy > 100) showWallDialog(w.x1, w.y1, w.x2, w.y2)
+                    invalidate()
                 } else if (touchMode == 1 && currentTool == Tool.PLACE && placeType != null) {
                     val dxS = event.x - downX; val dyS = event.y - downY
                     if (dxS * dxS + dyS * dyS < 400) {
-                        val pt = screenToCanvas(event.x, event.y); val s = snapPointForPlace(pt.x, pt.y)
-                        val savedId = objectRepository?.insert(projectId, placeType!!, s.x, s.y, s.rot) ?: 0L
-                        objects.add(PlanObject(savedId, projectId, placeType!!, s.x, s.y, s.rot)); invalidate()
+                        val pt = screenToCanvas(event.x, event.y)
+                        val hit = hitObject(pt.x, pt.y)
+                        if (hit != null) showObjectDialog(hit)
+                        else {
+                            val s = snapPointForPlace(pt.x, pt.y)
+                            val savedId = objectRepository?.insert(projectId, placeType!!, s.x, s.y, s.rot) ?: 0L
+                            objects.add(PlanObject(savedId, projectId, placeType!!, s.x, s.y, s.rot)); invalidate()
+                        }
                     }
                 } else if (currentTool == Tool.DRAW_TRACK) { fingerOn = false; invalidate() }
                 if (event.pointerCount <= 1) touchMode = 0
