@@ -25,14 +25,15 @@ class PlanEditorActivity : AppCompatActivity() {
         }
 
         val backBtn = TextView(this).apply {
-            text = "  ←  "
+            text = "  <-  "
             textSize = 24f
-            setTextColor(Color.WHITE)            setBackgroundColor(Color.parseColor("#1E1E1E"))
+            setTextColor(Color.WHITE)
+            setBackgroundColor(Color.parseColor("#1E1E1E"))
             setOnClickListener { finish() }
         }
 
         val title = TextView(this).apply {
-            text = "   $projectName · стена — палец, зум — два пальца"
+            text = "   $projectName"
             textSize = 14f
             setTextColor(Color.parseColor("#B0B0B0"))
         }
