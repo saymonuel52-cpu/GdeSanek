@@ -13,7 +13,7 @@ object GostSymbols {
             "socket_k" -> drawSocketComputer(canvas, x, y, rotation, paint)
             "socket_double" -> drawSocketDouble(canvas, x, y, rotation, paint)
             "socket_380" -> drawSocket380(canvas, x, y, rotation, paint)
-            "switch_1" -> drawSwitch(canvas, x, y, rotation, paint, 1)
+            "switch_o", "switch_1" -> drawSwitch(canvas, x, y, rotation, paint, 1)
             "switch_2" -> drawSwitch(canvas, x, y, rotation, paint, 2)
             "switch_3" -> drawSwitch(canvas, x, y, rotation, paint, 3)
             "switch_pass" -> drawSwitchPass(canvas, x, y, rotation, paint)

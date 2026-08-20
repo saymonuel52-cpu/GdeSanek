@@ -3,8 +3,8 @@ import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
-import android.util.TypedValue
 import android.view.Gravity
+import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -15,12 +15,15 @@ import ru.gdesanek.db.WallRepository
 import ru.gdesanek.db.ObjectRepository
 import ru.gdesanek.db.TrackRepository
 import ru.gdesanek.export.PdfExporter
+import ru.gdesanek.model.Catalog
 import ru.gdesanek.ui.PlanView
 
 class PlanEditorActivity : AppCompatActivity() {
     private lateinit var planView: PlanView
     private var projectId = 0L
     private var projectName = "План"
+    private val catalogButtons = mutableListOf<TextView>()
+    private val toolButtons = mutableListOf<TextView>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,36 +50,48 @@ class PlanEditorActivity : AppCompatActivity() {
         planView.objectRepository = ObjectRepository(this)
         planView.trackRepository = TrackRepository(this)
 
-        val bottomBar = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setBackgroundColor(Color.parseColor("#14181B")); setPadding(8, 14, 8, 14) }
-        val paddingPx = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 10f, resources.displayMetrics).toInt()
-        val params = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { setMargins(4, 0, 4, 0) }
-
-        fun makeButton(text: String): TextView = TextView(this).apply {
+        val toolsBar = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setBackgroundColor(Color.parseColor("#14181B")); setPadding(8, 10, 8, 4) }
+        val toolParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { setMargins(4, 0, 4, 0) }
+        fun makeTool(text: String): TextView = TextView(this@PlanEditorActivity).apply {
             this.text = text; setTextColor(Color.WHITE); textSize = 13f; typeface = Typeface.DEFAULT_BOLD; gravity = Gravity.CENTER
-            setBackgroundResource(R.drawable.btn_gray); layoutParams = params; setPadding(paddingPx, paddingPx, paddingPx, paddingPx)
+            setBackgroundResource(R.drawable.btn_gray); layoutParams = toolParams; setPadding(10, 14, 10, 14)
         }
+        val btnWall = makeTool("🧱 СТЕНА")
+        val btnPan = makeTool("✋ РУКА")
+        val btnTrack = makeTool("📏 ТРАССА")
+        val btnUndo = makeTool("🗑 УБРАТЬ")
+        toolButtons.addAll(listOf(btnWall, btnPan, btnTrack, btnUndo))
 
-        val btnWall = makeButton("🧱 СТЕНА")
-        val btnPan = makeButton("✋ РУКА")
-        val btnSocket = makeButton("🔌 РОЗЕТКА")
-        val btnSwitch = makeButton("💡 ВЫКЛ")
-        val btnTrack = makeButton("📏 ТРАССА")
-        val btnUndo = makeButton("🗑 УБРАТЬ")
+        fun highlightTool(sel: TextView?) { toolButtons.forEach { it.setBackgroundResource(if (it == sel) R.drawable.btn_active else R.drawable.btn_gray) } }
+        fun highlightCatalog(sel: TextView?) { catalogButtons.forEach { it.setBackgroundResource(if (it == sel) R.drawable.btn_active else R.drawable.btn_dark) } }
 
-        val buttons = listOf(btnWall, btnPan, btnSocket, btnSwitch, btnTrack, btnUndo)
-        fun highlight(selected: TextView) { buttons.forEach { it.setBackgroundResource(if (it == selected) R.drawable.btn_active else R.drawable.btn_gray) } }
-
-        btnWall.setOnClickListener { planView.currentTool = PlanView.Tool.DRAW_WALL; planView.placeType = null; highlight(btnWall) }
-        btnPan.setOnClickListener { planView.currentTool = PlanView.Tool.PAN; planView.placeType = null; highlight(btnPan) }
-        btnSocket.setOnClickListener { planView.currentTool = PlanView.Tool.PLACE; planView.placeType = "socket_b1"; highlight(btnSocket) }
-        btnSwitch.setOnClickListener { planView.currentTool = PlanView.Tool.PLACE; planView.placeType = "switch_o"; highlight(btnSwitch) }
-        btnTrack.setOnClickListener { planView.currentTool = PlanView.Tool.DRAW_TRACK; planView.placeType = null; highlight(btnTrack) }
+        btnWall.setOnClickListener { planView.currentTool = PlanView.Tool.DRAW_WALL; planView.placeType = null; highlightTool(btnWall); highlightCatalog(null) }
+        btnPan.setOnClickListener { planView.currentTool = PlanView.Tool.PAN; planView.placeType = null; highlightTool(btnPan); highlightCatalog(null) }
+        btnTrack.setOnClickListener { planView.currentTool = PlanView.Tool.DRAW_TRACK; planView.placeType = null; highlightTool(btnTrack); highlightCatalog(null) }
         btnUndo.setOnClickListener { planView.undo() }
 
-        buttons.forEach { bottomBar.addView(it) }
+        toolsBar.addView(btnWall); toolsBar.addView(btnPan); toolsBar.addView(btnTrack); toolsBar.addView(btnUndo)
+
+        val catalogScroll = HorizontalScrollView(this).apply { setBackgroundColor(Color.parseColor("#14181B")); setPadding(8, 4, 8, 10) }
+        val catalogRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        for (item in Catalog.items) {
+            val b = TextView(this).apply {
+                text = item.label; setTextColor(Color.WHITE); textSize = 12f; gravity = Gravity.CENTER
+                setBackgroundResource(R.drawable.btn_dark); setPadding(18, 12, 18, 12)
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginEnd = 6 }
+                setOnClickListener {
+                    planView.currentTool = PlanView.Tool.PLACE; planView.placeType = item.type
+                    highlightCatalog(this); highlightTool(null)
+                }
+            }
+            catalogButtons.add(b); catalogRow.addView(b)
+        }
+        catalogScroll.addView(catalogRow)
+
         root.addView(topBar)
         root.addView(planView, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
-        root.addView(bottomBar)
+        root.addView(toolsBar)
+        root.addView(catalogScroll)
         setContentView(root)
 
         btnWall.performClick()
