@@ -9,7 +9,7 @@
         android:id="@+id/titleText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Мои проекты · v0.4"
+        android:text="Мои проекты · v0.5"
         android:textColor="#FFFFFF"
         android:textSize="28sp"
         android:textStyle="bold"

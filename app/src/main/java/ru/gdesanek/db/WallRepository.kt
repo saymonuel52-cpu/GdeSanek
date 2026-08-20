@@ -16,6 +16,11 @@ class WallRepository(context: Context) {
         return db.insert("walls", null, values)
     }
 
+    fun delete(wallId: Long) {
+        val db = dbHelper.writableDatabase
+        db.delete("walls", "id = ?", arrayOf(wallId.toString()))
+    }
+
     fun getWalls(projectId: Long): List<Wall> {
         val db = dbHelper.readableDatabase
         val cursor = db.rawQuery("SELECT * FROM walls WHERE project_id = ? ORDER BY id", arrayOf(projectId.toString()))
@@ -23,12 +28,9 @@ class WallRepository(context: Context) {
         if (cursor.moveToFirst()) {
             do {
                 list.add(Wall(
-                    id = cursor.getLong(0),
-                    projectId = cursor.getLong(1),
-                    x1 = cursor.getFloat(2),
-                    y1 = cursor.getFloat(3),
-                    x2 = cursor.getFloat(4),
-                    y2 = cursor.getFloat(5)
+                    id = cursor.getLong(0), projectId = cursor.getLong(1),
+                    x1 = cursor.getFloat(2), y1 = cursor.getFloat(3),
+                    x2 = cursor.getFloat(4), y2 = cursor.getFloat(5)
                 ))
             } while (cursor.moveToNext())
         }
