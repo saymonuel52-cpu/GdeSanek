@@ -85,8 +85,9 @@ class PlanEditorActivity : AppCompatActivity() {
         val btnWall = makeTool("🧱 СТЕНА")
         val btnPan = makeTool("✋ РУКА")
         val btnTrack = makeTool("📏 ТРАССА")
+        val btnEdit = makeTool("✏ РЕД")
         val btnUndo = makeTool("🗑 УБРАТЬ")
-        toolButtons.addAll(listOf(btnWall, btnPan, btnTrack, btnUndo))
+        toolButtons.addAll(listOf(btnWall, btnPan, btnTrack, btnEdit, btnUndo))
 
         fun highlightTool(sel: TextView?) { toolButtons.forEach { it.setBackgroundColor(if (it == sel) theme.btnActiveBg else theme.btnBg) } }
         fun highlightCatalog(sel: TextView?) { catalogButtons.forEach { it.setBackgroundColor(if (it == sel) theme.btnActiveBg else theme.btnBg) } }
@@ -94,9 +95,18 @@ class PlanEditorActivity : AppCompatActivity() {
         btnWall.setOnClickListener { planView.currentTool = PlanView.Tool.DRAW_WALL; planView.placeType = null; highlightTool(btnWall); highlightCatalog(null) }
         btnPan.setOnClickListener { planView.currentTool = PlanView.Tool.PAN; planView.placeType = null; highlightTool(btnPan); highlightCatalog(null) }
         btnTrack.setOnClickListener { planView.currentTool = PlanView.Tool.DRAW_TRACK; planView.placeType = null; highlightTool(btnTrack); highlightCatalog(null) }
+        btnEdit.setOnClickListener {
+            planView.currentTool = PlanView.Tool.EDIT
+            planView.placeType = null
+            planView.selectedWallId = null
+            planView.selectedObjectId = null
+            planView.selectedTrackId = null
+            highlightTool(btnEdit); highlightCatalog(null)
+            planView.invalidate()
+        }
         btnUndo.setOnClickListener { planView.undo() }
 
-        toolsBar.addView(btnWall); toolsBar.addView(btnPan); toolsBar.addView(btnTrack); toolsBar.addView(btnUndo)
+        toolsBar.addView(btnWall); toolsBar.addView(btnPan); toolsBar.addView(btnTrack); toolsBar.addView(btnEdit); toolsBar.addView(btnUndo)
 
         val catalogScroll = HorizontalScrollView(this).apply { setBackgroundColor(theme.panelBg); setPadding(8, 4, 8, 10) }
         val catalogRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
