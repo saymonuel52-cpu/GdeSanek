@@ -47,6 +47,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     var underlayScale = 1f
     var underlayX = 0f
     var underlayY = 0f
+    var underlayAlpha = 128
     var onUnderlayChanged: (() -> Unit)? = null
     private var calibrating = false
     private val calibPoints = mutableListOf<TrackPoint>()
@@ -67,6 +68,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     private val trackPaint = Paint().apply { color = Color.parseColor("#4CAF50"); strokeWidth = 5f; style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND }
     private val tempTrackPaint = Paint().apply { color = Color.YELLOW; strokeWidth = 5f; style = Paint.Style.STROKE; pathEffect = DashPathEffect(floatArrayOf(20f, 15f), 0f) }
     private val calibPaint = Paint().apply { color = Color.parseColor("#FF5252"); strokeWidth = 6f; style = Paint.Style.STROKE }
+    private val underlayPaint = Paint().apply { alpha = 128 }
 
     private val matrix = Matrix()
     private val inverseMatrix = Matrix()
@@ -101,7 +103,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas); canvas.drawColor(Color.parseColor("#121212"))
         canvas.save(); canvas.concat(matrix)
-        underlay?.let { b -> canvas.drawBitmap(b, null, RectF(underlayX, underlayY, underlayX + b.width * underlayScale, underlayY + b.height * underlayScale), null) }
+        underlay?.let { b -> underlayPaint.alpha = underlayAlpha; canvas.drawBitmap(b, null, RectF(underlayX, underlayY, underlayX + b.width * underlayScale, underlayY + b.height * underlayScale), underlayPaint) }
         var x = -5000f; while (x <= 5000f) { canvas.drawLine(x, -5000f, x, 5000f, gridPaint); x += gridSize }
         var y = -5000f; while (y <= 5000f) { canvas.drawLine(-5000f, y, 5000f, y, gridPaint); y += gridSize }
         for (t in tracks) for (i in 0 until t.points.size - 1) canvas.drawLine(t.points[i].x, t.points[i].y, t.points[i+1].x, t.points[i+1].y, trackPaint)

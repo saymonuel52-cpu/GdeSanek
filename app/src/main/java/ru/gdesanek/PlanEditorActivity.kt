@@ -1,4 +1,5 @@
 package ru.gdesanek
+import android.app.AlertDialog
 import android.content.Intent
 import android.graphics.BitmapFactory
 import android.graphics.Color
@@ -7,6 +8,7 @@ import android.os.Bundle
 import android.view.Gravity
 import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
+import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -46,6 +48,11 @@ class PlanEditorActivity : AppCompatActivity() {
             val p = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT); p.marginStart = 8; layoutParams = p
             setOnClickListener { planView.startCalibration() }
         }
+        val dimBtn = TextView(this).apply {
+            text = " 🌓 "; textSize = 18f; setBackgroundResource(R.drawable.btn_dark); setPadding(12, 8, 12, 8)
+            val p = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT); p.marginStart = 8; layoutParams = p
+            setOnClickListener { showUnderlayDialog() }
+        }
         val estimateBtn = TextView(this).apply {
             text = " 📊 "; textSize = 18f; setBackgroundResource(R.drawable.btn_dark); setPadding(12, 8, 12, 8)
             val p = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT); p.marginStart = 8; layoutParams = p
@@ -56,7 +63,7 @@ class PlanEditorActivity : AppCompatActivity() {
             val p = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT); p.marginStart = 8; layoutParams = p
             setOnClickListener { exportPdf() }
         }
-        topBar.addView(backBtn); topBar.addView(title); topBar.addView(underlayBtn); topBar.addView(calibBtn); topBar.addView(estimateBtn); topBar.addView(shareBtn)
+        topBar.addView(backBtn); topBar.addView(title); topBar.addView(underlayBtn); topBar.addView(calibBtn); topBar.addView(dimBtn); topBar.addView(estimateBtn); topBar.addView(shareBtn)
 
         planView = PlanView(this)
         planView.projectId = projectId
@@ -124,8 +131,22 @@ class PlanEditorActivity : AppCompatActivity() {
         val f = File(filesDir, "underlay_$projectId.jpg")
         if (f.exists()) f.delete()
         planView.underlay = null
-        getSharedPreferences("underlay", MODE_PRIVATE).edit().remove("us_$projectId").remove("ux_$projectId").remove("uy_$projectId").apply()
+        getSharedPreferences("underlay", MODE_PRIVATE).edit().remove("us_$projectId").remove("ux_$projectId").remove("uy_$projectId").remove("ua_$projectId").apply()
         Toast.makeText(this, "Подложка удалена", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun showUnderlayDialog() {
+        if (planView.underlay == null) { Toast.makeText(this, "Сначала загрузи подложку 🖼", Toast.LENGTH_SHORT).show(); return }
+        val prefs = getSharedPreferences("underlay", MODE_PRIVATE)
+        val seek = SeekBar(this).apply { max = 255; progress = planView.underlayAlpha; setPadding(60, 30, 60, 30) }
+        seek.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(s: SeekBar?, p: Int, fromUser: Boolean) { planView.underlayAlpha = p; planView.invalidate() }
+            override fun onStartTrackingTouch(s: SeekBar?) {}
+            override fun onStopTrackingTouch(s: SeekBar?) { prefs.edit().putInt("ua_$projectId", planView.underlayAlpha).apply() }
+        })
+        AlertDialog.Builder(this).setTitle("Прозрачность подложки").setView(seek)
+            .setPositiveButton("Готово") { _, _ -> prefs.edit().putInt("ua_$projectId", planView.underlayAlpha).apply() }
+            .setNegativeButton("Отмена", null).show()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -135,7 +156,7 @@ class PlanEditorActivity : AppCompatActivity() {
                 val f = File(filesDir, "underlay_$projectId.jpg")
                 contentResolver.openInputStream(data.data!!)?.use { inp -> f.outputStream().use { out -> inp.copyTo(out) } }
                 loadUnderlay()
-                Toast.makeText(this, "Подложка загружена. Нажми 📐 и отметь 2 точки известного размера", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Подложка загружена. 📐 — калибровка, 🌓 — прозрачность", Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
                 Toast.makeText(this, "Не удалось загрузить подложку", Toast.LENGTH_SHORT).show()
             }
@@ -155,6 +176,7 @@ class PlanEditorActivity : AppCompatActivity() {
         planView.underlayScale = prefs.getFloat("us_$projectId", 1f)
         planView.underlayX = prefs.getFloat("ux_$projectId", 0f)
         planView.underlayY = prefs.getFloat("uy_$projectId", 0f)
+        planView.underlayAlpha = prefs.getInt("ua_$projectId", 128)
         planView.onUnderlayChanged = {
             prefs.edit().putFloat("us_$projectId", planView.underlayScale).putFloat("ux_$projectId", planView.underlayX).putFloat("uy_$projectId", planView.underlayY).apply()
         }

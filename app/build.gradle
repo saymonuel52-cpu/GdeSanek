@@ -9,8 +9,8 @@ android {
         applicationId "ru.gdesanek"
         minSdk 24
         targetSdk 34
-        versionCode 16
-        versionName "1.6-underlay"
+        versionCode 17
+        versionName "1.7-dim"
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
