@@ -14,7 +14,7 @@ import ru.gdesanek.theme.AppTheme
 class SkewButton @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) : View(context, attrs) {
     var text: String = ""
         set(v) { field = v; invalidate() }
-    var selected: Boolean = false
+    var isActive: Boolean = false
         set(v) { field = v; invalidate() }
     var theme: AppTheme? = null
         set(v) { field = v; invalidate() }
@@ -32,8 +32,8 @@ class SkewButton @JvmOverloads constructor(context: Context, attrs: AttributeSet
         super.onDraw(canvas)
         val t = theme ?: return
         strokePaint.color = t.accent
-        fillPaint.color = if (selected) t.btnActiveBg else t.btnBg
-        textPaint.color = if (selected) Color.WHITE else t.textPrimary
+        fillPaint.color = if (isActive) t.btnActiveBg else t.btnBg
+        textPaint.color = if (isActive) Color.WHITE else t.textPrimary
         val skew = height * 0.35f
         path.reset()
         path.moveTo(skew, 0f)
