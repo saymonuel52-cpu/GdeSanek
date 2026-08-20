@@ -4,10 +4,10 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="16dp"
-    app:cardBackgroundColor="#1E1E1E"
+    app:cardBackgroundColor="#1A2226"
     app:cardCornerRadius="16dp"
     app:cardElevation="6dp"
-    app:strokeColor="#333333"
+    app:strokeColor="#2A3B40"
     app:strokeWidth="1dp">
 
     <LinearLayout
@@ -29,7 +29,15 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:textColor="#B0B0B0"
+            android:textColor="#B0BEC5"
             android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/projectDate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:textColor="#4DD0E1"
+            android:textSize="12sp" />
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

@@ -36,7 +36,7 @@ class EstimateActivity : AppCompatActivity() {
         val list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         scroll.addView(list)
 
-        val totalView = TextView(this).apply { textSize = 26f; setTextColor(Color.parseColor("#FF9800")); setPadding(0, 24, 0, 0) }
+        val totalView = TextView(this).apply { textSize = 26f; setTextColor(Color.parseColor("#00C4DC")); setPadding(0, 24, 0, 0) }
 
         fun recalcTotal() {
             var total = 0f

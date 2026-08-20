@@ -7,28 +7,33 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import ru.gdesanek.R
 import ru.gdesanek.model.Project
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class ProjectAdapter(
     private val projects: List<Project>,
     private val onClick: (Project) -> Unit
 ) : RecyclerView.Adapter<ProjectAdapter.ViewHolder>() {
-    
+
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val nameText: TextView = view.findViewById(R.id.projectName)
         val addressText: TextView = view.findViewById(R.id.projectAddress)
+        val dateText: TextView = view.findViewById(R.id.projectDate)
     }
-    
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_project, parent, false)
         return ViewHolder(view)
     }
-    
+
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val project = projects[position]
         holder.nameText.text = project.name
         holder.addressText.text = project.address
+        holder.dateText.text = "📅 " + SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date(project.createdAt))
         holder.itemView.setOnClickListener { onClick(project) }
     }
-    
+
     override fun getItemCount() = projects.size
 }

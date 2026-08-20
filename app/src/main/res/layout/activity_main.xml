@@ -3,18 +3,57 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#121212">
+    android:background="#101418">
 
-    <TextView
-        android:id="@+id/titleText"
+    <LinearLayout
+        android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Мои проекты · v0.9"
-        android:textColor="#FFFFFF"
-        android:textSize="28sp"
-        android:textStyle="bold"
-        android:padding="20dp"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="#008C9E"
+        android:padding="16dp"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="⚡"
+            android:textSize="28sp" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ГДЕСАНЁК"
+                android:textColor="#FFFFFF"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.08" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="план · смета · PDF"
+                android:textColor="#B2EBF2"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="v1.0"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            android:background="#00606D"
+            android:padding="6dp" />
+    </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView"
@@ -22,7 +61,7 @@
         android:layout_height="0dp"
         android:padding="16dp"
         android:clipToPadding="false"
-        app:layout_constraintTop_toBottomOf="@id/titleText"
+        app:layout_constraintTop_toBottomOf="@id/toolbar"
         app:layout_constraintBottom_toBottomOf="parent" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -31,8 +70,9 @@
         android:layout_height="wrap_content"
         android:layout_margin="24dp"
         android:src="@android:drawable/ic_input_add"
-        app:backgroundTint="#FF9800"
+        app:backgroundTint="#008C9E"
         app:tint="#FFFFFF"
+        app:rippleColor="#B2EBF2"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
