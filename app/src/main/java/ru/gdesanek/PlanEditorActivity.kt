@@ -32,7 +32,13 @@ class PlanEditorActivity : AppCompatActivity() {
         val backBtn = TextView(this).apply { text = "←"; textSize = 26f; setTextColor(Color.WHITE); setPadding(16, 4, 16, 4); setOnClickListener { finish() } }
         val title = TextView(this).apply { text = projectName; textSize = 17f; setTextColor(Color.WHITE); typeface = Typeface.DEFAULT_BOLD; layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f) }
         val estimateBtn = TextView(this).apply { text = " 📊 "; textSize = 18f; setBackgroundResource(R.drawable.btn_dark); setPadding(12, 8, 12, 8); setOnClickListener { startActivity(Intent(this@PlanEditorActivity, EstimateActivity::class.java).putExtra("PROJECT_ID", projectId)) } }
-        val shareBtn = TextView(this).apply { text = " 📤 "; textSize = 18f; setBackgroundResource(R.drawable.btn_dark); setPadding(12, 8, 12, 8); val p = layoutParams as LinearLayout.LayoutParams; p.marginStart = 8; layoutParams = p; setOnClickListener { exportPdf() } }
+        val shareBtn = TextView(this).apply {
+            text = " 📤 "; textSize = 18f; setBackgroundResource(R.drawable.btn_dark); setPadding(12, 8, 12, 8)
+            val p = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+            p.marginStart = 8
+            layoutParams = p
+            setOnClickListener { exportPdf() }
+        }
         topBar.addView(backBtn); topBar.addView(title); topBar.addView(estimateBtn); topBar.addView(shareBtn)
 
         planView = PlanView(this)
