@@ -49,7 +49,6 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     var underlayX = 0f
     var underlayY = 0f
     var underlayAlpha = 128
-    fun startCalibration() { calibrating = true; calibPoints.clear(); invalidate() }
     var onUnderlayChanged: (() -> Unit)? = null
     private var calibrating = false
     private val calibPoints = mutableListOf<TrackPoint>()
@@ -57,6 +56,9 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     var selectedWallId: Long? = null
     var selectedObjectId: Long? = null
     var selectedTrackId: Long? = null
+    private var dragObject: PlanObject? = null
+    private var dragWall: Wall? = null
+    private var isDragging = false
 
     val walls = mutableListOf<Wall>()
     val objects = mutableListOf<PlanObject>()
@@ -97,6 +99,8 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         setBackgroundColor(t.canvasBg)
         invalidate()
     }
+
+    fun startCalibration() { calibrating = true; calibPoints.clear(); invalidate() }
 
     fun totalTrackMeters(): Float = tracks.map { trackLength(it.points) }.sum() / 100f * 1.1f
 
@@ -157,7 +161,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         for (p in calibPoints) { canvas.drawLine(p.x - 20f, p.y, p.x + 20f, p.y, calibPaint); canvas.drawLine(p.x, p.y - 20f, p.x, p.y + 20f, calibPaint) }
         canvas.restore()
         if (calibrating) canvas.drawText("Калибровка: отметь 2 точки", width / 2f, height / 2f, hintPaint)
-        else if (currentTool == Tool.EDIT) canvas.drawText("РЕДАКТ: тапни по объекту", width / 2f, height / 2f, hintPaint)
+        else if (currentTool == Tool.EDIT) canvas.drawText("РЕДАКТ: тапни или перетащи", width / 2f, height / 2f, hintPaint)
         else if (currentTool == Tool.DRAW_TRACK && currentTrackPoints.isEmpty()) canvas.drawText("Трасса: тапай точки", width / 2f, height / 2f, hintPaint)
         else if (walls.isEmpty() && objects.isEmpty() && currentWall == null && underlay == null) canvas.drawText("Выбери инструмент снизу", width / 2f, height / 2f, hintPaint)
     }
@@ -350,8 +354,9 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
                             selectedObjectId = hitObj?.id
                             selectedWallId = hitW?.id
                             selectedTrackId = hitT?.id
-                            if (hitObj != null) showObjectDialog(hitObj)
-                            else if (hitW != null) showWallEditDialog(hitW)
+                            dragObject = hitObj
+                            dragWall = hitW
+                            isDragging = false
                             invalidate()
                         }
                         Tool.DRAW_WALL -> {
@@ -382,6 +387,27 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
             MotionEvent.ACTION_MOVE -> {
                 if (touchMode == 1 && event.pointerCount == 1) {
                     when (currentTool) {
+                        Tool.EDIT -> {
+                            if (dragObject != null) {
+                                val pt = screenToCanvas(event.x, event.y)
+                                val idx = objects.indexOfFirst { it.id == dragObject!!.id }
+                                if (idx >= 0) {
+                                    objects[idx] = dragObject!!.copy(x = pt.x, y = pt.y)
+                                    isDragging = true
+                                    invalidate()
+                                }
+                            } else if (dragWall != null) {
+                                val pt = screenToCanvas(event.x, event.y)
+                                val idx = walls.indexOfFirst { it.id == dragWall!!.id }
+                                if (idx >= 0) {
+                                    val dx = dragWall!!.x2 - dragWall!!.x1
+                                    val dy = dragWall!!.y2 - dragWall!!.y1
+                                    walls[idx] = dragWall!!.copy(x1 = pt.x - dx/2, y1 = pt.y - dy/2, x2 = pt.x + dx/2, y2 = pt.y + dy/2)
+                                    isDragging = true
+                                    invalidate()
+                                }
+                            }
+                        }
                         Tool.DRAW_WALL -> { if (currentWall != null) { val pt = screenToCanvas(event.x, event.y); currentWall = currentWall!!.copy(x2 = snap(pt.x), y2 = snap(pt.y)); invalidate() } }
                         Tool.PAN -> { matrix.postTranslate(event.x - lastTouchX, event.y - lastTouchY); lastTouchX = event.x; lastTouchY = event.y; invalidate() }
                         Tool.DRAW_TRACK -> { val pt = screenToCanvas(event.x, event.y); fingerX = pt.x; fingerY = pt.y; fingerOn = true; invalidate() }
@@ -395,7 +421,21 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
                 }
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
-                if (touchMode == 1 && currentTool == Tool.DRAW_WALL && currentWall != null) {
+                if (currentTool == Tool.EDIT) {
+                    if (isDragging && dragObject != null) {
+                        objectRepository?.update(dragObject!!)
+                    } else if (isDragging && dragWall != null) {
+                        repository?.update(dragWall!!)
+                    } else if (!isDragging) {
+                        val pt = screenToCanvas(event.x, event.y)
+                        val hitObj = hitObject(pt.x, pt.y)
+                        val hitW = hitWall(pt.x, pt.y)
+                        if (hitObj != null) showObjectDialog(hitObj)
+                        else if (hitW != null) showWallEditDialog(hitW)
+                    }
+                    dragObject = null; dragWall = null; isDragging = false
+                    invalidate()
+                } else if (touchMode == 1 && currentTool == Tool.DRAW_WALL && currentWall != null) {
                     val w = currentWall!!; val dx = w.x2 - w.x1; val dy = w.y2 - w.y1
                     currentWall = null
                     if (dx * dx + dy * dy > 100) showWallDialog(w.x1, w.y1, w.x2, w.y2)
