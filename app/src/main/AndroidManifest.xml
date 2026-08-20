@@ -11,5 +11,6 @@
             </intent-filter>
         </activity>
         <activity android:name=".PlanEditorActivity" />
+        <activity android:name=".EstimateActivity" />
     </application>
 </manifest>

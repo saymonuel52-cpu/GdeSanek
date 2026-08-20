@@ -1,4 +1,5 @@
 package ru.gdesanek
+import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
@@ -20,8 +21,9 @@ class PlanEditorActivity : AppCompatActivity() {
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(Color.parseColor("#121212")) }
         val topBar = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(16, 16, 16, 16) }
         val backBtn = TextView(this).apply { text = "  <-  "; textSize = 24f; setTextColor(Color.WHITE); setBackgroundColor(Color.parseColor("#1E1E1E")); setOnClickListener { finish() } }
-        val title = TextView(this).apply { text = "   $projectName"; textSize = 14f; setTextColor(Color.parseColor("#B0B0B0")) }
-        topBar.addView(backBtn); topBar.addView(title)
+        val title = TextView(this).apply { text = "   $projectName"; textSize = 14f; setTextColor(Color.parseColor("#B0B0B0")); layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f) }
+        val estimateBtn = TextView(this).apply { text = "  📊  "; textSize = 22f; setBackgroundColor(Color.parseColor("#1E1E1E")); setOnClickListener { startActivity(Intent(this@PlanEditorActivity, EstimateActivity::class.java).putExtra("PROJECT_ID", projectId)) } }
+        topBar.addView(backBtn); topBar.addView(title); topBar.addView(estimateBtn)
 
         val planView = PlanView(this)
         planView.projectId = projectId
