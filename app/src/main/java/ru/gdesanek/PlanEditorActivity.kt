@@ -7,25 +7,33 @@ import android.util.TypedValue
 import android.view.Gravity
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.FileProvider
 import ru.gdesanek.db.WallRepository
 import ru.gdesanek.db.ObjectRepository
 import ru.gdesanek.db.TrackRepository
+import ru.gdesanek.export.PdfExporter
 import ru.gdesanek.ui.PlanView
 
 class PlanEditorActivity : AppCompatActivity() {
+    private lateinit var planView: PlanView
+    private var projectId = 0L
+    private var projectName = "План"
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val projectId = intent.getLongExtra("PROJECT_ID", 0)
-        val projectName = intent.getStringExtra("PROJECT_NAME") ?: "План"
+        projectId = intent.getLongExtra("PROJECT_ID", 0)
+        projectName = intent.getStringExtra("PROJECT_NAME") ?: "План"
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(Color.parseColor("#121212")) }
         val topBar = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(16, 16, 16, 16) }
         val backBtn = TextView(this).apply { text = "  <-  "; textSize = 24f; setTextColor(Color.WHITE); setBackgroundColor(Color.parseColor("#1E1E1E")); setOnClickListener { finish() } }
         val title = TextView(this).apply { text = "   $projectName"; textSize = 14f; setTextColor(Color.parseColor("#B0B0B0")); layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f) }
         val estimateBtn = TextView(this).apply { text = "  📊  "; textSize = 22f; setBackgroundColor(Color.parseColor("#1E1E1E")); setOnClickListener { startActivity(Intent(this@PlanEditorActivity, EstimateActivity::class.java).putExtra("PROJECT_ID", projectId)) } }
-        topBar.addView(backBtn); topBar.addView(title); topBar.addView(estimateBtn)
+        val shareBtn = TextView(this).apply { text = "  📤  "; textSize = 22f; setBackgroundColor(Color.parseColor("#1E1E1E")); setOnClickListener { exportPdf() } }
+        topBar.addView(backBtn); topBar.addView(title); topBar.addView(estimateBtn); topBar.addView(shareBtn)
 
-        val planView = PlanView(this)
+        planView = PlanView(this)
         planView.projectId = projectId
         planView.repository = WallRepository(this)
         planView.objectRepository = ObjectRepository(this)
@@ -67,5 +75,23 @@ class PlanEditorActivity : AppCompatActivity() {
         planView.loadWalls()
         planView.loadObjects()
         planView.loadTracks()
+    }
+
+    private fun exportPdf() {
+        Toast.makeText(this, "Формируем PDF...", Toast.LENGTH_SHORT).show()
+        Thread {
+            val walls = WallRepository(this).getWalls(projectId)
+            val objects = ObjectRepository(this).getAll(projectId)
+            val tracks = TrackRepository(this).getAll(projectId)
+            val file = PdfExporter.export(this, projectName, projectId, walls, objects, tracks)
+            runOnUiThread {
+                val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
+                val send = Intent(Intent.ACTION_SEND)
+                send.type = "application/pdf"
+                send.putExtra(Intent.EXTRA_STREAM, uri)
+                send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                startActivity(Intent.createChooser(send, "Отправить PDF"))
+            }
+        }.start()
     }
 }
