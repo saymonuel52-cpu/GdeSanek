@@ -49,6 +49,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     var underlayX = 0f
     var underlayY = 0f
     var underlayAlpha = 128
+    fun startCalibration() { calibrating = true; calibPoints.clear(); invalidate() }
     var onUnderlayChanged: (() -> Unit)? = null
     private var calibrating = false
     private val calibPoints = mutableListOf<TrackPoint>()
