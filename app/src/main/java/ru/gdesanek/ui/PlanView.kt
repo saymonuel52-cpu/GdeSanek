@@ -36,7 +36,7 @@ import kotlin.math.round
 import kotlin.math.atan2
 
 class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0) : View(context, attrs, defStyleAttr) {
-    enum class Tool { DRAW_WALL, PAN, PLACE, DRAW_TRACK }
+    enum class Tool { DRAW_WALL, PAN, PLACE, DRAW_TRACK, EDIT }
     var currentTool = Tool.DRAW_WALL
     var placeType: String? = null
     var projectId: Long = 0
@@ -53,7 +53,9 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     private var calibrating = false
     private val calibPoints = mutableListOf<TrackPoint>()
 
-    fun startCalibration() { calibrating = true; calibPoints.clear(); invalidate() }
+    var selectedWallId: Long? = null
+    var selectedObjectId: Long? = null
+    var selectedTrackId: Long? = null
 
     val walls = mutableListOf<Wall>()
     val objects = mutableListOf<PlanObject>()
@@ -69,6 +71,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     private val trackPaint = Paint().apply { color = Color.parseColor("#4CAF50"); strokeWidth = 5f; style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND }
     private val tempTrackPaint = Paint().apply { color = Color.YELLOW; strokeWidth = 5f; style = Paint.Style.STROKE; pathEffect = DashPathEffect(floatArrayOf(20f, 15f), 0f) }
     private val calibPaint = Paint().apply { color = Color.parseColor("#FF5252"); strokeWidth = 6f; style = Paint.Style.STROKE }
+    private val selectionPaint = Paint().apply { color = Color.parseColor("#00BFFF"); strokeWidth = 4f; style = Paint.Style.STROKE; pathEffect = DashPathEffect(floatArrayOf(15f, 10f), 0f) }
     private val underlayPaint = Paint().apply { alpha = 128 }
 
     private val matrix = Matrix()
@@ -116,16 +119,45 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         underlay?.let { b -> underlayPaint.alpha = underlayAlpha; canvas.drawBitmap(b, null, RectF(underlayX, underlayY, underlayX + b.width * underlayScale, underlayY + b.height * underlayScale), underlayPaint) }
         var x = -5000f; while (x <= 5000f) { canvas.drawLine(x, -5000f, x, 5000f, gridPaint); x += gridSize }
         var y = -5000f; while (y <= 5000f) { canvas.drawLine(-5000f, y, 5000f, y, gridPaint); y += gridSize }
-        for (t in tracks) for (i in 0 until t.points.size - 1) canvas.drawLine(t.points[i].x, t.points[i].y, t.points[i+1].x, t.points[i+1].y, trackPaint)
-        for (wall in walls) WallRender.draw(canvas, wall, wallPaint)
+        for (t in tracks) {
+            for (i in 0 until t.points.size - 1) canvas.drawLine(t.points[i].x, t.points[i].y, t.points[i+1].x, t.points[i+1].y, trackPaint)
+            if (t.id == selectedTrackId) {
+                for (i in 0 until t.points.size - 1) {
+                    val dx = t.points[i+1].x - t.points[i].x; val dy = t.points[i+1].y - t.points[i].y
+                    val len = sqrt(dx * dx + dy * dy); if (len < 1f) continue
+                    val ux = dx / len; val uy = dy / len; val px = -uy; val py = ux; val pad = 15f
+                    canvas.drawLine(t.points[i].x + px * pad, t.points[i].y + py * pad, t.points[i+1].x + px * pad, t.points[i+1].y + py * pad, selectionPaint)
+                    canvas.drawLine(t.points[i].x - px * pad, t.points[i].y - py * pad, t.points[i+1].x - px * pad, t.points[i+1].y - py * pad, selectionPaint)
+                }
+            }
+        }
+        for (wall in walls) {
+            WallRender.draw(canvas, wall, wallPaint)
+            if (wall.id == selectedWallId) {
+                val dx = wall.x2 - wall.x1; val dy = wall.y2 - wall.y1
+                val len = sqrt(dx * dx + dy * dy)
+                if (len > 0f) {
+                    val ux = dx / len; val uy = dy / len; val px = -uy; val py = ux
+                    val t = wall.thickness / 10f / 2f + 10f
+                    canvas.drawLine(wall.x1 + px * t, wall.y1 + py * t, wall.x2 + px * t, wall.y2 + py * t, selectionPaint)
+                    canvas.drawLine(wall.x1 - px * t, wall.y1 - py * t, wall.x2 - px * t, wall.y2 - py * t, selectionPaint)
+                    canvas.drawLine(wall.x1 + px * t, wall.y1 + py * t, wall.x1 - px * t, wall.y1 - py * t, selectionPaint)
+                    canvas.drawLine(wall.x2 + px * t, wall.y2 + py * t, wall.x2 - px * t, wall.y2 - py * t, selectionPaint)
+                }
+            }
+        }
         currentWall?.let { canvas.drawLine(it.x1, it.y1, it.x2, it.y2, tempWallPaint) }
         for (i in 0 until currentTrackPoints.size - 1) canvas.drawLine(currentTrackPoints[i].x, currentTrackPoints[i].y, currentTrackPoints[i+1].x, currentTrackPoints[i+1].y, tempTrackPaint)
         if (currentTrackPoints.isNotEmpty() && fingerOn) { val l = currentTrackPoints.last(); canvas.drawLine(l.x, l.y, fingerX, fingerY, tempTrackPaint) }
-        for (obj in objects) GostSymbols.draw(canvas, obj.type, obj.x, obj.y, obj.rotation, wallPaint)
+        for (obj in objects) {
+            GostSymbols.draw(canvas, obj.type, obj.x, obj.y, obj.rotation, wallPaint)
+            if (obj.id == selectedObjectId) canvas.drawCircle(obj.x, obj.y, 35f, selectionPaint)
+        }
         for (p in calibPoints) { canvas.drawLine(p.x - 20f, p.y, p.x + 20f, p.y, calibPaint); canvas.drawLine(p.x, p.y - 20f, p.x, p.y + 20f, calibPaint) }
         canvas.restore()
-        if (calibrating) canvas.drawText("Калибровка: отметь 2 точки на подложке", width / 2f, height / 2f, hintPaint)
-        else if (currentTool == Tool.DRAW_TRACK && currentTrackPoints.isEmpty()) canvas.drawText("Трасса: тапай точки, тап по последней — готово", width / 2f, height / 2f, hintPaint)
+        if (calibrating) canvas.drawText("Калибровка: отметь 2 точки", width / 2f, height / 2f, hintPaint)
+        else if (currentTool == Tool.EDIT) canvas.drawText("РЕДАКТ: тапни по объекту", width / 2f, height / 2f, hintPaint)
+        else if (currentTool == Tool.DRAW_TRACK && currentTrackPoints.isEmpty()) canvas.drawText("Трасса: тапай точки", width / 2f, height / 2f, hintPaint)
         else if (walls.isEmpty() && objects.isEmpty() && currentWall == null && underlay == null) canvas.drawText("Выбери инструмент снизу", width / 2f, height / 2f, hintPaint)
     }
 
@@ -143,7 +175,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     private fun showCalibDialog(p1: TrackPoint, p2: TrackPoint) {
         val dWorld = sqrt((p2.x - p1.x).pow(2) + (p2.y - p1.y).pow(2))
         if (dWorld < 1f) return
-        val edit = EditText(context).apply { inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL; hint = "Расстояние между точками, м" }
+        val edit = EditText(context).apply { inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL; hint = "Расстояние, м" }
         AlertDialog.Builder(context).setTitle("Калибровка масштаба").setView(edit)
             .setPositiveButton("ОК") { _, _ ->
                 val meters = edit.text.toString().toFloatOrNull() ?: return@setPositiveButton
@@ -198,17 +230,88 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     }
 
     private fun showObjectDialog(obj: PlanObject) {
-        AlertDialog.Builder(context).setTitle("Объект").setItems(arrayOf("Повернуть на 45°", "Удалить")) { _, i ->
+        AlertDialog.Builder(context).setTitle("Объект: ${obj.type}").setItems(arrayOf("Повернуть на 45°", "Удалить")) { _, i ->
             when (i) {
                 0 -> { val upd = obj.copy(rotation = obj.rotation + 45f); objectRepository?.update(upd); val idx = objects.indexOfFirst { it.id == obj.id }; if (idx >= 0) objects[idx] = upd }
-                1 -> { objectRepository?.delete(obj.id); objects.removeAll { it.id == obj.id } }
+                1 -> { objectRepository?.delete(obj.id); objects.removeAll { it.id == obj.id }; selectedObjectId = null }
             }
             invalidate()
         }.show()
     }
 
+    private fun showWallEditDialog(wall: Wall) {
+        val box = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL; setPadding(40, 20, 40, 10) }
+        val thick = EditText(context).apply { setText(wall.thickness.toString()); inputType = InputType.TYPE_CLASS_NUMBER; hint = "Толщина, мм" }
+        val scroll = HorizontalScrollView(context)
+        val row = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
+        scroll.addView(row); box.addView(thick); box.addView(scroll)
+        val dlg = AlertDialog.Builder(context).setTitle("Редактировать стену").setView(box)
+            .setPositiveButton("Сохранить") { _, _ ->
+                val t = thick.text.toString().toFloatOrNull() ?: wall.thickness
+                val upd = wall.copy(thickness = t)
+                repository?.update(upd)
+                val idx = walls.indexOfFirst { it.id == wall.id }
+                if (idx >= 0) walls[idx] = upd
+                selectedWallId = null
+                invalidate()
+            }
+            .setNegativeButton("Отмена", null)
+            .setNeutralButton("Удалить") { _, _ ->
+                repository?.delete(wall.id)
+                walls.removeAll { it.id == wall.id }
+                selectedWallId = null
+                invalidate()
+            }
+            .create()
+        for ((code, name) in WallMaterials.list) {
+            val b = TextView(context).apply {
+                text = name; setTextColor(if (code == wall.material) Color.parseColor("#00BFFF") else Color.WHITE); textSize = 14f
+                setBackgroundColor(Color.parseColor("#1E1E1E")); setPadding(20, 16, 20, 16)
+                setOnClickListener {
+                    val t = thick.text.toString().toFloatOrNull() ?: wall.thickness
+                    val upd = wall.copy(material = code, thickness = t)
+                    repository?.update(upd)
+                    val idx = walls.indexOfFirst { it.id == wall.id }
+                    if (idx >= 0) walls[idx] = upd
+                    invalidate(); dlg.dismiss()
+                }
+            }
+            val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginEnd = 8 }
+            row.addView(b, lp)
+        }
+        dlg.show()
+    }
+
     private fun hitObject(wx: Float, wy: Float): PlanObject? =
         objects.lastOrNull { (it.x - wx) * (it.x - wx) + (it.y - wy) * (it.y - wy) < 45f * 45f }
+
+    private fun hitWall(wx: Float, wy: Float): Wall? {
+        for (wall in walls.reversed()) {
+            val dx = wall.x2 - wall.x1; val dy = wall.y2 - wall.y1; val lenSq = dx * dx + dy * dy
+            if (lenSq == 0f) continue
+            var t = ((wx - wall.x1) * dx + (wy - wall.y1) * dy) / lenSq; t = t.coerceIn(0f, 1f)
+            val projX = wall.x1 + t * dx; val projY = wall.y1 + t * dy
+            val dist = sqrt((wx - projX) * (wx - projX) + (wy - projY) * (wy - projY))
+            val threshold = wall.thickness / 10f / 2f + 20f
+            if (dist < threshold) return wall
+        }
+        return null
+    }
+
+    private fun hitTrack(wx: Float, wy: Float): CableTrack? {
+        for (track in tracks.reversed()) {
+            for (i in 0 until track.points.size - 1) {
+                val p1 = track.points[i]; val p2 = track.points[i+1]
+                val dx = p2.x - p1.x; val dy = p2.y - p1.y; val lenSq = dx * dx + dy * dy
+                if (lenSq == 0f) continue
+                var t = ((wx - p1.x) * dx + (wy - p1.y) * dy) / lenSq; t = t.coerceIn(0f, 1f)
+                val projX = p1.x + t * dx; val projY = p1.y + t * dy
+                val dist = sqrt((wx - projX) * (wx - projX) + (wy - projY) * (wy - projY))
+                if (dist < 25f) return track
+            }
+        }
+        return null
+    }
 
     private fun finishTrack() {
         if (currentTrackPoints.size >= 2) {
@@ -238,6 +341,18 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
                 lastTouchX = event.x; lastTouchY = event.y; downX = event.x; downY = event.y
                 if (event.pointerCount == 1) {
                     when (currentTool) {
+                        Tool.EDIT -> {
+                            val pt = screenToCanvas(event.x, event.y)
+                            val hitObj = hitObject(pt.x, pt.y)
+                            val hitW = hitWall(pt.x, pt.y)
+                            val hitT = hitTrack(pt.x, pt.y)
+                            selectedObjectId = hitObj?.id
+                            selectedWallId = hitW?.id
+                            selectedTrackId = hitT?.id
+                            if (hitObj != null) showObjectDialog(hitObj)
+                            else if (hitW != null) showWallEditDialog(hitW)
+                            invalidate()
+                        }
                         Tool.DRAW_WALL -> {
                             val pt = screenToCanvas(event.x, event.y); val sx = snap(pt.x); val sy = snap(pt.y)
                             currentWall = Wall(projectId = projectId, x1 = sx, y1 = sy, x2 = sx, y2 = sy); invalidate()
