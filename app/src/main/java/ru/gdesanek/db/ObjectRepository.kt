@@ -5,9 +5,12 @@ import ru.gdesanek.model.PlanObject
 class ObjectRepository(context: Context) {
     private val dbHelper = DatabaseHelper(context)
     fun insert(projectId: Long, type: String, x: Float, y: Float, rotation: Float): Long {
-        val db = dbHelper.writableDatabase
-        val values = ContentValues().apply { put("project_id", projectId); put("type", type); put("x", x); put("y", y); put("rotation", rotation) }
-        return db.insert("objects", null, values)
+        val v = ContentValues().apply { put("project_id", projectId); put("type", type); put("x", x); put("y", y); put("rotation", rotation) }
+        return dbHelper.writableDatabase.insert("objects", null, v)
+    }
+    fun update(obj: PlanObject) {
+        val v = ContentValues().apply { put("rotation", obj.rotation); put("x", obj.x); put("y", obj.y) }
+        dbHelper.writableDatabase.update("objects", v, "id = ?", arrayOf(obj.id.toString()))
     }
     fun delete(id: Long) { dbHelper.writableDatabase.delete("objects", "id = ?", arrayOf(id.toString())) }
     fun getAll(projectId: Long): List<PlanObject> {
