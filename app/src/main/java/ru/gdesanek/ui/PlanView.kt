@@ -59,6 +59,8 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     private var dragObject: PlanObject? = null
     private var dragWall: Wall? = null
     private var isDragging = false
+    private var dragWallEnd = 0
+    private val handlePaint = Paint().apply { color = Color.parseColor("#FFD700"); style = Paint.Style.FILL }
 
     val walls = mutableListOf<Wall>()
     val objects = mutableListOf<PlanObject>()
@@ -146,6 +148,8 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
                     val t = wall.thickness / 10f / 2f + 10f
                     canvas.drawLine(wall.x1 + px * t, wall.y1 + py * t, wall.x2 + px * t, wall.y2 + py * t, selectionPaint)
                     canvas.drawLine(wall.x1 - px * t, wall.y1 - py * t, wall.x2 - px * t, wall.y2 - py * t, selectionPaint)
+                    canvas.drawRect(wall.x1 - 15f, wall.y1 - 15f, wall.x1 + 15f, wall.y1 + 15f, handlePaint)
+                    canvas.drawRect(wall.x2 - 15f, wall.y2 - 15f, wall.x2 + 15f, wall.y2 + 15f, handlePaint)
                     canvas.drawLine(wall.x1 + px * t, wall.y1 + py * t, wall.x1 - px * t, wall.y1 - py * t, selectionPaint)
                     canvas.drawLine(wall.x2 + px * t, wall.y2 + py * t, wall.x2 - px * t, wall.y2 - py * t, selectionPaint)
                 }
@@ -356,6 +360,12 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
                             selectedTrackId = hitT?.id
                             dragObject = hitObj
                             dragWall = hitW
+                            val selW = walls.firstOrNull { it.id == selectedWallId }
+                            dragWallEnd = 0
+                            if (selW != null) {
+                                if (sqrt((pt.x - selW.x1).pow(2) + (pt.y - selW.y1).pow(2)) < 40f) dragWallEnd = 1
+                                else if (sqrt((pt.x - selW.x2).pow(2) + (pt.y - selW.y2).pow(2)) < 40f) dragWallEnd = 2
+                            }
                             isDragging = false
                             invalidate()
                         }
@@ -388,6 +398,26 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
                 if (touchMode == 1 && event.pointerCount == 1) {
                     when (currentTool) {
                         Tool.EDIT -> {
+                            if (dragWallEnd != 0) {
+                                val pt = screenToCanvas(event.x, event.y)
+                                val idx = walls.indexOfFirst { it.id == selectedWallId }
+                                if (idx >= 0) {
+                                    val w = walls[idx]
+                                    walls[idx] = if (dragWallEnd == 1) w.copy(x1 = pt.x, y1 = pt.y) else w.copy(x2 = pt.x, y2 = pt.y)
+                                    isDragging = true
+                                    invalidate()
+                                }
+                            } else
+                            if (dragWallEnd != 0) {
+                                val pt = screenToCanvas(event.x, event.y)
+                                val idx = walls.indexOfFirst { it.id == selectedWallId }
+                                if (idx >= 0) {
+                                    val w = walls[idx]
+                                    walls[idx] = if (dragWallEnd == 1) w.copy(x1 = pt.x, y1 = pt.y) else w.copy(x2 = pt.x, y2 = pt.y)
+                                    isDragging = true
+                                    invalidate()
+                                }
+                            } else
                             if (dragObject != null) {
                                 val pt = screenToCanvas(event.x, event.y)
                                 val idx = objects.indexOfFirst { it.id == dragObject!!.id }
@@ -422,6 +452,13 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
                 if (currentTool == Tool.EDIT) {
+                    if (dragWallEnd != 0 && isDragging) {
+                        val idx = walls.indexOfFirst { it.id == selectedWallId }
+                        if (idx >= 0) repository?.update(walls[idx])
+                        dragWallEnd = 0
+                        isDragging = false
+                        invalidate()
+                    } else
                     if (isDragging && dragObject != null) {
                         objectRepository?.update(dragObject!!)
                     } else if (isDragging && dragWall != null) {
@@ -433,7 +470,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
                         if (hitObj != null) showObjectDialog(hitObj)
                         else if (hitW != null) showWallEditDialog(hitW)
                     }
-                    dragObject = null; dragWall = null; isDragging = false
+                    dragObject = null; dragWall = null; isDragging = false; dragWallEnd = 0
                     invalidate()
                 } else if (touchMode == 1 && currentTool == Tool.DRAW_WALL && currentWall != null) {
                     val w = currentWall!!; val dx = w.x2 - w.x1; val dy = w.y2 - w.y1
