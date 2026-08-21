@@ -40,6 +40,7 @@ class PlanEditorActivity : AppCompatActivity() {
     private lateinit var theme: AppTheme
     private var projectId = 0L
     private var projectName = "План"
+    private var currentCatalogGroup = "Розетки"
     private val catalogButtons = mutableListOf<TextView>()
     private val toolButtons = mutableListOf<SkewButton>()
 
@@ -157,7 +158,6 @@ class PlanEditorActivity : AppCompatActivity() {
         planView.loadObjects()
         planView.loadTracks()
         loadUnderlay()
-        Toast.makeText(this, "OK: стен=" + planView.walls.size + " объ=" + planView.objects.size, Toast.LENGTH_LONG).show()
     }
 
     private fun showWallContext() {
@@ -259,8 +259,41 @@ class PlanEditorActivity : AppCompatActivity() {
 
     private fun showCatalog() {
         contextPanel.removeAllViews()
-        contextPanel.visibility = View.GONE
-        catalogScroll.visibility = View.VISIBLE
+        contextPanel.visibility = View.VISIBLE
+        catalogScroll.visibility = View.GONE
+
+        val wrap = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT) }
+
+        val groupScroll = HorizontalScrollView(this)
+        val groupRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        for (g in Catalog.groups) {
+            val b = TextView(this).apply {
+                text = g; setTextColor(theme.textPrimary); textSize = 12f; gravity = Gravity.CENTER
+                setBackgroundColor(if (g == currentCatalogGroup) theme.btnActiveBg else theme.btnBg)
+                setPadding(16, 10, 16, 10)
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginEnd = 6 }
+                setOnClickListener { currentCatalogGroup = g; showCatalog() }
+            }
+            groupRow.addView(b)
+        }
+        groupScroll.addView(groupRow)
+        wrap.addView(groupScroll)
+
+        val itemScroll = HorizontalScrollView(this)
+        val itemRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, 6, 0, 0) }
+        for (item in Catalog.byGroup(currentCatalogGroup)) {
+            val b = TextView(this).apply {
+                text = item.label; setTextColor(theme.textPrimary); textSize = 12f; gravity = Gravity.CENTER
+                setBackgroundColor(if (item.type == planView.placeType) theme.btnActiveBg else theme.btnBg)
+                setPadding(18, 12, 18, 12)
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginEnd = 6 }
+                setOnClickListener { planView.currentTool = PlanView.Tool.PLACE; planView.placeType = item.type; showCatalog() }
+            }
+            itemRow.addView(b)
+        }
+        itemScroll.addView(itemRow)
+        wrap.addView(itemScroll)
+        contextPanel.addView(wrap)
     }
 
     private fun hideContext() {
@@ -310,7 +343,6 @@ class PlanEditorActivity : AppCompatActivity() {
                 val f = File(filesDir, "underlay_$projectId.jpg")
                 contentResolver.openInputStream(data.data!!)?.use { inp -> f.outputStream().use { out -> inp.copyTo(out) } }
                 loadUnderlay()
-        Toast.makeText(this, "OK: стен=" + planView.walls.size + " объ=" + planView.objects.size, Toast.LENGTH_LONG).show()
                 Toast.makeText(this, "Подложка загружена", Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
                 Toast.makeText(this, "Не удалось загрузить подложку", Toast.LENGTH_SHORT).show()
