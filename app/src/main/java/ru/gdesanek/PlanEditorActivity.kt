@@ -97,8 +97,9 @@ class PlanEditorActivity : AppCompatActivity() {
         val btnPan = makeTool("✋ РУКА")
         val btnTrack = makeTool("📏 ТРАССА")
         val btnEdit = makeTool("✏ РЕД")
+        val btnElec = makeTool("⚡ ЭЛЕКТ")
         val btnUndo = makeTool("🗑 УБРАТЬ")
-        toolButtons.addAll(listOf(btnWall, btnPan, btnTrack, btnEdit, btnUndo))
+        toolButtons.addAll(listOf(btnWall, btnPan, btnTrack, btnElec, btnEdit, btnUndo))
 
         fun highlightTool(sel: TextView?) { toolButtons.forEach { it.setBackgroundColor(if (it == sel) theme.btnActiveBg else theme.btnBg) } }
         fun highlightCatalog(sel: TextView?) { catalogButtons.forEach { it.setBackgroundColor(if (it == sel) theme.btnActiveBg else theme.btnBg) } }
@@ -106,6 +107,7 @@ class PlanEditorActivity : AppCompatActivity() {
         btnWall.setOnClickListener { planView.currentTool = PlanView.Tool.DRAW_WALL; planView.placeType = null; highlightTool(btnWall); highlightCatalog(null); showWallContext() }
         btnPan.setOnClickListener { planView.currentTool = PlanView.Tool.PAN; planView.placeType = null; highlightTool(btnPan); highlightCatalog(null); hideContext() }
         btnTrack.setOnClickListener { planView.currentTool = PlanView.Tool.DRAW_TRACK; planView.placeType = null; highlightTool(btnTrack); highlightCatalog(null); showTrackContext() }
+        btnElec.setOnClickListener { planView.currentTool = PlanView.Tool.PLACE; planView.placeType = "socket_b1"; highlightTool(btnElec); highlightCatalog(null); showCatalog() }
         btnEdit.setOnClickListener {
             planView.currentTool = PlanView.Tool.EDIT; planView.placeType = null
             planView.selectedWallId = null; planView.selectedObjectId = null; planView.selectedTrackId = null
@@ -114,7 +116,7 @@ class PlanEditorActivity : AppCompatActivity() {
         }
         btnUndo.setOnClickListener { planView.undo() }
 
-        toolsBar.addView(btnWall); toolsBar.addView(btnPan); toolsBar.addView(btnTrack); toolsBar.addView(btnEdit); toolsBar.addView(btnUndo)
+        toolsBar.addView(btnWall); toolsBar.addView(btnPan); toolsBar.addView(btnTrack); toolsBar.addView(btnElec); toolsBar.addView(btnEdit); toolsBar.addView(btnUndo)
 
         contextPanel = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -133,7 +135,7 @@ class PlanEditorActivity : AppCompatActivity() {
                 layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginEnd = 6 }
                 setOnClickListener {
                     planView.currentTool = PlanView.Tool.PLACE; planView.placeType = item.type
-                    highlightCatalog(this); highlightTool(null)
+                    highlightCatalog(this); highlightTool(btnElec)
                     hideContext()
                     catalogScroll.visibility = View.VISIBLE
                 }
@@ -231,6 +233,12 @@ class PlanEditorActivity : AppCompatActivity() {
         }
         scroll.addView(row)
         contextPanel.addView(scroll)
+    }
+
+    private fun showCatalog() {
+        contextPanel.removeAllViews()
+        contextPanel.visibility = View.GONE
+        catalogScroll.visibility = View.VISIBLE
     }
 
     private fun hideContext() {
