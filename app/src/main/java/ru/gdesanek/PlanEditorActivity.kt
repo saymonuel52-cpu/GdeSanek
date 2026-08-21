@@ -255,6 +255,12 @@ class PlanEditorActivity : AppCompatActivity() {
         contextPanel.addView(wrap)
     }
 
+    private fun showCatalog() {
+        contextPanel.removeAllViews()
+        contextPanel.visibility = View.GONE
+        catalogScroll.visibility = View.VISIBLE
+    }
+
     private fun hideContext() {
         contextPanel.removeAllViews()
         contextPanel.visibility = View.GONE
