@@ -91,7 +91,7 @@ class PlanEditorActivity : AppCompatActivity() {
         val toolsBar = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setBackgroundColor(theme.panelBg); setPadding(8, 10, 8, 4) }
         val toolParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { setMargins(4, 0, 4, 0) }
         fun makeTool(text: String): SkewButton = SkewButton(this@PlanEditorActivity).apply {
-            this.text = text; this.theme = theme; layoutParams = toolParams
+            this.text = text; this.theme = this@PlanEditorActivity.theme; layoutParams = toolParams
         }
         val btnWall = makeTool("🧱 СТЕНА")
         val btnPan = makeTool("✋ РУКА")

@@ -9,8 +9,8 @@ android {
         applicationId "ru.gdesanek"
         minSdk 24
         targetSdk 34
-        versionCode 28
-        versionName "1.18-fix"
+        versionCode 29
+        versionName "1.19-skewfix"
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
