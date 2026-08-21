@@ -62,10 +62,11 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     var currentMaterial = "beton"
     var currentThickness = 100f
     var currentWiring = "shtroba"
+    var currentTrackColor = Color.parseColor("#4CAF50")
     var orthoMode = true
     var snapEnd = true
     private var dragWallEnd = 0
-    private val handlePaint = Paint().apply { color = Color.parseColor("#FFD700"); style = Paint.Style.FILL }
+    private val handlePaint = Paint().apply { color = Color.parseColor("#FFD700"); style = Paint.Style.FILL; alpha = 110 }
 
     val walls = mutableListOf<Wall>()
     val objects = mutableListOf<PlanObject>()
@@ -131,7 +132,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         underlay?.let { b -> underlayPaint.alpha = underlayAlpha; canvas.drawBitmap(b, null, RectF(underlayX, underlayY, underlayX + b.width * underlayScale, underlayY + b.height * underlayScale), underlayPaint) }
         var x = -5000f; while (x <= 5000f) { canvas.drawLine(x, -5000f, x, 5000f, gridPaint); x += gridSize }
         var y = -5000f; while (y <= 5000f) { canvas.drawLine(-5000f, y, 5000f, y, gridPaint); y += gridSize }
-        for (t in tracks) {
+        for (t in tracks) { trackPaint.color = t.color
             for (i in 0 until t.points.size - 1) canvas.drawLine(t.points[i].x, t.points[i].y, t.points[i+1].x, t.points[i+1].y, trackPaint)
             if (t.id == selectedTrackId) {
                 for (i in 0 until t.points.size - 1) {
@@ -153,8 +154,8 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
                     val t = wall.thickness / 10f / 2f + 10f
                     canvas.drawLine(wall.x1 + px * t, wall.y1 + py * t, wall.x2 + px * t, wall.y2 + py * t, selectionPaint)
                     canvas.drawLine(wall.x1 - px * t, wall.y1 - py * t, wall.x2 - px * t, wall.y2 - py * t, selectionPaint)
-                    canvas.drawRect(wall.x1 - 15f, wall.y1 - 15f, wall.x1 + 15f, wall.y1 + 15f, handlePaint)
-                    canvas.drawRect(wall.x2 - 15f, wall.y2 - 15f, wall.x2 + 15f, wall.y2 + 15f, handlePaint)
+                    canvas.drawRect(wall.x1 - 12f, wall.y1 - 12f, wall.x1 + 12f, wall.y1 + 12f, handlePaint)
+                    canvas.drawRect(wall.x2 - 12f, wall.y2 - 12f, wall.x2 + 12f, wall.y2 + 12f, handlePaint)
                     canvas.drawLine(wall.x1 + px * t, wall.y1 + py * t, wall.x1 - px * t, wall.y1 - py * t, selectionPaint)
                     canvas.drawLine(wall.x2 + px * t, wall.y2 + py * t, wall.x2 - px * t, wall.y2 - py * t, selectionPaint)
                 }
@@ -356,7 +357,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
             val meters = trackLength(currentTrackPoints) / 100f
             val pts = currentTrackPoints.toList()
             Toast.makeText(context, String.format("Трасса: %.1f м (запас x1.1 = %.1f м)", meters, meters * 1.1f), Toast.LENGTH_LONG).show()
-            val id = trackRepository?.insert(projectId, "power", pts, currentWiring) ?: 0L; tracks.add(CableTrack(id, projectId, "power", pts, currentWiring))
+            val id = trackRepository?.insert(projectId, "power", pts, currentWiring) ?: 0L; tracks.add(CableTrack(id, projectId, "power", pts, currentWiring, currentTrackColor))
         }
         currentTrackPoints.clear(); fingerOn = false
         invalidate()

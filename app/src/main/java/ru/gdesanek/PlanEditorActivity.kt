@@ -219,6 +219,8 @@ class PlanEditorActivity : AppCompatActivity() {
         contextPanel.visibility = View.VISIBLE
         catalogScroll.visibility = View.GONE
 
+        val wrap = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT) }
+
         val scroll = HorizontalScrollView(this)
         val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         for ((code, name) in WiringTypes.list) {
@@ -232,13 +234,25 @@ class PlanEditorActivity : AppCompatActivity() {
             row.addView(b)
         }
         scroll.addView(row)
-        contextPanel.addView(scroll)
-    }
+        wrap.addView(scroll)
 
-    private fun showCatalog() {
-        contextPanel.removeAllViews()
-        contextPanel.visibility = View.GONE
-        catalogScroll.visibility = View.VISIBLE
+        val colorScroll = HorizontalScrollView(this)
+        val colorRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, 6, 0, 0) }
+        val palette = listOf(Color.parseColor("#4CAF50"), Color.parseColor("#FF5252"), Color.parseColor("#2196F3"), Color.parseColor("#FF9800"), Color.parseColor("#FFEB3B"), Color.parseColor("#9C27B0"), Color.parseColor("#00BCD4"), Color.parseColor("#FFFFFF"))
+        for (c in palette) {
+            val b = TextView(this).apply {
+                text = if (planView.currentTrackColor == c) "✓" else ""
+                textSize = 14f; gravity = Gravity.CENTER
+                setTextColor(if (c == -1) Color.BLACK else Color.WHITE)
+                setBackgroundColor(c)
+                layoutParams = LinearLayout.LayoutParams(70, 50).apply { marginEnd = 8 }
+                setOnClickListener { planView.currentTrackColor = c; showTrackContext() }
+            }
+            colorRow.addView(b)
+        }
+        colorScroll.addView(colorRow)
+        wrap.addView(colorScroll)
+        contextPanel.addView(wrap)
     }
 
     private fun hideContext() {
