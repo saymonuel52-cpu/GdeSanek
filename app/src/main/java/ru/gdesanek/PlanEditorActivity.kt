@@ -157,6 +157,7 @@ class PlanEditorActivity : AppCompatActivity() {
         planView.loadObjects()
         planView.loadTracks()
         loadUnderlay()
+        Toast.makeText(this, "OK: стен=" + planView.walls.size + " объ=" + planView.objects.size, Toast.LENGTH_LONG).show()
     }
 
     private fun showWallContext() {
@@ -309,6 +310,7 @@ class PlanEditorActivity : AppCompatActivity() {
                 val f = File(filesDir, "underlay_$projectId.jpg")
                 contentResolver.openInputStream(data.data!!)?.use { inp -> f.outputStream().use { out -> inp.copyTo(out) } }
                 loadUnderlay()
+        Toast.makeText(this, "OK: стен=" + planView.walls.size + " объ=" + planView.objects.size, Toast.LENGTH_LONG).show()
                 Toast.makeText(this, "Подложка загружена", Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
                 Toast.makeText(this, "Не удалось загрузить подложку", Toast.LENGTH_SHORT).show()

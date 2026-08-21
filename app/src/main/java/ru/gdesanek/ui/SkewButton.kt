@@ -28,6 +28,10 @@ class SkewButton @JvmOverloads constructor(context: Context, attrs: AttributeSet
         try { textPaint.typeface = ResourcesCompat.getFont(context, R.font.russoone) } catch (e: Exception) {}
     }
 
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), 150)
+    }
+
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         val t = theme ?: return
