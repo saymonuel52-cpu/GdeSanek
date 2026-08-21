@@ -184,6 +184,25 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         matrix.invert(inverseMatrix); val pts = floatArrayOf(x, y); inverseMatrix.mapPoints(pts); return PointF(pts[0], pts[1])
     }
 
+    private fun applyOrtho(sx: Float, sy: Float, ex: Float, ey: Float): TrackPoint {
+        if (!orthoMode) return TrackPoint(ex, ey)
+        val dx = ex - sx; val dy = ey - sy
+        return if (kotlin.math.abs(dx) > kotlin.math.abs(dy)) TrackPoint(ex, sy) else TrackPoint(sx, ey)
+    }
+
+    private fun snapWallPoint(x: Float, y: Float): TrackPoint {
+        if (snapEnd) {
+            var bestD = 35f; var bx = x; var by = y; var found = false
+            for (w in walls) {
+                for (p in listOf(TrackPoint(w.x1, w.y1), TrackPoint(w.x2, w.y2))) {
+                    val d = sqrt((x - p.x).pow(2) + (y - p.y).pow(2))
+                    if (d < bestD) { bestD = d; bx = p.x; by = p.y; found = true }
+                }
+            }
+            if (found) return TrackPoint(bx, by)
+        }
+        return TrackPoint(snap(x), snap(y))
+    }
     private fun snapPoint(x: Float, y: Float): TrackPoint {
         var bestD = 40f; var bx = x; var by = y; var found = false
         for (o in objects) { val d = sqrt((x - o.x).pow(2) + (y - o.y).pow(2)); if (d < bestD) { bestD = d; bx = o.x; by = o.y; found = true } }
