@@ -9,8 +9,8 @@ android {
         applicationId "ru.gdesanek"
         minSdk 24
         targetSdk 34
-        versionCode 25
-        versionName "1.15-trackcolors"
+        versionCode 26
+        versionName "1.16-autocad"
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17

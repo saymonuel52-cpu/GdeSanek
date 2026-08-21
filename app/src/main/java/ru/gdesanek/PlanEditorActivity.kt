@@ -30,6 +30,7 @@ import ru.gdesanek.theme.AppTheme
 import ru.gdesanek.theme.ThemeManager
 import ru.gdesanek.theme.Themes
 import ru.gdesanek.ui.PlanView
+import ru.gdesanek.ui.SkewButton
 import java.io.File
 
 class PlanEditorActivity : AppCompatActivity() {
@@ -40,7 +41,7 @@ class PlanEditorActivity : AppCompatActivity() {
     private var projectId = 0L
     private var projectName = "План"
     private val catalogButtons = mutableListOf<TextView>()
-    private val toolButtons = mutableListOf<TextView>()
+    private val toolButtons = mutableListOf<SkewButton>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,7 +53,7 @@ class PlanEditorActivity : AppCompatActivity() {
         val topBar = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setBackgroundColor(theme.toolbarBg); setPadding(12, 12, 12, 12) }
         val menuBtn = TextView(this).apply { text = "☰"; textSize = 26f; setTextColor(theme.textPrimary); setPadding(16, 4, 16, 4); setOnClickListener { showThemeDialog() } }
         val backBtn = TextView(this).apply { text = "←"; textSize = 26f; setTextColor(theme.textPrimary); setPadding(16, 4, 16, 4); setOnClickListener { finish() } }
-        val title = TextView(this).apply { text = projectName; textSize = 17f; setTextColor(theme.textPrimary); typeface = Typeface.DEFAULT_BOLD; layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f) }
+        val title = TextView(this).apply { text = projectName; textSize = 17f; setTextColor(theme.textPrimary); typeface = androidx.core.content.res.ResourcesCompat.getFont(this@PlanEditorActivity, R.font.russoone); layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f) }
         val underlayBtn = TextView(this).apply {
             text = " 🖼 "; textSize = 18f; setBackgroundColor(theme.btnBg); setTextColor(theme.textPrimary); setPadding(12, 8, 12, 8)
             setOnClickListener { pickUnderlay() }
@@ -89,9 +90,8 @@ class PlanEditorActivity : AppCompatActivity() {
 
         val toolsBar = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setBackgroundColor(theme.panelBg); setPadding(8, 10, 8, 4) }
         val toolParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { setMargins(4, 0, 4, 0) }
-        fun makeTool(text: String): TextView = TextView(this@PlanEditorActivity).apply {
-            this.text = text; setTextColor(theme.textPrimary); textSize = 13f; typeface = Typeface.DEFAULT_BOLD; gravity = Gravity.CENTER
-            setBackgroundColor(theme.btnBg); layoutParams = toolParams; setPadding(10, 14, 10, 14)
+        fun makeTool(text: String): SkewButton = SkewButton(this@PlanEditorActivity).apply {
+            this.text = text; this.theme = theme; layoutParams = toolParams
         }
         val btnWall = makeTool("🧱 СТЕНА")
         val btnPan = makeTool("✋ РУКА")
@@ -101,7 +101,7 @@ class PlanEditorActivity : AppCompatActivity() {
         val btnUndo = makeTool("🗑 УБРАТЬ")
         toolButtons.addAll(listOf(btnWall, btnPan, btnTrack, btnElec, btnEdit, btnUndo))
 
-        fun highlightTool(sel: TextView?) { toolButtons.forEach { it.setBackgroundColor(if (it == sel) theme.btnActiveBg else theme.btnBg) } }
+        fun highlightTool(sel: SkewButton?) { toolButtons.forEach { it.isActive = it == sel } }
         fun highlightCatalog(sel: TextView?) { catalogButtons.forEach { it.setBackgroundColor(if (it == sel) theme.btnActiveBg else theme.btnBg) } }
 
         btnWall.setOnClickListener { planView.currentTool = PlanView.Tool.DRAW_WALL; planView.placeType = null; highlightTool(btnWall); highlightCatalog(null); showWallContext() }
@@ -145,6 +145,7 @@ class PlanEditorActivity : AppCompatActivity() {
         catalogScroll.addView(catalogRow)
 
         root.addView(topBar)
+        root.addView(View(this).apply { setBackgroundColor(theme.accent); layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 4) })
         root.addView(planView, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
         root.addView(toolsBar)
         root.addView(contextPanel)
