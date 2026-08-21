@@ -25,6 +25,12 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         val theme = ThemeManager.current(this)
         setContentView(R.layout.activity_main)
+        val crashLog = getSharedPreferences("crash", MODE_PRIVATE).getString("log", null)
+        if (crashLog != null) {
+            getSharedPreferences("crash", MODE_PRIVATE).edit().remove("log").apply()
+            val et = android.widget.EditText(this).apply { setText(crashLog); textIsSelectable = true }
+            android.app.AlertDialog.Builder(this).setTitle("ЛОГ КРАША — скопируй и пришли").setView(et).setPositiveButton("ОК", null).show()
+        }
         window.decorView.setBackgroundColor(theme.canvasBg)
 
         repository = ProjectRepository(this)

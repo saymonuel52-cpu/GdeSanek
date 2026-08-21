@@ -53,7 +53,7 @@ class PlanEditorActivity : AppCompatActivity() {
         val topBar = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setBackgroundColor(theme.toolbarBg); setPadding(12, 12, 12, 12) }
         val menuBtn = TextView(this).apply { text = "☰"; textSize = 26f; setTextColor(theme.textPrimary); setPadding(16, 4, 16, 4); setOnClickListener { showThemeDialog() } }
         val backBtn = TextView(this).apply { text = "←"; textSize = 26f; setTextColor(theme.textPrimary); setPadding(16, 4, 16, 4); setOnClickListener { finish() } }
-        val title = TextView(this).apply { text = projectName; textSize = 17f; setTextColor(theme.textPrimary); typeface = androidx.core.content.res.ResourcesCompat.getFont(this@PlanEditorActivity, R.font.russoone); layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f) }
+        val title = TextView(this).apply { text = projectName; textSize = 17f; setTextColor(theme.textPrimary); try { typeface = androidx.core.content.res.ResourcesCompat.getFont(this@PlanEditorActivity, R.font.russoone) } catch (e: Exception) {}; layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f) }
         val underlayBtn = TextView(this).apply {
             text = " 🖼 "; textSize = 18f; setBackgroundColor(theme.btnBg); setTextColor(theme.textPrimary); setPadding(12, 8, 12, 8)
             setOnClickListener { pickUnderlay() }
