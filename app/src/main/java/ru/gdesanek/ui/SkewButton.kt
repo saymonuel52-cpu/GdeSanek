@@ -38,7 +38,7 @@ class SkewButton @JvmOverloads constructor(context: Context, attrs: AttributeSet
         strokePaint.color = t.accent
         fillPaint.color = if (isActive) t.btnActiveBg else t.btnBg
         textPaint.color = if (isActive) Color.WHITE else t.textPrimary
-        val skew = height * 0.35f
+        val skew = height * 0.22f
         path.reset()
         path.moveTo(skew, 0f)
         path.lineTo(width.toFloat(), 0f)
@@ -47,7 +47,7 @@ class SkewButton @JvmOverloads constructor(context: Context, attrs: AttributeSet
         path.close()
         canvas.drawPath(path, fillPaint)
         canvas.drawPath(path, strokePaint)
-        val ts = height * 0.40f
+        val ts = height * 0.24f
         textPaint.textSize = ts
         canvas.drawText(text, width / 2f, height / 2f + ts * 0.36f, textPaint)
     }

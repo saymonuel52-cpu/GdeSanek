@@ -93,12 +93,12 @@ class PlanEditorActivity : AppCompatActivity() {
         fun makeTool(text: String): SkewButton = SkewButton(this@PlanEditorActivity).apply {
             this.text = text; this.theme = this@PlanEditorActivity.theme; layoutParams = toolParams
         }
-        val btnWall = makeTool("🧱 СТЕНА")
-        val btnPan = makeTool("✋ РУКА")
-        val btnTrack = makeTool("📏 ТРАССА")
-        val btnEdit = makeTool("✏ РЕД")
-        val btnElec = makeTool("⚡ ЭЛЕКТ")
-        val btnUndo = makeTool("🗑 УБРАТЬ")
+        val btnWall = makeTool("СТЕНА")
+        val btnPan = makeTool("РУКА")
+        val btnTrack = makeTool("ТРАССА")
+        val btnEdit = makeTool("РЕД")
+        val btnElec = makeTool("ЭЛЕКТ")
+        val btnUndo = makeTool("УБРАТЬ")
         toolButtons.addAll(listOf(btnWall, btnPan, btnTrack, btnElec, btnEdit, btnUndo))
 
         fun highlightTool(sel: SkewButton?) { toolButtons.forEach { it.isActive = it == sel } }
