@@ -5,7 +5,12 @@ import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
+import android.text.Editable
+import android.text.InputType
+import android.text.TextWatcher
 import android.view.Gravity
+import android.view.View
+import android.widget.EditText
 import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.SeekBar
@@ -19,6 +24,9 @@ import ru.gdesanek.db.ObjectRepository
 import ru.gdesanek.db.TrackRepository
 import ru.gdesanek.export.PdfExporter
 import ru.gdesanek.model.Catalog
+import ru.gdesanek.model.WallMaterials
+import ru.gdesanek.model.WiringTypes
+import ru.gdesanek.theme.AppTheme
 import ru.gdesanek.theme.ThemeManager
 import ru.gdesanek.theme.Themes
 import ru.gdesanek.ui.PlanView
@@ -26,6 +34,9 @@ import java.io.File
 
 class PlanEditorActivity : AppCompatActivity() {
     private lateinit var planView: PlanView
+    private lateinit var contextPanel: LinearLayout
+    private lateinit var catalogScroll: HorizontalScrollView
+    private lateinit var theme: AppTheme
     private var projectId = 0L
     private var projectName = "План"
     private val catalogButtons = mutableListOf<TextView>()
@@ -35,7 +46,7 @@ class PlanEditorActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         projectId = intent.getLongExtra("PROJECT_ID", 0)
         projectName = intent.getStringExtra("PROJECT_NAME") ?: "План"
-        val theme = ThemeManager.current(this)
+        theme = ThemeManager.current(this)
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(theme.canvasBg) }
 
         val topBar = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setBackgroundColor(theme.toolbarBg); setPadding(12, 12, 12, 12) }
@@ -92,23 +103,28 @@ class PlanEditorActivity : AppCompatActivity() {
         fun highlightTool(sel: TextView?) { toolButtons.forEach { it.setBackgroundColor(if (it == sel) theme.btnActiveBg else theme.btnBg) } }
         fun highlightCatalog(sel: TextView?) { catalogButtons.forEach { it.setBackgroundColor(if (it == sel) theme.btnActiveBg else theme.btnBg) } }
 
-        btnWall.setOnClickListener { planView.currentTool = PlanView.Tool.DRAW_WALL; planView.placeType = null; highlightTool(btnWall); highlightCatalog(null) }
-        btnPan.setOnClickListener { planView.currentTool = PlanView.Tool.PAN; planView.placeType = null; highlightTool(btnPan); highlightCatalog(null) }
-        btnTrack.setOnClickListener { planView.currentTool = PlanView.Tool.DRAW_TRACK; planView.placeType = null; highlightTool(btnTrack); highlightCatalog(null) }
+        btnWall.setOnClickListener { planView.currentTool = PlanView.Tool.DRAW_WALL; planView.placeType = null; highlightTool(btnWall); highlightCatalog(null); showWallContext() }
+        btnPan.setOnClickListener { planView.currentTool = PlanView.Tool.PAN; planView.placeType = null; highlightTool(btnPan); highlightCatalog(null); hideContext() }
+        btnTrack.setOnClickListener { planView.currentTool = PlanView.Tool.DRAW_TRACK; planView.placeType = null; highlightTool(btnTrack); highlightCatalog(null); showTrackContext() }
         btnEdit.setOnClickListener {
-            planView.currentTool = PlanView.Tool.EDIT
-            planView.placeType = null
-            planView.selectedWallId = null
-            planView.selectedObjectId = null
-            planView.selectedTrackId = null
-            highlightTool(btnEdit); highlightCatalog(null)
+            planView.currentTool = PlanView.Tool.EDIT; planView.placeType = null
+            planView.selectedWallId = null; planView.selectedObjectId = null; planView.selectedTrackId = null
+            highlightTool(btnEdit); highlightCatalog(null); hideContext()
             planView.invalidate()
         }
         btnUndo.setOnClickListener { planView.undo() }
 
         toolsBar.addView(btnWall); toolsBar.addView(btnPan); toolsBar.addView(btnTrack); toolsBar.addView(btnEdit); toolsBar.addView(btnUndo)
 
-        val catalogScroll = HorizontalScrollView(this).apply { setBackgroundColor(theme.panelBg); setPadding(8, 4, 8, 10) }
+        contextPanel = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setBackgroundColor(theme.panelBg)
+            setPadding(8, 6, 8, 6)
+            visibility = View.GONE
+        }
+
+        catalogScroll = HorizontalScrollView(this).apply { setBackgroundColor(theme.panelBg); setPadding(8, 4, 8, 10); visibility = View.GONE }
         val catalogRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         for (item in Catalog.items) {
             val b = TextView(this).apply {
@@ -118,6 +134,8 @@ class PlanEditorActivity : AppCompatActivity() {
                 setOnClickListener {
                     planView.currentTool = PlanView.Tool.PLACE; planView.placeType = item.type
                     highlightCatalog(this); highlightTool(null)
+                    hideContext()
+                    catalogScroll.visibility = View.VISIBLE
                 }
             }
             catalogButtons.add(b); catalogRow.addView(b)
@@ -127,6 +145,7 @@ class PlanEditorActivity : AppCompatActivity() {
         root.addView(topBar)
         root.addView(planView, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
         root.addView(toolsBar)
+        root.addView(contextPanel)
         root.addView(catalogScroll)
         setContentView(root)
 
@@ -137,11 +156,93 @@ class PlanEditorActivity : AppCompatActivity() {
         loadUnderlay()
     }
 
+    private fun showWallContext() {
+        contextPanel.removeAllViews()
+        contextPanel.visibility = View.VISIBLE
+        catalogScroll.visibility = View.GONE
+
+        val scroll = HorizontalScrollView(this)
+        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        for ((code, name) in WallMaterials.list) {
+            val b = TextView(this).apply {
+                text = name; setTextColor(theme.textPrimary); textSize = 12f; gravity = Gravity.CENTER
+                setBackgroundColor(if (code == planView.currentMaterial) theme.btnActiveBg else theme.btnBg)
+                setPadding(16, 10, 16, 10)
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginEnd = 6 }
+                setOnClickListener { planView.currentMaterial = code; showWallContext() }
+            }
+            row.addView(b)
+        }
+        scroll.addView(row)
+        contextPanel.addView(scroll, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+
+        val thickEdit = EditText(this).apply {
+            setText(planView.currentThickness.toInt().toString())
+            inputType = InputType.TYPE_CLASS_NUMBER
+            setTextColor(theme.textPrimary)
+            setPadding(16, 10, 16, 10)
+            setBackgroundColor(theme.btnBg)
+            layoutParams = LinearLayout.LayoutParams(150, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginStart = 8 }
+            addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+                override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+                override fun afterTextChanged(s: Editable?) { planView.currentThickness = s.toString().toFloatOrNull() ?: 100f }
+            })
+        }
+        contextPanel.addView(thickEdit)
+
+        val orthoBtn = TextView(this).apply {
+            text = if (planView.orthoMode) "90° ✓" else "90°"
+            setTextColor(theme.textPrimary); textSize = 12f; gravity = Gravity.CENTER
+            setBackgroundColor(if (planView.orthoMode) theme.btnActiveBg else theme.btnBg)
+            setPadding(16, 10, 16, 10)
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginStart = 8 }
+            setOnClickListener { planView.orthoMode = !planView.orthoMode; showWallContext() }
+        }
+        contextPanel.addView(orthoBtn)
+
+        val snapBtn = TextView(this).apply {
+            text = if (planView.snapEnd) "⚓ ✓" else "⚓"
+            setTextColor(theme.textPrimary); textSize = 12f; gravity = Gravity.CENTER
+            setBackgroundColor(if (planView.snapEnd) theme.btnActiveBg else theme.btnBg)
+            setPadding(16, 10, 16, 10)
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginStart = 8 }
+            setOnClickListener { planView.snapEnd = !planView.snapEnd; showWallContext() }
+        }
+        contextPanel.addView(snapBtn)
+    }
+
+    private fun showTrackContext() {
+        contextPanel.removeAllViews()
+        contextPanel.visibility = View.VISIBLE
+        catalogScroll.visibility = View.GONE
+
+        val scroll = HorizontalScrollView(this)
+        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        for ((code, name) in WiringTypes.list) {
+            val b = TextView(this).apply {
+                text = name; setTextColor(theme.textPrimary); textSize = 12f; gravity = Gravity.CENTER
+                setBackgroundColor(if (code == planView.currentWiring) theme.btnActiveBg else theme.btnBg)
+                setPadding(16, 10, 16, 10)
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginEnd = 6 }
+                setOnClickListener { planView.currentWiring = code; showTrackContext() }
+            }
+            row.addView(b)
+        }
+        scroll.addView(row)
+        contextPanel.addView(scroll)
+    }
+
+    private fun hideContext() {
+        contextPanel.removeAllViews()
+        contextPanel.visibility = View.GONE
+        catalogScroll.visibility = View.GONE
+    }
+
     private fun showThemeDialog() {
         val names = Themes.all.map { it.name }.toTypedArray()
         AlertDialog.Builder(this).setTitle("Выбор темы").setItems(names) { _, i ->
-            ThemeManager.set(this, Themes.all[i].id)
-            recreate()
+            ThemeManager.set(this, Themes.all[i].id); recreate()
         }.setNegativeButton("Отмена", null).show()
     }
 
@@ -179,7 +280,7 @@ class PlanEditorActivity : AppCompatActivity() {
                 val f = File(filesDir, "underlay_$projectId.jpg")
                 contentResolver.openInputStream(data.data!!)?.use { inp -> f.outputStream().use { out -> inp.copyTo(out) } }
                 loadUnderlay()
-                Toast.makeText(this, "Подложка загружена. 📐 — калибровка, 🌓 — прозрачность", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Подложка загружена", Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
                 Toast.makeText(this, "Не удалось загрузить подложку", Toast.LENGTH_SHORT).show()
             }
