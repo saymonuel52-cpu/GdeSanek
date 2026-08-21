@@ -59,6 +59,11 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     private var dragObject: PlanObject? = null
     private var dragWall: Wall? = null
     private var isDragging = false
+    var currentMaterial = "beton"
+    var currentThickness = 100f
+    var currentWiring = "shtroba"
+    var orthoMode = true
+    var snapEnd = true
     private var dragWallEnd = 0
     private val handlePaint = Paint().apply { color = Color.parseColor("#FFD700"); style = Paint.Style.FILL }
 
@@ -156,6 +161,11 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
             }
         }
         currentWall?.let { canvas.drawLine(it.x1, it.y1, it.x2, it.y2, tempWallPaint) }
+        currentWall?.let { w ->
+            val lenM = sqrt((w.x2 - w.x1).pow(2) + (w.y2 - w.y1).pow(2)) / 100f
+            val sizePaint = Paint(hintPaint).apply { color = Color.parseColor("#FFD700"); textSize = 32f }
+            canvas.drawText(String.format("%.2f м", lenM), (w.x1 + w.x2) / 2f + 20f, (w.y1 + w.y2) / 2f - 20f, sizePaint)
+        }
         for (i in 0 until currentTrackPoints.size - 1) canvas.drawLine(currentTrackPoints[i].x, currentTrackPoints[i].y, currentTrackPoints[i+1].x, currentTrackPoints[i+1].y, tempTrackPaint)
         if (currentTrackPoints.isNotEmpty() && fingerOn) { val l = currentTrackPoints.last(); canvas.drawLine(l.x, l.y, fingerX, fingerY, tempTrackPaint) }
         for (obj in objects) {
@@ -327,7 +337,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
             val meters = trackLength(currentTrackPoints) / 100f
             val pts = currentTrackPoints.toList()
             Toast.makeText(context, String.format("Трасса: %.1f м (запас x1.1 = %.1f м)", meters, meters * 1.1f), Toast.LENGTH_LONG).show()
-            showWiringDialog(pts)
+            val id = trackRepository?.insert(projectId, "power", pts, currentWiring) ?: 0L; tracks.add(CableTrack(id, projectId, "power", pts, currentWiring))
         }
         currentTrackPoints.clear(); fingerOn = false
         invalidate()
@@ -370,7 +380,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
                             invalidate()
                         }
                         Tool.DRAW_WALL -> {
-                            val pt = screenToCanvas(event.x, event.y); val sx = snap(pt.x); val sy = snap(pt.y)
+                            val pt = screenToCanvas(event.x, event.y); val sp = snapWallPoint(pt.x, pt.y); val sx = sp.x; val sy = sp.y
                             currentWall = Wall(projectId = projectId, x1 = sx, y1 = sy, x2 = sx, y2 = sy); invalidate()
                         }
                         Tool.DRAW_TRACK -> {
@@ -438,7 +448,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
                                 }
                             }
                         }
-                        Tool.DRAW_WALL -> { if (currentWall != null) { val pt = screenToCanvas(event.x, event.y); currentWall = currentWall!!.copy(x2 = snap(pt.x), y2 = snap(pt.y)); invalidate() } }
+                        Tool.DRAW_WALL -> { if (currentWall != null) { val pt = screenToCanvas(event.x, event.y); val sp = snapWallPoint(pt.x, pt.y); val op = applyOrtho(currentWall!!.x1, currentWall!!.y1, sp.x, sp.y); currentWall = currentWall!!.copy(x2 = op.x, y2 = op.y); invalidate() } }
                         Tool.PAN -> { matrix.postTranslate(event.x - lastTouchX, event.y - lastTouchY); lastTouchX = event.x; lastTouchY = event.y; invalidate() }
                         Tool.DRAW_TRACK -> { val pt = screenToCanvas(event.x, event.y); fingerX = pt.x; fingerY = pt.y; fingerOn = true; invalidate() }
                         else -> {}
@@ -475,7 +485,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
                 } else if (touchMode == 1 && currentTool == Tool.DRAW_WALL && currentWall != null) {
                     val w = currentWall!!; val dx = w.x2 - w.x1; val dy = w.y2 - w.y1
                     currentWall = null
-                    if (dx * dx + dy * dy > 100) showWallDialog(w.x1, w.y1, w.x2, w.y2)
+                    if (dx * dx + dy * dy > 100) { val id = repository?.insert(projectId, w.x1, w.y1, w.x2, w.y2, currentMaterial, currentThickness) ?: 0L; walls.add(Wall(id, projectId, w.x1, w.y1, w.x2, w.y2, currentMaterial, currentThickness)) }
                     invalidate()
                 } else if (touchMode == 1 && currentTool == Tool.PLACE && placeType != null) {
                     val dxS = event.x - downX; val dyS = event.y - downY
