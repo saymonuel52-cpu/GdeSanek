@@ -3,6 +3,7 @@ package ru.gdesanek.export
 import android.content.Context
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.DashPathEffect
 import android.graphics.pdf.PdfDocument
 import ru.gdesanek.model.CableTrack
 import ru.gdesanek.model.PlanObject
@@ -58,12 +59,12 @@ object PdfExporter {
 
         val trPaint = Paint().apply { strokeWidth = 1.5f }
         for (t in tracks) {
-            trPaint.color = t.color
+            trPaint.color = t.color; trPaint.pathEffect = when (t.wiring) { "shtroba" -> DashPathEffect(floatArrayOf(6f, 4f), 0f); "gofra" -> DashPathEffect(floatArrayOf(6f, 3f, 2f, 3f), 0f); "truba" -> DashPathEffect(floatArrayOf(2f, 3f), 0f); "lotok" -> DashPathEffect(floatArrayOf(8f, 3f), 0f); else -> null }
             for (i in 0 until t.points.size - 1) canvas.drawLine(tx(t.points[i].x), ty(t.points[i].y), tx(t.points[i+1].x), ty(t.points[i+1].y), trPaint)
         }
 
         val symPaint = Paint().apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeWidth = 8f }
-        val labelPaint = Paint().apply { color = Color.BLACK; textSize = 7f }
+        val labelPaint = Paint().apply { color = Color.BLACK; textSize = 5f }
         for (o in objects) {
             symPaint.color = SymbolPalette.color(o.type)
             canvas.save()
@@ -72,7 +73,7 @@ object PdfExporter {
             canvas.translate(-o.x, -o.y)
             GostSymbols.draw(canvas, o.type, o.x, o.y, o.rotation, symPaint)
             canvas.restore()
-            SymbolPalette.height(o.type)?.let { h -> canvas.drawText("H=$h", tx(o.x) + 12f, ty(o.y) + 12f, labelPaint) }
+            SymbolPalette.height(o.type)?.let { h -> canvas.drawText("H=$h", tx(o.x) + 6f, ty(o.y) - 4f, labelPaint) }
         }
 
         val legend = listOf(

@@ -9,8 +9,8 @@ android {
         applicationId "ru.gdesanek"
         minSdk 24
         targetSdk 34
-        versionCode 36
-        versionName "1.26-pdf-fix"
+        versionCode 37
+        versionName "1.27-wiring-lines"
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17

@@ -86,7 +86,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     private val selectionPaint = Paint().apply { color = Color.parseColor("#00BFFF"); strokeWidth = 4f; style = Paint.Style.STROKE; pathEffect = DashPathEffect(floatArrayOf(15f, 10f), 0f) }
     private val underlayPaint = Paint().apply { alpha = 128 }
     private val symPaint = Paint().apply { color = Color.WHITE; strokeWidth = 8f; style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND }
-    private val labelPaint = Paint().apply { color = Color.parseColor("#9E9E9E"); textSize = 24f }
+    private val labelPaint = Paint().apply { color = Color.parseColor("#9E9E9E"); textSize = 20f }
 
     private val matrix = Matrix()
     private val inverseMatrix = Matrix()
@@ -136,7 +136,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         underlay?.let { b -> underlayPaint.alpha = underlayAlpha; canvas.drawBitmap(b, null, RectF(underlayX, underlayY, underlayX + b.width * underlayScale, underlayY + b.height * underlayScale), underlayPaint) }
         var x = -5000f; while (x <= 5000f) { canvas.drawLine(x, -5000f, x, 5000f, gridPaint); x += gridSize }
         var y = -5000f; while (y <= 5000f) { canvas.drawLine(-5000f, y, 5000f, y, gridPaint); y += gridSize }
-        for (t in tracks) { trackPaint.color = t.color
+        for (t in tracks) { trackPaint.color = t.color; trackPaint.pathEffect = when (t.wiring) { "shtroba" -> DashPathEffect(floatArrayOf(20f, 15f), 0f); "gofra" -> DashPathEffect(floatArrayOf(20f, 10f, 5f, 10f), 0f); "truba" -> DashPathEffect(floatArrayOf(5f, 10f), 0f); "lotok" -> DashPathEffect(floatArrayOf(30f, 10f), 0f); else -> null }
             for (i in 0 until t.points.size - 1) canvas.drawLine(t.points[i].x, t.points[i].y, t.points[i+1].x, t.points[i+1].y, trackPaint)
             if (t.id == selectedTrackId) {
                 for (i in 0 until t.points.size - 1) {
@@ -175,7 +175,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         if (currentTrackPoints.isNotEmpty() && fingerOn) { val l = currentTrackPoints.last(); canvas.drawLine(l.x, l.y, fingerX, fingerY, tempTrackPaint) }
         for (obj in objects) {
             symPaint.color = SymbolPalette.color(obj.type); GostSymbols.draw(canvas, obj.type, obj.x, obj.y, obj.rotation, symPaint)
-            SymbolPalette.height(obj.type)?.let { h -> canvas.drawText("H=" + h, obj.x + 40f, obj.y - 40f, labelPaint) }
+            SymbolPalette.height(obj.type)?.let { h -> canvas.drawText("H=" + h, obj.x + 28f, obj.y - 28f, labelPaint) }
             if (obj.id == selectedObjectId) canvas.drawCircle(obj.x, obj.y, 35f, selectionPaint)
         }
         for (p in calibPoints) { canvas.drawLine(p.x - 20f, p.y, p.x + 20f, p.y, calibPaint); canvas.drawLine(p.x, p.y - 20f, p.x, p.y + 20f, calibPaint) }
