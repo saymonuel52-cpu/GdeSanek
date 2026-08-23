@@ -319,4 +319,24 @@ object GostSymbols {
         canvas.drawLine(25f, 0f, 25f, -r - 10f, p)
         canvas.restore()
     }
+    private fun drawSocketProtected(canvas: Canvas, x: Float, y: Float, rotation: Float, paint: Paint) {
+        canvas.save(); canvas.translate(x, y); canvas.rotate(rotation)
+        val r = 20f; val p = Paint(paint).apply { style = Paint.Style.STROKE; strokeWidth = 4f }
+        canvas.drawArc(RectF(-r, -r, r, r), 180f, 180f, false, p)
+        canvas.drawLine(0f, 0f, 0f, -r - 10f, p)
+        canvas.drawLine(-r - 8f, -8f, -r, -8f, p)
+        canvas.restore()
+    }
+
+    private fun drawSocketTriple(canvas: Canvas, x: Float, y: Float, rotation: Float, paint: Paint) {
+        canvas.save(); canvas.translate(x, y); canvas.rotate(rotation)
+        val r = 20f; val p = Paint(paint).apply { style = Paint.Style.STROKE; strokeWidth = 4f }
+        canvas.drawArc(RectF(-r - 25f, -r, r - 25f, r), 180f, 180f, false, p)
+        canvas.drawArc(RectF(-r, -r, r, r), 180f, 180f, false, p)
+        canvas.drawArc(RectF(-r + 25f, -r, r + 25f, r), 180f, 180f, false, p)
+        canvas.drawLine(-25f, 0f, -25f, -r - 10f, p)
+        canvas.drawLine(0f, 0f, 0f, -r - 10f, p)
+        canvas.drawLine(25f, 0f, 25f, -r - 10f, p)
+        canvas.restore()
+    }
 }
