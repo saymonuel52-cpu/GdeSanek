@@ -220,9 +220,7 @@ class PlanEditorActivity : AppCompatActivity() {
         contextPanel.removeAllViews()
         contextPanel.visibility = View.VISIBLE
         catalogScroll.visibility = View.GONE
-
         val wrap = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT) }
-
         val scroll = HorizontalScrollView(this)
         val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         for ((code, name) in WiringTypes.list) {
@@ -235,9 +233,20 @@ class PlanEditorActivity : AppCompatActivity() {
             }
             row.addView(b)
         }
-        scroll.addView(row)
-        wrap.addView(scroll)
-
+        scroll.addView(row); wrap.addView(scroll)
+        val cableScroll = HorizontalScrollView(this)
+        val cableRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, 6, 0, 0) }
+        for (cbl in listOf("3x1.5", "3x2.5", "3x4", "3x6")) {
+            val b = TextView(this).apply {
+                text = cbl; setTextColor(theme.textPrimary); textSize = 12f; gravity = Gravity.CENTER
+                setBackgroundColor(if (cbl == planView.currentCable) theme.btnActiveBg else theme.btnBg)
+                setPadding(18, 10, 18, 10)
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginEnd = 6 }
+                setOnClickListener { planView.currentCable = cbl; showTrackContext() }
+            }
+            cableRow.addView(b)
+        }
+        cableScroll.addView(cableRow); wrap.addView(cableScroll)
         val colorScroll = HorizontalScrollView(this)
         val colorRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, 6, 0, 0) }
         val palette = listOf(Color.parseColor("#4CAF50"), Color.parseColor("#FF5252"), Color.parseColor("#2196F3"), Color.parseColor("#FF9800"), Color.parseColor("#FFEB3B"), Color.parseColor("#9C27B0"), Color.parseColor("#00BCD4"), Color.parseColor("#FFFFFF"))
@@ -252,8 +261,7 @@ class PlanEditorActivity : AppCompatActivity() {
             }
             colorRow.addView(b)
         }
-        colorScroll.addView(colorRow)
-        wrap.addView(colorScroll)
+        colorScroll.addView(colorRow); wrap.addView(colorScroll)
         contextPanel.addView(wrap)
     }
 

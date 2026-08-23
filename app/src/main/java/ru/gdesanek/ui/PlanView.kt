@@ -64,6 +64,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     var currentThickness = 100f
     var currentWiring = "shtroba"
     var currentTrackColor = Color.parseColor("#4CAF50")
+    var currentCable = "3x2.5"
     var orthoMode = true
     var snapEnd = true
     private var dragWallEnd = 0
@@ -87,6 +88,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     private val underlayPaint = Paint().apply { alpha = 128 }
     private val symPaint = Paint().apply { color = Color.WHITE; strokeWidth = 8f; style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND }
     private val labelPaint = Paint().apply { color = Color.parseColor("#9E9E9E"); textSize = 20f }
+    private val trackLabelPaint = Paint().apply { textSize = 20f }
 
     private val matrix = Matrix()
     private val inverseMatrix = Matrix()
@@ -138,6 +140,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         var y = -5000f; while (y <= 5000f) { canvas.drawLine(-5000f, y, 5000f, y, gridPaint); y += gridSize }
         for (t in tracks) { trackPaint.color = t.color; trackPaint.pathEffect = when (t.wiring) { "shtroba" -> DashPathEffect(floatArrayOf(20f, 15f), 0f); "gofra" -> DashPathEffect(floatArrayOf(20f, 10f, 5f, 10f), 0f); "truba" -> DashPathEffect(floatArrayOf(5f, 10f), 0f); "lotok" -> DashPathEffect(floatArrayOf(30f, 10f), 0f); else -> null }
             for (i in 0 until t.points.size - 1) canvas.drawLine(t.points[i].x, t.points[i].y, t.points[i+1].x, t.points[i+1].y, trackPaint)
+            if (t.points.isNotEmpty()) { val p0 = t.points[0]; trackLabelPaint.color = t.color; canvas.drawText("Гр." + (tracks.indexOf(t) + 1), p0.x + 20f, p0.y - 20f, trackLabelPaint); canvas.drawText("ВВГнг-LS " + t.cable, p0.x + 20f, p0.y + 30f, trackLabelPaint) }
             if (t.id == selectedTrackId) {
                 for (i in 0 until t.points.size - 1) {
                     val dx = t.points[i+1].x - t.points[i].x; val dy = t.points[i+1].y - t.points[i].y
@@ -362,7 +365,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
             val meters = trackLength(currentTrackPoints) / 100f
             val pts = currentTrackPoints.toList()
             Toast.makeText(context, String.format("Трасса: %.1f м (запас x1.1 = %.1f м)", meters, meters * 1.1f), Toast.LENGTH_LONG).show()
-            val id = trackRepository?.insert(projectId, "power", pts, currentWiring) ?: 0L; tracks.add(CableTrack(id, projectId, "power", pts, currentWiring, currentTrackColor))
+            val id = trackRepository?.insert(projectId, "power", pts, currentWiring) ?: 0L; tracks.add(CableTrack(id, projectId, "power", pts, currentWiring, currentTrackColor, currentCable))
         }
         currentTrackPoints.clear(); fingerOn = false
         invalidate()

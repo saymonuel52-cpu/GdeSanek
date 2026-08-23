@@ -61,8 +61,10 @@ object PdfExporter {
         for (t in tracks) {
             trPaint.color = t.color; trPaint.pathEffect = when (t.wiring) { "shtroba" -> DashPathEffect(floatArrayOf(6f, 4f), 0f); "gofra" -> DashPathEffect(floatArrayOf(6f, 3f, 2f, 3f), 0f); "truba" -> DashPathEffect(floatArrayOf(2f, 3f), 0f); "lotok" -> DashPathEffect(floatArrayOf(8f, 3f), 0f); else -> null }
             for (i in 0 until t.points.size - 1) canvas.drawLine(tx(t.points[i].x), ty(t.points[i].y), tx(t.points[i+1].x), ty(t.points[i+1].y), trPaint)
+            if (t.points.isNotEmpty()) { val p0 = t.points[0]; labelPaint.color = t.color; canvas.drawText("Гр." + (tracks.indexOf(t) + 1) + " ВВГнг-LS " + t.cable, tx(p0.x) + 4f, ty(p0.y) - 3f, labelPaint) }
         }
 
+        labelPaint.color = Color.BLACK
         val symPaint = Paint().apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeWidth = 8f }
         val labelPaint = Paint().apply { color = Color.BLACK; textSize = 5f }
         for (o in objects) {
