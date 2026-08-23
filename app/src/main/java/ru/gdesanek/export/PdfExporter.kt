@@ -4,100 +4,112 @@ import android.content.Context
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
-import android.os.Environment
-import ru.gdesanek.core.EstimateCalculator
 import ru.gdesanek.model.CableTrack
 import ru.gdesanek.model.PlanObject
 import ru.gdesanek.model.Wall
 import ru.gdesanek.render.GostSymbols
+import ru.gdesanek.theme.SymbolPalette
 import java.io.File
-import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.min
+import kotlin.math.sqrt
 
 object PdfExporter {
-
     fun export(context: Context, projectName: String, projectId: Long, walls: List<Wall>, objects: List<PlanObject>, tracks: List<CableTrack>): File {
-        val prefs = context.getSharedPreferences("estimate", Context.MODE_PRIVATE)
-        val date = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date())
-        val document = PdfDocument()
+        val doc = PdfDocument()
+        val page = doc.startPage(PdfDocument.PageInfo.Builder(842, 595, 1).create())
+        val canvas = page.canvas
+        canvas.drawColor(Color.WHITE)
 
         val framePaint = Paint().apply { color = Color.BLACK; strokeWidth = 2f; style = Paint.Style.STROKE }
-        val stampPaint = Paint().apply { color = Color.GRAY; textSize = 10f }
-        val titlePaint = Paint().apply { color = Color.BLACK; textSize = 18f; isFakeBoldText = true }
+        val thinPaint = Paint().apply { color = Color.BLACK; strokeWidth = 1f }
+        val textPaint = Paint().apply { color = Color.BLACK; textSize = 10f }
+        val titlePaint = Paint().apply { color = Color.BLACK; textSize = 13f }
 
-        // ===== ЛИСТ 1: ПЛАН (А4 альбомный) =====
-        val page1 = document.startPage(PdfDocument.PageInfo.Builder(842, 595, 1).create())
-        val c1 = page1.canvas
-        c1.drawColor(Color.WHITE)
-        c1.drawRect(15f, 15f, 827f, 580f, framePaint)
-        c1.drawText("ГдеСанёк · План электропроводки · $projectName", 30f, 40f, titlePaint)
+        val L = 57f; val T = 14f; val R = 828f; val B = 581f
+        canvas.drawRect(L, T, R, B, framePaint)
 
         var minX = Float.MAX_VALUE; var minY = Float.MAX_VALUE; var maxX = -Float.MAX_VALUE; var maxY = -Float.MAX_VALUE
-        fun add(x: Float, y: Float) { if (x < minX) minX = x; if (y < minY) minY = y; if (x > maxX) maxX = x; if (y > maxY) maxY = y }
+        fun add(x: Float, y: Float) { if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y }
         walls.forEach { add(it.x1, it.y1); add(it.x2, it.y2) }
         objects.forEach { add(it.x, it.y) }
         tracks.forEach { t -> t.points.forEach { add(it.x, it.y) } }
-        if (minX > maxX) { minX = 0f; minY = 0f; maxX = 100f; maxY = 100f }
+        if (minX > maxX) { minX = 0f; minY = 0f; maxX = 1000f; maxY = 1000f }
+        minX -= 100f; minY -= 100f; maxX += 100f; maxY += 100f
 
-        val scale = minOf((842 - 120f) / (maxX - minX + 1), (595 - 160f) / (maxY - minY + 1))
-        c1.save()
-        c1.translate(60f, 70f)
-        c1.scale(scale, scale)
-        c1.translate(-minX, -minY)
+        val aL = L + 10f; val aT = T + 25f; val aR = R - 10f; val aB = B - 80f
+        val scale = min((aR - aL) / (maxX - minX), (aB - aT) / (maxY - minY))
+        fun tx(x: Float) = aL + (x - minX) * scale
+        fun ty(y: Float) = aT + (y - minY) * scale
 
-        val trackPaint = Paint().apply { color = Color.parseColor("#2E7D32"); strokeWidth = 4f; style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND }
-        val wallPaint = Paint().apply { color = Color.BLACK; strokeWidth = 8f; style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND }
-        val symPaint = Paint().apply { color = Color.BLACK; strokeWidth = 4f }
+        canvas.drawText("ПЛАН РАСПОЛОЖЕНИЯ ЭО И ОСВЕЩЕНИЯ — $projectName", L + 10f, T + 16f, titlePaint)
 
-        for (t in tracks) for (i in 0 until t.points.size - 1) c1.drawLine(t.points[i].x, t.points[i].y, t.points[i+1].x, t.points[i+1].y, trackPaint)
-        for (w in walls) c1.drawLine(w.x1, w.y1, w.x2, w.y2, wallPaint)
-        for (o in objects) GostSymbols.draw(c1, o.type, o.x, o.y, o.rotation, symPaint)
-        c1.restore()
-
-        c1.drawText("Масштаб: 1 клетка = 0.5 м · Трассы зеленым · Дата: $date", 30f, 570f, stampPaint)
-        document.finishPage(page1)
-
-        // ===== ЛИСТ 2: СМЕТА (А4 книжный) =====
-        val page2 = document.startPage(PdfDocument.PageInfo.Builder(595, 842, 2).create())
-        val c2 = page2.canvas
-        c2.drawColor(Color.WHITE)
-        c2.drawRect(15f, 15f, 580f, 827f, framePaint)
-        c2.drawText("СМЕТА · $projectName", 30f, 50f, titlePaint)
-        c2.drawText("Дата: $date", 30f, 72f, stampPaint)
-
-        val hPaint = Paint().apply { color = Color.BLACK; textSize = 13f; isFakeBoldText = true }
-        val tPaint = Paint().apply { color = Color.BLACK; textSize = 12f }
-        val totalPaint = Paint().apply { color = Color.BLACK; textSize = 18f; isFakeBoldText = true }
-
-        var y = 120f
-        c2.drawText("Наименование", 30f, y, hPaint)
-        c2.drawText("Кол-во", 320f, y, hPaint)
-        c2.drawText("Цена", 410f, y, hPaint)
-        c2.drawText("Сумма", 480f, y, hPaint)
-        y += 12f; c2.drawLine(30f, y, 565f, y, tPaint); y += 28f
-
-        var total = 0f
-        for (r in EstimateCalculator.rows(objects, tracks)) {
-            val price = prefs.getFloat(r.key, 0f)
-            val sum = r.qty * price
-            total += sum
-            c2.drawText(r.name, 30f, y, tPaint)
-            c2.drawText(String.format("%.1f %s", r.qty, r.unit), 320f, y, tPaint)
-            c2.drawText(String.format("%.0f", price), 410f, y, tPaint)
-            c2.drawText(String.format("%.0f", sum), 480f, y, tPaint)
-            y += 26f
+        val wallPaint = Paint().apply { color = Color.BLACK; strokeWidth = 1.5f }
+        for (w in walls) {
+            val dx = w.x2 - w.x1; val dy = w.y2 - w.y1
+            val len = sqrt(dx * dx + dy * dy); if (len < 1f) continue
+            val ux = dx / len; val uy = dy / len; val px = -uy; val py = ux
+            val half = w.thickness / 10f / 2f * scale
+            canvas.drawLine(tx(w.x1) + px * half, ty(w.y1) + py * half, tx(w.x2) + px * half, ty(w.y2) + py * half, wallPaint)
+            canvas.drawLine(tx(w.x1) - px * half, ty(w.y1) - py * half, tx(w.x2) - px * half, ty(w.y2) - py * half, wallPaint)
         }
-        y += 24f
-        c2.drawText(String.format("ИТОГО: %.0f руб.", total), 30f, y, totalPaint)
-        c2.drawText("ГдеСанёк · Лист 2 (Смета)", 430f, 815f, stampPaint)
-        document.finishPage(page2)
 
-        val dir = context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS)!!
-        val file = File(dir, "GdeSanek_${projectName.replace(Regex("[^A-Za-zА-Яа-я0-9]"), "_")}.pdf")
-        document.writeTo(FileOutputStream(file))
-        document.close()
+        val trPaint = Paint().apply { strokeWidth = 1.5f }
+        for (t in tracks) {
+            trPaint.color = t.color
+            for (i in 0 until t.points.size - 1) canvas.drawLine(tx(t.points[i].x), ty(t.points[i].y), tx(t.points[i+1].x), ty(t.points[i+1].y), trPaint)
+        }
+
+        val symPaint = Paint().apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeWidth = 8f }
+        val labelPaint = Paint().apply { color = Color.BLACK; textSize = 7f }
+        for (o in objects) {
+            symPaint.color = SymbolPalette.color(o.type)
+            canvas.save()
+            canvas.translate(tx(o.x), ty(o.y))
+            canvas.scale(scale, scale)
+            canvas.translate(-o.x, -o.y)
+            GostSymbols.draw(canvas, o.type, o.x, o.y, o.rotation, symPaint)
+            canvas.restore()
+            SymbolPalette.height(o.type)?.let { h -> canvas.drawText("H=$h", tx(o.x) + 8f, ty(o.y) - 6f, labelPaint) }
+        }
+
+        val legend = listOf(
+            "Розетки 220В" to Color.parseColor("#FF5252"),
+            "Выключатели" to Color.parseColor("#FF7043"),
+            "Освещение" to Color.parseColor("#FFCA28"),
+            "Слаботочка" to Color.parseColor("#40C4FF"),
+            "Щиты/короба" to Color.parseColor("#26A69A"),
+            "Нагрузка" to Color.parseColor("#AB47BC")
+        )
+        var ly = B - 66f
+        textPaint.textSize = 8f
+        for ((name, c) in legend) {
+            trPaint.color = c; trPaint.strokeWidth = 2f
+            canvas.drawLine(L + 10f, ly - 3f, L + 30f, ly - 3f, trPaint)
+            textPaint.color = Color.BLACK
+            canvas.drawText(name, L + 35f, ly, textPaint)
+            ly += 11f
+        }
+
+        val sL = R - 185f; val sT = B - 55f
+        canvas.drawRect(sL, sT, R, B, framePaint)
+        canvas.drawLine(sL, sT + 18f, R, sT + 18f, thinPaint)
+        canvas.drawLine(sL, sT + 36f, R, sT + 36f, thinPaint)
+        canvas.drawLine(sL + 95f, sT + 18f, sL + 95f, B, thinPaint)
+        textPaint.textSize = 11f
+        canvas.drawText("ГдеСанёк", sL + 6f, sT + 12f, textPaint)
+        textPaint.textSize = 9f
+        canvas.drawText("Лист Э1    Масштаб 1:100", sL + 6f, sT + 30f, textPaint)
+        canvas.drawText(projectName, sL + 6f, sT + 48f, textPaint)
+        canvas.drawText("Дата: " + SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date()), sL + 100f, sT + 30f, textPaint)
+        canvas.drawText("Разработал: Электромонтажник", sL + 100f, sT + 48f, textPaint)
+
+        doc.finishPage(page)
+        val file = File(context.cacheDir, "GdeSanek_$projectId.pdf")
+        file.outputStream().use { doc.writeTo(it) }
+        doc.close()
         return file
     }
 }
