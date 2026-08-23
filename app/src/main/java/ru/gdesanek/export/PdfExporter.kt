@@ -23,6 +23,7 @@ object PdfExporter {
         val page = doc.startPage(PdfDocument.PageInfo.Builder(842, 595, 1).create())
         val canvas = page.canvas
         canvas.drawColor(Color.WHITE)
+        val labelPaint = Paint().apply { color = Color.BLACK; textSize = 5f }
 
         val framePaint = Paint().apply { color = Color.BLACK; strokeWidth = 2f; style = Paint.Style.STROKE }
         val thinPaint = Paint().apply { color = Color.BLACK; strokeWidth = 1f }
@@ -66,7 +67,6 @@ object PdfExporter {
 
         labelPaint.color = Color.BLACK
         val symPaint = Paint().apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeWidth = 8f }
-        val labelPaint = Paint().apply { color = Color.BLACK; textSize = 5f }
         for (o in objects) {
             symPaint.color = SymbolPalette.color(o.type)
             canvas.save()
