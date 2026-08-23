@@ -6,10 +6,10 @@ import android.graphics.RectF
 object GostSymbols {
     fun draw(canvas: Canvas, type: String, x: Float, y: Float, rotation: Float, paint: Paint) {
         when(type) {
-            "socket_b1" -> drawSocket(canvas, x, y, rotation, paint)
+            "socket_b1" -> drawSocketProtected(canvas, x, y, rotation, paint)
             "socket_b2" -> drawSocketDouble(canvas, x, y, rotation, paint)
             "socket_b3" -> drawSocketIp44(canvas, x, y, rotation, paint)
-            "socket_b4" -> drawSocketIp44Double(canvas, x, y, rotation, paint)
+            "socket_b4" -> drawSocketTriple(canvas, x, y, rotation, paint)
             "socket_k" -> drawSocketComputer(canvas, x, y, rotation, paint)
             "socket_double" -> drawSocketDouble(canvas, x, y, rotation, paint)
             "socket_380" -> drawSocket380(canvas, x, y, rotation, paint)
@@ -297,6 +297,26 @@ object GostSymbols {
         canvas.drawCircle(0f, 0f, 22f, p)
         val pText = Paint(paint).apply { textSize = 12f; textAlign = Paint.Align.CENTER }
         canvas.drawText(label, 0f, 4f, pText)
+        canvas.restore()
+    }
+    private fun drawSocketProtected(canvas: Canvas, x: Float, y: Float, rotation: Float, paint: Paint) {
+        canvas.save(); canvas.translate(x, y); canvas.rotate(rotation)
+        val r = 20f; val p = Paint(paint).apply { style = Paint.Style.STROKE; strokeWidth = 4f }
+        canvas.drawArc(RectF(-r, -r, r, r), 180f, 180f, false, p)
+        canvas.drawLine(0f, 0f, 0f, -r - 10f, p)
+        canvas.drawLine(-r - 8f, -8f, -r, -8f, p)
+        canvas.restore()
+    }
+
+    private fun drawSocketTriple(canvas: Canvas, x: Float, y: Float, rotation: Float, paint: Paint) {
+        canvas.save(); canvas.translate(x, y); canvas.rotate(rotation)
+        val r = 20f; val p = Paint(paint).apply { style = Paint.Style.STROKE; strokeWidth = 4f }
+        canvas.drawArc(RectF(-r - 25f, -r, r - 25f, r), 180f, 180f, false, p)
+        canvas.drawArc(RectF(-r, -r, r, r), 180f, 180f, false, p)
+        canvas.drawArc(RectF(-r + 25f, -r, r + 25f, r), 180f, 180f, false, p)
+        canvas.drawLine(-25f, 0f, -25f, -r - 10f, p)
+        canvas.drawLine(0f, 0f, 0f, -r - 10f, p)
+        canvas.drawLine(25f, 0f, 25f, -r - 10f, p)
         canvas.restore()
     }
 }
