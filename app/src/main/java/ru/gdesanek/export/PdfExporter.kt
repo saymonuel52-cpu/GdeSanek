@@ -72,7 +72,7 @@ object PdfExporter {
             canvas.translate(-o.x, -o.y)
             GostSymbols.draw(canvas, o.type, o.x, o.y, o.rotation, symPaint)
             canvas.restore()
-            SymbolPalette.height(o.type)?.let { h -> canvas.drawText("H=$h", tx(o.x) + 8f, ty(o.y) - 6f, labelPaint) }
+            SymbolPalette.height(o.type)?.let { h -> canvas.drawText("H=$h", tx(o.x) + 12f, ty(o.y) + 12f, labelPaint) }
         }
 
         val legend = listOf(
@@ -83,14 +83,18 @@ object PdfExporter {
             "Щиты/короба" to Color.parseColor("#26A69A"),
             "Нагрузка" to Color.parseColor("#AB47BC")
         )
-        var ly = B - 66f
+        var ly = B - 38f
         textPaint.textSize = 8f
-        for ((name, c) in legend) {
+        for (i in legend.indices) {
+            val (name, c) = legend[i]
+            val col = if (i < 3) 0 else 1
+            val row = if (i < 3) i else i - 3
+            val x0 = L + 10f + col * 200f
+            val yy = B - 38f + row * 11f
             trPaint.color = c; trPaint.strokeWidth = 2f
-            canvas.drawLine(L + 10f, ly - 3f, L + 30f, ly - 3f, trPaint)
+            canvas.drawLine(x0, yy - 3f, x0 + 20f, yy - 3f, trPaint)
             textPaint.color = Color.BLACK
-            canvas.drawText(name, L + 35f, ly, textPaint)
-            ly += 11f
+            canvas.drawText(name, x0 + 25f, yy, textPaint)
         }
 
         val sL = R - 185f; val sT = B - 55f
