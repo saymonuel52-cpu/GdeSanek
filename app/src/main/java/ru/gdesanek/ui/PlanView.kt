@@ -30,6 +30,7 @@ import ru.gdesanek.model.WiringTypes
 import ru.gdesanek.render.GostSymbols
 import ru.gdesanek.render.WallRender
 import ru.gdesanek.theme.AppTheme
+import ru.gdesanek.theme.SymbolPalette
 import kotlin.math.pow
 import kotlin.math.sqrt
 import kotlin.math.round
@@ -84,6 +85,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     private val calibPaint = Paint().apply { color = Color.parseColor("#FF5252"); strokeWidth = 6f; style = Paint.Style.STROKE }
     private val selectionPaint = Paint().apply { color = Color.parseColor("#00BFFF"); strokeWidth = 4f; style = Paint.Style.STROKE; pathEffect = DashPathEffect(floatArrayOf(15f, 10f), 0f) }
     private val underlayPaint = Paint().apply { alpha = 128 }
+    private val symPaint = Paint().apply { color = Color.WHITE; strokeWidth = 8f; style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND }
 
     private val matrix = Matrix()
     private val inverseMatrix = Matrix()
@@ -170,7 +172,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         for (i in 0 until currentTrackPoints.size - 1) canvas.drawLine(currentTrackPoints[i].x, currentTrackPoints[i].y, currentTrackPoints[i+1].x, currentTrackPoints[i+1].y, tempTrackPaint)
         if (currentTrackPoints.isNotEmpty() && fingerOn) { val l = currentTrackPoints.last(); canvas.drawLine(l.x, l.y, fingerX, fingerY, tempTrackPaint) }
         for (obj in objects) {
-            GostSymbols.draw(canvas, obj.type, obj.x, obj.y, obj.rotation, wallPaint)
+            symPaint.color = SymbolPalette.color(obj.type); GostSymbols.draw(canvas, obj.type, obj.x, obj.y, obj.rotation, symPaint)
             if (obj.id == selectedObjectId) canvas.drawCircle(obj.x, obj.y, 35f, selectionPaint)
         }
         for (p in calibPoints) { canvas.drawLine(p.x - 20f, p.y, p.x + 20f, p.y, calibPaint); canvas.drawLine(p.x, p.y - 20f, p.x, p.y + 20f, calibPaint) }

@@ -20,6 +20,18 @@ data class AppTheme(
     val hintColor: Int
 )
 
+object SymbolPalette {
+    fun color(type: String): Int = when {
+        type.startsWith("socket") -> Color.parseColor("#FF5252")
+        type.startsWith("switch") -> Color.parseColor("#FF7043")
+        type.startsWith("lamp") -> Color.parseColor("#FFCA28")
+        type.startsWith("sks") || type.startsWith("rj45") -> Color.parseColor("#40C4FF")
+        type.startsWith("panel") || type.startsWith("box") || type.startsWith("ground") || type.startsWith("input") -> Color.parseColor("#26A69A")
+        type.startsWith("cons") || type.startsWith("cond") -> Color.parseColor("#AB47BC")
+        else -> Color.WHITE
+    }
+}
+
 object Themes {
     val classic = AppTheme(
         "classic", "Классика AutoCAD",
@@ -27,6 +39,13 @@ object Themes {
         Color.parseColor("#1E1E1E"), Color.parseColor("#008C9E"), Color.parseColor("#008C9E"),
         Color.WHITE, Color.parseColor("#B0B0B0"), Color.parseColor("#222222"),
         Color.WHITE, Color.parseColor("#4CAF50"), Color.parseColor("#777777")
+    )
+    val paper = AppTheme(
+        "paper", "ГОСТ Бумага",
+        Color.parseColor("#F2F0EB"), Color.parseColor("#1A1A1A"), Color.parseColor("#14181B"),
+        Color.parseColor("#1E1E1E"), Color.parseColor("#008C9E"), Color.parseColor("#008C9E"),
+        Color.WHITE, Color.parseColor("#B0B0B0"), Color.parseColor("#D8D5CE"),
+        Color.parseColor("#222222"), Color.parseColor("#222222"), Color.parseColor("#9E9E9E")
     )
     val blueprint = AppTheme(
         "blueprint", "Blueprint (чертёж)",
@@ -57,7 +76,7 @@ object Themes {
         Color.WHITE, Color.parseColor("#66BB6A"), Color.parseColor("#888888")
     )
 
-    val all = listOf(classic, blueprint, terminal, glossy, hatching)
+    val all = listOf(classic, paper, blueprint, terminal, glossy, hatching)
     fun byId(id: String) = all.firstOrNull { it.id == id } ?: classic
 }
 

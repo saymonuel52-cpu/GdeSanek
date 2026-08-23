@@ -52,31 +52,31 @@ class PlanEditorActivity : AppCompatActivity() {
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(theme.canvasBg) }
 
         val topBar = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setBackgroundColor(theme.toolbarBg); setPadding(12, 12, 12, 12) }
-        val menuBtn = TextView(this).apply { text = "☰"; textSize = 26f; setTextColor(theme.textPrimary); setPadding(16, 4, 16, 4); setOnClickListener { showThemeDialog() } }
-        val backBtn = TextView(this).apply { text = "←"; textSize = 26f; setTextColor(theme.textPrimary); setPadding(16, 4, 16, 4); setOnClickListener { finish() } }
+        val menuBtn = TextView(this).apply { setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_menu, 0, 0, 0); setTextColor(theme.textPrimary); setPadding(16, 4, 16, 4); setOnClickListener { showThemeDialog() } }
+        val backBtn = TextView(this).apply { setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_back, 0, 0, 0); setTextColor(theme.textPrimary); setPadding(16, 4, 16, 4); setOnClickListener { finish() } }
         val title = TextView(this).apply { text = projectName; textSize = 17f; setTextColor(theme.textPrimary); try { typeface = androidx.core.content.res.ResourcesCompat.getFont(this@PlanEditorActivity, R.font.russoone) } catch (e: Exception) {}; layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f) }
         val underlayBtn = TextView(this).apply {
-            text = " 🖼 "; textSize = 18f; setBackgroundColor(theme.btnBg); setTextColor(theme.textPrimary); setPadding(12, 8, 12, 8)
+            setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_underlay, 0, 0); setBackgroundColor(theme.btnBg); setTextColor(theme.textPrimary); setPadding(12, 8, 12, 8)
             setOnClickListener { pickUnderlay() }
             setOnLongClickListener { removeUnderlay(); true }
         }
         val calibBtn = TextView(this).apply {
-            text = " 📐 "; textSize = 18f; setBackgroundColor(theme.btnBg); setTextColor(theme.textPrimary); setPadding(12, 8, 12, 8)
+            setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_calib, 0, 0); setBackgroundColor(theme.btnBg); setTextColor(theme.textPrimary); setPadding(12, 8, 12, 8)
             val p = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT); p.marginStart = 8; layoutParams = p
             setOnClickListener { planView.startCalibration() }
         }
         val dimBtn = TextView(this).apply {
-            text = " 🌓 "; textSize = 18f; setBackgroundColor(theme.btnBg); setTextColor(theme.textPrimary); setPadding(12, 8, 12, 8)
+            setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_dim, 0, 0); setBackgroundColor(theme.btnBg); setTextColor(theme.textPrimary); setPadding(12, 8, 12, 8)
             val p = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT); p.marginStart = 8; layoutParams = p
             setOnClickListener { showUnderlayDialog() }
         }
         val estimateBtn = TextView(this).apply {
-            text = " 📊 "; textSize = 18f; setBackgroundColor(theme.btnBg); setTextColor(theme.textPrimary); setPadding(12, 8, 12, 8)
+            setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_estimate, 0, 0); setBackgroundColor(theme.btnBg); setTextColor(theme.textPrimary); setPadding(12, 8, 12, 8)
             val p = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT); p.marginStart = 8; layoutParams = p
             setOnClickListener { startActivity(Intent(this@PlanEditorActivity, EstimateActivity::class.java).putExtra("PROJECT_ID", projectId)) }
         }
         val shareBtn = TextView(this).apply {
-            text = " 📤 "; textSize = 18f; setBackgroundColor(theme.btnBg); setTextColor(theme.textPrimary); setPadding(12, 8, 12, 8)
+            setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_share, 0, 0); setBackgroundColor(theme.btnBg); setTextColor(theme.textPrimary); setPadding(12, 8, 12, 8)
             val p = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT); p.marginStart = 8; layoutParams = p
             setOnClickListener { exportPdf() }
         }
