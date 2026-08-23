@@ -30,6 +30,19 @@ object SymbolPalette {
         type.startsWith("cons") || type.startsWith("cond") -> Color.parseColor("#AB47BC")
         else -> Color.WHITE
     }
+
+    fun height(type: String): Int? = when {
+        type.startsWith("socket_b") -> 30
+        type.startsWith("socket_k") -> 110
+        type.startsWith("socket_380") -> 100
+        type.startsWith("switch") -> 90
+        type.startsWith("lamp") -> 240
+        type.startsWith("box") -> 150
+        type.startsWith("panel") -> 180
+        type.startsWith("cond_vk") -> 200
+        type.startsWith("cons_boiler") -> 100
+        else -> null
+    }
 }
 
 object Themes {

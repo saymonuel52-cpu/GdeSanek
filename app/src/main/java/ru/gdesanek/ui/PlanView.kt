@@ -86,6 +86,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     private val selectionPaint = Paint().apply { color = Color.parseColor("#00BFFF"); strokeWidth = 4f; style = Paint.Style.STROKE; pathEffect = DashPathEffect(floatArrayOf(15f, 10f), 0f) }
     private val underlayPaint = Paint().apply { alpha = 128 }
     private val symPaint = Paint().apply { color = Color.WHITE; strokeWidth = 8f; style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND }
+    private val labelPaint = Paint().apply { color = Color.parseColor("#9E9E9E"); textSize = 24f }
 
     private val matrix = Matrix()
     private val inverseMatrix = Matrix()
@@ -105,6 +106,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         wallPaint.color = t.wallColor
         gridPaint.color = t.gridColor
         hintPaint.color = t.hintColor
+        labelPaint.color = t.hintColor
         trackPaint.color = t.trackColor
         setBackgroundColor(t.canvasBg)
         invalidate()
@@ -173,6 +175,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         if (currentTrackPoints.isNotEmpty() && fingerOn) { val l = currentTrackPoints.last(); canvas.drawLine(l.x, l.y, fingerX, fingerY, tempTrackPaint) }
         for (obj in objects) {
             symPaint.color = SymbolPalette.color(obj.type); GostSymbols.draw(canvas, obj.type, obj.x, obj.y, obj.rotation, symPaint)
+            SymbolPalette.height(obj.type)?.let { h -> canvas.drawText("H=" + h, obj.x + 40f, obj.y - 40f, labelPaint) }
             if (obj.id == selectedObjectId) canvas.drawCircle(obj.x, obj.y, 35f, selectionPaint)
         }
         for (p in calibPoints) { canvas.drawLine(p.x - 20f, p.y, p.x + 20f, p.y, calibPaint); canvas.drawLine(p.x, p.y - 20f, p.x, p.y + 20f, calibPaint) }
