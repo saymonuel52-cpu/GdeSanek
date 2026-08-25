@@ -27,7 +27,7 @@ class EstimateActivity : AppCompatActivity() {
     private lateinit var rows: List<ru.gdesanek.core.EstimateRow>
     private lateinit var prefs: android.content.SharedPreferences
     private lateinit var theme: ru.gdesanek.theme.AppTheme
-    private lateinit var projectId: Long
+    private var projectId: Long = 0
     private lateinit var projectName: String
     private lateinit var totalView: TextView
     private lateinit var list: LinearLayout
