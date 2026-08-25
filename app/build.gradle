@@ -9,8 +9,8 @@ android {
         applicationId "ru.gdesanek"
         minSdk 24
         targetSdk 34
-        versionCode 50
-        versionName "3.5-dark-only"
+        versionCode 52
+        versionName "3.6-object-menu"
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17

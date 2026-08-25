@@ -65,6 +65,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     var currentWiring = "shtroba"
     var currentTrackColor = Color.parseColor("#4CAF50")
     var currentCable = "3x2.5"
+    var onObjectTap: ((PlanObject) -> Unit)? = null
     var orthoMode = true
     var snapEnd = true
     private var dragWallEnd = 0
@@ -299,10 +300,33 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     }
 
     private fun showObjectDialog(obj: PlanObject) {
-        AlertDialog.Builder(context).setTitle("Объект: ${obj.type}").setItems(arrayOf("Повернуть на 45°", "Удалить")) { _, i ->
+        val curH = if (obj.height >= 0) obj.height else (ru.gdesanek.theme.SymbolPalette.height(obj.type) ?: 0)
+        AlertDialog.Builder(context).setTitle("Объект: ${obj.type}").setItems(arrayOf(
+            "Высота (сейчас H=$curH см)",
+            "Повернуть на 45°",
+            "Дублировать",
+            "Удалить"
+        )) { _, i ->
             when (i) {
-                0 -> { val upd = obj.copy(rotation = obj.rotation + 45f); objectRepository?.update(upd); val idx = objects.indexOfFirst { it.id == obj.id }; if (idx >= 0) objects[idx] = upd }
-                1 -> { objectRepository?.delete(obj.id); objects.removeAll { it.id == obj.id }; selectedObjectId = null }
+                0 -> {
+                    val et = EditText(context).apply { inputType = InputType.TYPE_CLASS_NUMBER; setText(curH.toString()) }
+                    AlertDialog.Builder(context).setTitle("Высота установки, см").setView(et).setPositiveButton("ОК") { _, _ ->
+                        val h = et.text.toString().toIntOrNull() ?: -1
+                        val upd = obj.copy(height = h)
+                        objectRepository?.update(upd)
+                        val idx = objects.indexOfFirst { it.id == obj.id }; if (idx >= 0) objects[idx] = upd
+                        invalidate()
+                    }.setNegativeButton("Отмена", null).show()
+                }
+                1 -> {
+                    val upd = obj.copy(rotation = obj.rotation + 45f); objectRepository?.update(upd)
+                    val idx = objects.indexOfFirst { it.id == obj.id }; if (idx >= 0) objects[idx] = upd
+                }
+                2 -> {
+                    val newId = objectRepository?.insert(obj.projectId, obj.type, obj.x + 60f, obj.y + 60f, obj.rotation, obj.name, obj.area) ?: 0L
+                    objects.add(obj.copy(id = newId, x = obj.x + 60f, y = obj.y + 60f))
+                }
+                3 -> { objectRepository?.delete(obj.id); objects.removeAll { it.id == obj.id }; selectedObjectId = null }
             }
             invalidate()
         }.show()
