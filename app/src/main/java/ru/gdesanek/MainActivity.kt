@@ -1,11 +1,13 @@
 package ru.gdesanek
 
 import android.app.AlertDialog
+import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
 import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -14,6 +16,9 @@ import ru.gdesanek.db.ProjectRepository
 import ru.gdesanek.theme.ThemeManager
 import ru.gdesanek.theme.Themes
 import ru.gdesanek.ui.ProjectAdapter
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
     private lateinit var recyclerView: RecyclerView
@@ -21,36 +26,89 @@ class MainActivity : AppCompatActivity() {
     private lateinit var repository: ProjectRepository
     private val projects = mutableListOf<ru.gdesanek.model.Project>()
     private lateinit var adapter: ProjectAdapter
+    private lateinit var header: TextView
+    private lateinit var hint: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val theme = ThemeManager.current(this)
-        setContentView(R.layout.activity_main)
-        val crashLog = getSharedPreferences("crash", MODE_PRIVATE).getString("log", null)
-        if (crashLog != null) {
-            getSharedPreferences("crash", MODE_PRIVATE).edit().remove("log").apply()
-            val et = android.widget.EditText(this).apply { setText(crashLog) }
-            android.app.AlertDialog.Builder(this).setTitle("ЛОГ КРАША — скопируй и пришли").setView(et).setPositiveButton("ОК", null).show()
+        
+        // Программный layout
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(theme.canvasBg)
         }
-        window.decorView.setBackgroundColor(theme.canvasBg)
 
-        repository = ProjectRepository(this)
-        val header = TextView(this).apply {
+        // Заголовок
+        header = TextView(this).apply {
             text = "Мои проекты"
             textSize = 24f
             setTextColor(theme.textPrimary)
             typeface = Typeface.DEFAULT_BOLD
             setPadding(32, 40, 32, 20)
         }
-        (findViewById<LinearLayout>(R.id.rootLayout)).addView(header, 0)
-        recyclerView = findViewById(R.id.recyclerView)
-        recyclerView.setBackgroundColor(theme.canvasBg)
-        fabAdd = findViewById(R.id.fabAdd)
-        fabAdd.backgroundTintList = android.content.res.ColorStateList.valueOf(theme.accent)
+        root.addView(header)
 
+        // Подсказка для пустого состояния
+        hint = TextView(this).apply {
+            text = "Нажмите + чтобы создать первый проект"
+            textSize = 16f
+            setTextColor(theme.hintColor)
+            setPadding(32, 20, 32, 20)
+            visibility = android.view.View.GONE
+        }
+        root.addView(hint)
+
+        // RecyclerView
+        recyclerView = RecyclerView(this).apply {
+            setBackgroundColor(theme.canvasBg)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                0,
+                1f
+            )
+        }
+        root.addView(recyclerView)
+
+        // FAB
+        fabAdd = FloatingActionButton(this).apply {
+            imageTintList = android.content.res.ColorStateList.valueOf(Color.WHITE)
+            backgroundTintList = android.content.res.ColorStateList.valueOf(theme.accent)
+            setImageResource(R.drawable.ic_add)
+            layoutParams = android.widget.FrameLayout.LayoutParams(
+                android.widget.FrameLayout.LayoutParams.WRAP_CONTENT,
+                android.widget.FrameLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                gravity = android.view.Gravity.BOTTOM or android.view.Gravity.END
+                setMargins(32, 32, 32, 32)
+            }
+        }
+        val frame = android.widget.FrameLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                0,
+                1f
+            )
+            addView(recyclerView)
+            addView(fabAdd)
+        }
+        root.removeView(recyclerView)
+        root.addView(frame)
+
+        setContentView(root)
+
+        // Проверка краша
+        val crashLog = getSharedPreferences("crash", MODE_PRIVATE).getString("log", null)
+        if (crashLog != null) {
+            getSharedPreferences("crash", MODE_PRIVATE).edit().remove("log").apply()
+            val et = EditText(this).apply { setText(crashLog) }
+            AlertDialog.Builder(this).setTitle("ЛОГ КРАША — скопируй и пришли").setView(et).setPositiveButton("ОК", null).show()
+        }
+
+        repository = ProjectRepository(this)
         recyclerView.layoutManager = LinearLayoutManager(this)
         adapter = ProjectAdapter(projects, theme) { project ->
-            val intent = android.content.Intent(this, PlanEditorActivity::class.java)
+            val intent = Intent(this, PlanEditorActivity::class.java)
             intent.putExtra("PROJECT_ID", project.id)
             intent.putExtra("PROJECT_NAME", project.name)
             startActivity(intent)
@@ -70,15 +128,13 @@ class MainActivity : AppCompatActivity() {
         projects.clear()
         projects.addAll(repository.getAll())
         adapter.notifyDataSetChanged()
+        
         if (projects.isEmpty()) {
             header.text = "Нет проектов"
-            val hint = TextView(this).apply {
-                text = "Нажмите + чтобы создать первый проект"
-                textSize = 16f
-                setTextColor(theme.hintColor)
-                setPadding(32, 20, 32, 20)
-            }
-            (findViewById<LinearLayout>(R.id.rootLayout)).addView(hint, 1)
+            hint.visibility = android.view.View.VISIBLE
+        } else {
+            header.text = "Мои проекты"
+            hint.visibility = android.view.View.GONE
         }
     }
 
@@ -88,9 +144,18 @@ class MainActivity : AppCompatActivity() {
             setPadding(60, 40, 60, 20)
             setBackgroundColor(theme.panelBg)
         }
-        val nameInput = EditText(this).apply { hint = "Название"; maxLines = 1; setTextColor(theme.textPrimary); setHintTextColor(theme.textSecondary) }
-        val addressInput = EditText(this).apply { hint = "Адрес"; maxLines = 1; setTextColor(theme.textPrimary); setHintTextColor(theme.textSecondary) }
-
+        val nameInput = EditText(this).apply {
+            hint = "Название проекта"
+            setTextColor(theme.textPrimary)
+            setHintTextColor(theme.hintColor)
+            setPadding(20, 20, 20, 20)
+        }
+        val addressInput = EditText(this).apply {
+            hint = "Адрес (необязательно)"
+            setTextColor(theme.textPrimary)
+            setHintTextColor(theme.hintColor)
+            setPadding(20, 20, 20, 20)
+        }
         layout.addView(nameInput)
         layout.addView(addressInput)
 
@@ -98,11 +163,10 @@ class MainActivity : AppCompatActivity() {
             .setTitle("Новый проект")
             .setView(layout)
             .setPositiveButton("Создать") { _, _ ->
-                val name = nameInput.text.toString()
-                if (name.isNotBlank()) {
-                    repository.insert(name, addressInput.text.toString())
-                    loadProjects()
-                }
+                val name = nameInput.text.toString().ifEmpty { "Проект ${System.currentTimeMillis()}" }
+                val address = addressInput.text.toString()
+                repository.insert(name, address)
+                loadProjects()
             }
             .setNegativeButton("Отмена", null)
             .show()
