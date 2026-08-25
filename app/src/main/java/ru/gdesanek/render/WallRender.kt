@@ -30,22 +30,57 @@ object WallRender {
         canvas.save()
         canvas.clipPath(path)
         val hatch = Paint(paint).apply { style = Paint.Style.STROKE; strokeWidth = 2f }
-        val step: Float; val cross: Boolean; val double: Boolean
+        val dot = Paint(paint).apply { style = Paint.Style.FILL }
+
         when (wall.material) {
-            "kirpich" -> { step = 14f; cross = false; double = false }
-            "gazobeton" -> { step = 22f; cross = false; double = false }
-            "gkl" -> { step = 18f; cross = false; double = true }
-            "derevo" -> { step = 16f; cross = true; double = false }
-            else -> { step = 12f; cross = false; double = false }
-        }
-        var s = -2 * t
-        while (s < len + 2 * t) {
-            val bx = wall.x1 + ux * s; val by = wall.y1 + uy * s
-            val ex = wall.x1 + ux * (s + 2 * t); val ey = wall.y1 + uy * (s + 2 * t)
-            canvas.drawLine(bx + px * t, by + py * t, ex - px * t, ey - py * t, hatch)
-            if (cross) canvas.drawLine(bx - px * t, by - py * t, ex + px * t, ey + py * t, hatch)
-            if (double) canvas.drawLine(bx + px * t * 0.5f, by + py * t * 0.5f, ex - px * t * 0.5f, ey - py * t * 0.5f, hatch)
-            s += step
+            "kirpich" -> {
+                var s = -2 * t
+                while (s < len + 2 * t) {
+                    val bx = wall.x1 + ux * s; val by = wall.y1 + uy * s
+                    val ex = wall.x1 + ux * (s + 2 * t); val ey = wall.y1 + uy * (s + 2 * t)
+                    canvas.drawLine(bx + px * t, by + py * t, ex - px * t, ey - py * t, hatch)
+                    s += 14f
+                }
+            }
+            "gazobeton" -> {
+                var s = 6f
+                while (s < len) {
+                    val bx = wall.x1 + ux * s; val by = wall.y1 + uy * s
+                    canvas.drawLine(bx + px * t * 0.8f, by + py * t * 0.8f, bx - px * t * 0.8f, by - py * t * 0.8f, hatch)
+                    s += 24f
+                }
+            }
+            "gkl" -> {
+                canvas.drawLine(wall.x1 + px * t * 0.5f, wall.y1 + py * t * 0.5f, wall.x2 + px * t * 0.5f, wall.y2 + py * t * 0.5f, hatch)
+                canvas.drawLine(wall.x1 - px * t * 0.5f, wall.y1 - py * t * 0.5f, wall.x2 - px * t * 0.5f, wall.y2 - py * t * 0.5f, hatch)
+            }
+            "derevo" -> {
+                var s = -2 * t
+                while (s < len + 2 * t) {
+                    val bx = wall.x1 + ux * s; val by = wall.y1 + uy * s
+                    val ex = wall.x1 + ux * (s + 2 * t); val ey = wall.y1 + uy * (s + 2 * t)
+                    canvas.drawLine(bx + px * t, by + py * t, ex - px * t, ey - py * t, hatch)
+                    canvas.drawLine(bx - px * t, by - py * t, ex + px * t, ey + py * t, hatch)
+                    s += 16f
+                }
+            }
+            else -> {
+                var s = 8f; var row = 0
+                while (s < len) {
+                    val off = if (row % 2 == 0) t * 0.4f else -t * 0.4f
+                    val bx = wall.x1 + ux * s + px * off
+                    val by = wall.y1 + uy * s + py * off
+                    canvas.drawCircle(bx, by, 2.5f, dot)
+                    s += 30f; row++
+                }
+                s = -2 * t
+                while (s < len + 2 * t) {
+                    val bx = wall.x1 + ux * s; val by = wall.y1 + uy * s
+                    val ex = wall.x1 + ux * (s + 2 * t); val ey = wall.y1 + uy * (s + 2 * t)
+                    canvas.drawLine(bx + px * t, by + py * t, ex - px * t, ey - py * t, hatch)
+                    s += 60f
+                }
+            }
         }
         canvas.restore()
     }
