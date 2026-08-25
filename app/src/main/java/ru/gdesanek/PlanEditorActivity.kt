@@ -115,7 +115,19 @@ class PlanEditorActivity : AppCompatActivity() {
             highlightTool(btnEdit); highlightCatalog(null); hideContext()
             planView.invalidate()
         }
-        btnUndo.setOnClickListener { planView.undo() }
+        btnUndo.setOnClickListener {
+            val t = when {
+                planView.tracks.isNotEmpty() -> "трасса"
+                planView.objects.isNotEmpty() -> "объект"
+                planView.walls.isNotEmpty() -> "стена"
+                else -> null
+            }
+            if (t == null) Toast.makeText(this, "Нечего убирать", Toast.LENGTH_SHORT).show()
+            else AlertDialog.Builder(this).setTitle("Убрать: $t?").setPositiveButton("Убрать") { _, _ ->
+                planView.undo()
+                com.google.android.material.snackbar.Snackbar.make(root, "Убрано: $t", 5000).setAction("Вернуть") { planView.restoreLast() }.show()
+            }.setNegativeButton("Отмена", null).show()
+        }
 
         toolsBar.addView(btnWall); toolsBar.addView(btnPan); toolsBar.addView(btnTrack); toolsBar.addView(btnElec); toolsBar.addView(btnEdit); toolsBar.addView(btnUndo)
 
@@ -158,6 +170,11 @@ class PlanEditorActivity : AppCompatActivity() {
         planView.loadObjects()
         planView.loadTracks()
         loadUnderlay()
+
+    override fun onDestroy() {
+        super.onDestroy()
+        planView.commitPending()
+    }
     }
 
     private fun showWallContext() {
@@ -351,6 +368,11 @@ class PlanEditorActivity : AppCompatActivity() {
                 val f = File(filesDir, "underlay_$projectId.jpg")
                 contentResolver.openInputStream(data.data!!)?.use { inp -> f.outputStream().use { out -> inp.copyTo(out) } }
                 loadUnderlay()
+
+    override fun onDestroy() {
+        super.onDestroy()
+        planView.commitPending()
+    }
                 Toast.makeText(this, "Подложка загружена", Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
                 Toast.makeText(this, "Не удалось загрузить подложку", Toast.LENGTH_SHORT).show()

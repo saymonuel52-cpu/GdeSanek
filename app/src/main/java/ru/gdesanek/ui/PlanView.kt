@@ -124,14 +124,35 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         return s
     }
 
-    fun undo() {
-        if (currentTrackPoints.isNotEmpty()) currentTrackPoints.removeAt(currentTrackPoints.size - 1)
-        else if (tracks.isNotEmpty()) { val last = tracks.removeAt(tracks.size - 1); trackRepository?.delete(last.id) }
-        else if (objects.isNotEmpty()) { val last = objects.removeAt(objects.size - 1); objectRepository?.delete(last.id) }
-        else if (walls.isNotEmpty()) { val last = walls.removeAt(walls.size - 1); repository?.delete(last.id) }
+    private var pendingWall: Wall? = null
+    private var pendingObject: PlanObject? = null
+    private var pendingTrack: CableTrack? = null
+
+    fun commitPending() {
+        pendingWall?.let { repository?.delete(it.id) }
+        pendingObject?.let { objectRepository?.delete(it.id) }
+        pendingTrack?.let { trackRepository?.delete(it.id) }
+        pendingWall = null; pendingObject = null; pendingTrack = null
+    }
+
+    fun restoreLast() {
+        pendingWall?.let { walls.add(it) }
+        pendingObject?.let { objects.add(it) }
+        pendingTrack?.let { tracks.add(it) }
+        pendingWall = null; pendingObject = null; pendingTrack = null
         invalidate()
     }
 
+    fun undo() {
+        if (currentTrackPoints.isNotEmpty()) { currentTrackPoints.removeAt(currentTrackPoints.size - 1); invalidate(); return }
+        commitPending()
+        when {
+            tracks.isNotEmpty() -> pendingTrack = tracks.removeAt(tracks.size - 1)
+            objects.isNotEmpty() -> pendingObject = objects.removeAt(objects.size - 1)
+            walls.isNotEmpty() -> pendingWall = walls.removeAt(walls.size - 1)
+        }
+        invalidate()
+    }
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas); canvas.drawColor(Color.parseColor("#121212"))
         canvas.save(); canvas.concat(matrix)

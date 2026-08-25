@@ -9,8 +9,8 @@ android {
         applicationId "ru.gdesanek"
         minSdk 24
         targetSdk 34
-        versionCode 44
-        versionName "2.4-estimate-visual"
+        versionCode 45
+        versionName "3.0-safe-undo"
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
