@@ -31,8 +31,8 @@ object GostSymbols {
             "rj45" -> drawWeakCurrent(canvas, x, y, rotation, paint, "RJ45")
             "rj45x2" -> drawWeakCurrent(canvas, x, y, rotation, paint, "2RJ45")
             "sks_tv" -> drawWeakCurrent(canvas, x, y, rotation, paint, "ТВ")
-            "sks_phone" -> drawWeakCurrent(canvas, x, y, rotation, paint, "ТЕЛ")
-            "sks_intercom" -> drawWeakCurrent(canvas, x, y, rotation, paint, "ДОМ")
+            "sks_phone" -> drawWeakCurrent(canvas, x, y, rotation, paint, "Тел")
+            "sks_intercom" -> drawWeakCurrent(canvas, x, y, rotation, paint, "Домоф")
             "sks_cam" -> drawCamera(canvas, x, y, rotation, paint)
             "sks_smoke" -> drawSmokeDetector(canvas, x, y, rotation, paint)
             "sks_sec" -> drawSecuritySensor(canvas, x, y, rotation, paint)
@@ -42,9 +42,9 @@ object GostSymbols {
             "input_220" -> drawInput(canvas, x, y, rotation, paint)
             "ground" -> drawGround(canvas, x, y, rotation, paint)
             "cond_vk" -> drawConsumer(canvas, x, y, rotation, paint, "ВК")
-            "cons_boiler" -> drawConsumer(canvas, x, y, rotation, paint, "БОЙЛ")
-            "cons_stove" -> drawConsumer(canvas, x, y, rotation, paint, "ПЛИТА")
-            "cons_pump" -> drawConsumer(canvas, x, y, rotation, paint, "НАСОС")
+            "cons_boiler" -> drawConsumer(canvas, x, y, rotation, paint, "Бойл")
+            "cons_stove" -> drawConsumer(canvas, x, y, rotation, paint, "Плита")
+            "cons_pump" -> drawConsumer(canvas, x, y, rotation, paint, "Насос")
         }
     }
 
@@ -54,6 +54,27 @@ object GostSymbols {
         val p = Paint(paint).apply { style = Paint.Style.STROKE; strokeWidth = 4f }
         canvas.drawArc(rect, 180f, 180f, false, p)
         canvas.drawLine(0f, 0f, 0f, -r - 10f, p)
+        canvas.restore()
+    }
+
+    private fun drawSocketProtected(canvas: Canvas, x: Float, y: Float, rotation: Float, paint: Paint) {
+        canvas.save(); canvas.translate(x, y); canvas.rotate(rotation)
+        val r = 20f; val p = Paint(paint).apply { style = Paint.Style.STROKE; strokeWidth = 4f }
+        canvas.drawArc(RectF(-r, -r, r, r), 180f, 180f, false, p)
+        canvas.drawLine(0f, 0f, 0f, -r - 10f, p)
+        canvas.drawLine(-r - 8f, -8f, -r, -8f, p)
+        canvas.restore()
+    }
+
+    private fun drawSocketTriple(canvas: Canvas, x: Float, y: Float, rotation: Float, paint: Paint) {
+        canvas.save(); canvas.translate(x, y); canvas.rotate(rotation)
+        val r = 20f; val p = Paint(paint).apply { style = Paint.Style.STROKE; strokeWidth = 4f }
+        canvas.drawArc(RectF(-r - 25f, -r, r - 25f, r), 180f, 180f, false, p)
+        canvas.drawArc(RectF(-r, -r, r, r), 180f, 180f, false, p)
+        canvas.drawArc(RectF(-r + 25f, -r, r + 25f, r), 180f, 180f, false, p)
+        canvas.drawLine(-25f, 0f, -25f, -r - 10f, p)
+        canvas.drawLine(0f, 0f, 0f, -r - 10f, p)
+        canvas.drawLine(25f, 0f, 25f, -r - 10f, p)
         canvas.restore()
     }
 
@@ -213,7 +234,7 @@ object GostSymbols {
         val p = Paint(paint).apply { style = Paint.Style.STROKE; strokeWidth = 3f }
         canvas.drawRect(RectF(-20f, -10f, 20f, 10f), p)
         val pText = Paint(paint).apply { textSize = 12f; textAlign = Paint.Align.CENTER }
-        canvas.drawText("ВЫХОД", 0f, 4f, pText)
+        canvas.drawText("ВЫХ", 0f, 4f, pText)
         canvas.restore()
     }
 
@@ -297,35 +318,6 @@ object GostSymbols {
         canvas.drawCircle(0f, 0f, 22f, p)
         val pText = Paint(paint).apply { textSize = 12f; textAlign = Paint.Align.CENTER }
         canvas.drawText(label, 0f, 4f, pText)
-        canvas.restore()
-    }
-    private fun drawSocketProtected(canvas: Canvas, x: Float, y: Float, rotation: Float, paint: Paint) {
-        canvas.save(); canvas.translate(x, y); canvas.rotate(rotation)
-        val r = 20f; val p = Paint(paint).apply { style = Paint.Style.STROKE; strokeWidth = 4f }
-        canvas.drawArc(RectF(-r, -r, r, r), 180f, 180f, false, p)
-        canvas.drawLine(0f, 0f, 0f, -r - 10f, p)
-        canvas.drawLine(-r - 8f, -8f, -r, -8f, p)
-        canvas.restore()
-    }
-
-        val r = 20f; val p = Paint(paint).apply { style = Paint.Style.STROKE; strokeWidth = 4f }
-        canvas.drawArc(RectF(-r - 25f, -r, r - 25f, r), 180f, 180f, false, p)
-        canvas.drawArc(RectF(-r, -r, r, r), 180f, 180f, false, p)
-        canvas.drawArc(RectF(-r + 25f, -r, r + 25f, r), 180f, 180f, false, p)
-        canvas.drawLine(-25f, 0f, -25f, -r - 10f, p)
-        canvas.drawLine(0f, 0f, 0f, -r - 10f, p)
-        canvas.drawLine(25f, 0f, 25f, -r - 10f, p)
-        canvas.restore()
-    }
-    private fun drawSocketTriple(canvas: Canvas, x: Float, y: Float, rotation: Float, paint: Paint) {
-        canvas.save(); canvas.translate(x, y); canvas.rotate(rotation)
-        val r = 20f; val p = Paint(paint).apply { style = Paint.Style.STROKE; strokeWidth = 4f }
-        canvas.drawArc(RectF(-r - 25f, -r, r - 25f, r), 180f, 180f, false, p)
-        canvas.drawArc(RectF(-r, -r, r, r), 180f, 180f, false, p)
-        canvas.drawArc(RectF(-r + 25f, -r, r + 25f, r), 180f, 180f, false, p)
-        canvas.drawLine(-25f, 0f, -25f, -r - 10f, p)
-        canvas.drawLine(0f, 0f, 0f, -r - 10f, p)
-        canvas.drawLine(25f, 0f, 25f, -r - 10f, p)
         canvas.restore()
     }
 }
