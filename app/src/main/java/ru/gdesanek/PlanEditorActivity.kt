@@ -171,10 +171,6 @@ class PlanEditorActivity : AppCompatActivity() {
         planView.loadTracks()
         loadUnderlay()
 
-    override fun onDestroy() {
-        super.onDestroy()
-        planView.commitPending()
-    }
     }
 
     private fun showWallContext() {
@@ -369,10 +365,6 @@ class PlanEditorActivity : AppCompatActivity() {
                 contentResolver.openInputStream(data.data!!)?.use { inp -> f.outputStream().use { out -> inp.copyTo(out) } }
                 loadUnderlay()
 
-    override fun onDestroy() {
-        super.onDestroy()
-        planView.commitPending()
-    }
                 Toast.makeText(this, "Подложка загружена", Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
                 Toast.makeText(this, "Не удалось загрузить подложку", Toast.LENGTH_SHORT).show()
@@ -415,5 +407,10 @@ class PlanEditorActivity : AppCompatActivity() {
                 startActivity(Intent.createChooser(send, "Отправить PDF"))
             }
         }.start()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        planView.commitPending()
     }
 }
