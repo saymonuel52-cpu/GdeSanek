@@ -18,6 +18,8 @@ class SkewButton @JvmOverloads constructor(context: Context, attrs: AttributeSet
         set(v) { field = v; invalidate() }
     var theme: AppTheme? = null
         set(v) { field = v; invalidate() }
+    var iconRes: Int = 0
+        set(v) { field = v; invalidate() }
 
     private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = 3f }
@@ -47,8 +49,9 @@ class SkewButton @JvmOverloads constructor(context: Context, attrs: AttributeSet
         path.close()
         canvas.drawPath(path, fillPaint)
         canvas.drawPath(path, strokePaint)
-        val ts = height * 0.24f
+        val ts = height * 0.20f
         textPaint.textSize = ts
-        canvas.drawText(text, width / 2f, height / 2f + ts * 0.36f, textPaint)
+        if (iconRes != 0) { val d = androidx.core.content.ContextCompat.getDrawable(context, iconRes); if (d != null) { d.setTint(if (isActive) Color.WHITE else t.textPrimary); val sz = (height * 0.36f).toInt(); d.setBounds((width / 2 - sz / 2).toInt(), (height * 0.12f).toInt(), (width / 2 + sz / 2).toInt(), (height * 0.12f).toInt() + sz); d.draw(canvas) } }
+        canvas.drawText(text, width / 2f, height * 0.80f, textPaint)
     }
 }

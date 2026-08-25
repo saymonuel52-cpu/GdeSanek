@@ -52,13 +52,19 @@ class PlanEditorActivity : AppCompatActivity() {
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(theme.canvasBg) }
 
         val topBar = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setBackgroundColor(theme.toolbarBg); setPadding(12, 12, 12, 12) }
-        val menuBtn = TextView(this).apply { setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_menu, 0, 0, 0); setTextColor(theme.textPrimary); setPadding(16, 4, 16, 4); setOnClickListener { showThemeDialog() } }
-        val backBtn = TextView(this).apply { setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_back, 0, 0, 0); setTextColor(theme.textPrimary); setPadding(16, 4, 16, 4); setOnClickListener { finish() } }
+        val menuBtn = TextView(this).apply { setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_menu, 0, 0, 0); setTextColor(theme.textPrimary); setPadding(16, 4, 16, 4); setOnClickListener { showThemeDialog() }; tooltipText = "Меню и темы" }
+        val backBtn = TextView(this).apply { setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_back, 0, 0, 0); setTextColor(theme.textPrimary); setPadding(16, 4, 16, 4); setOnClickListener { finish() }; tooltipText = "Назад" }
         val title = TextView(this).apply { text = projectName; textSize = 17f; setTextColor(theme.textPrimary); try { typeface = androidx.core.content.res.ResourcesCompat.getFont(this@PlanEditorActivity, R.font.russoone) } catch (e: Exception) {}; layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f) }
         val underlayBtn = TextView(this).apply {
-            setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_underlay, 0, 0); setBackgroundColor(theme.btnBg); setTextColor(theme.textPrimary); setPadding(12, 8, 12, 8)
-            setOnClickListener { pickUnderlay() }
-            setOnLongClickListener { removeUnderlay(); true }
+            setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_underlay, 0, 0)
+            setPadding(12, 8, 12, 8); setBackgroundColor(theme.btnBg)
+            tooltipText = "Подложка: фото помещения"
+            setOnClickListener {
+                if (planView.underlay == null) pickUnderlay()
+                else AlertDialog.Builder(this@PlanEditorActivity).setTitle("Подложка").setItems(arrayOf("Калибровать масштаб", "Прозрачность", "Заменить фото", "Убрать")) { _, i ->
+                    when (i) { 0 -> planView.startCalibration(); 1 -> showUnderlayDialog(); 2 -> pickUnderlay(); 3 -> removeUnderlay() }
+                }.show()
+            }
         }
         val calibBtn = TextView(this).apply {
             setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_calib, 0, 0); setBackgroundColor(theme.btnBg); setTextColor(theme.textPrimary); setPadding(12, 8, 12, 8)
@@ -70,17 +76,17 @@ class PlanEditorActivity : AppCompatActivity() {
             val p = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT); p.marginStart = 8; layoutParams = p
             setOnClickListener { showUnderlayDialog() }
         }
-        val estimateBtn = TextView(this).apply {
+        val estimateBtn = TextView(this).apply { tooltipText = "Смета";
             setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_estimate, 0, 0); setBackgroundColor(theme.btnBg); setTextColor(theme.textPrimary); setPadding(12, 8, 12, 8)
             val p = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT); p.marginStart = 8; layoutParams = p
             setOnClickListener { startActivity(Intent(this@PlanEditorActivity, EstimateActivity::class.java).putExtra("PROJECT_ID", projectId)) }
         }
-        val shareBtn = TextView(this).apply {
+        val shareBtn = TextView(this).apply { tooltipText = "Отправить PDF";
             setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_share, 0, 0); setBackgroundColor(theme.btnBg); setTextColor(theme.textPrimary); setPadding(12, 8, 12, 8)
             val p = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT); p.marginStart = 8; layoutParams = p
             setOnClickListener { exportPdf() }
         }
-        topBar.addView(menuBtn); topBar.addView(backBtn); topBar.addView(title); topBar.addView(underlayBtn); topBar.addView(calibBtn); topBar.addView(dimBtn); topBar.addView(estimateBtn); topBar.addView(shareBtn)
+        topBar.addView(menuBtn); topBar.addView(backBtn); topBar.addView(title); topBar.addView(underlayBtn); topBar.addView(estimateBtn); topBar.addView(shareBtn)
 
         planView = PlanView(this)
         planView.projectId = projectId
@@ -90,16 +96,16 @@ class PlanEditorActivity : AppCompatActivity() {
         planView.applyTheme(theme)
 
         val toolsBar = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setBackgroundColor(theme.panelBg); setPadding(8, 10, 8, 4) }
-        val toolParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { setMargins(4, 0, 4, 0) }
-        fun makeTool(text: String): SkewButton = SkewButton(this@PlanEditorActivity).apply {
-            this.text = text; this.theme = this@PlanEditorActivity.theme; layoutParams = toolParams
+        val toolParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { setMargins(2, 0, 2, 0) }
+        fun makeTool(text: String, icon: Int = 0): SkewButton = SkewButton(this@PlanEditorActivity).apply {
+            this.text = text; this.iconRes = icon; this.theme = this@PlanEditorActivity.theme; layoutParams = toolParams
         }
-        val btnWall = makeTool("СТЕНА")
-        val btnPan = makeTool("РУКА")
-        val btnTrack = makeTool("ТРАССА")
-        val btnEdit = makeTool("РЕД")
-        val btnElec = makeTool("ЭЛЕКТ")
-        val btnUndo = makeTool("УБРАТЬ")
+        val btnWall = makeTool("СТЕНА", R.drawable.ic_wall)
+        val btnPan = makeTool("РУКА", R.drawable.ic_pan)
+        val btnTrack = makeTool("ТРАССА", R.drawable.ic_track)
+        val btnEdit = makeTool("РЕД", R.drawable.ic_edit)
+        val btnElec = makeTool("ЭЛЕКТ", R.drawable.ic_elec)
+        val btnUndo = makeTool("УБРАТЬ", R.drawable.ic_undo)
         toolButtons.addAll(listOf(btnWall, btnPan, btnTrack, btnElec, btnEdit, btnUndo))
 
         fun highlightTool(sel: SkewButton?) { toolButtons.forEach { it.isActive = it == sel } }

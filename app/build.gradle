@@ -9,8 +9,8 @@ android {
         applicationId "ru.gdesanek"
         minSdk 24
         targetSdk 34
-        versionCode 46
-        versionName "3.1-wall-hatch"
+        versionCode 47
+        versionName "3.2-toolbars"
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
