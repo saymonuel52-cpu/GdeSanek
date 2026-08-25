@@ -102,7 +102,7 @@ object Themes {
         Color.WHITE, Color.parseColor("#66BB6A"), Color.parseColor("#888888")
     )
 
-    val all = listOf(classic, paper)
+    val all = listOf(classic)
     fun byId(id: String) = all.firstOrNull { it.id == id } ?: classic
 }
 
