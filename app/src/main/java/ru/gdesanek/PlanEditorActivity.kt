@@ -333,6 +333,7 @@ class PlanEditorActivity : AppCompatActivity() {
         val names = Themes.all.map { it.name }.toTypedArray()
         AlertDialog.Builder(this).setTitle("Выбор темы").setItems(names) { _, i ->
             ThemeManager.set(this, Themes.all[i].id); recreate()
+            recreate()
         }.setNegativeButton("Отмена", null).show()
     }
 
