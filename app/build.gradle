@@ -9,8 +9,8 @@ android {
         applicationId "ru.gdesanek"
         minSdk 24
         targetSdk 34
-        versionCode 53
-        versionName "3.6-object-menu-fixed"
+        versionCode 54
+        versionName "3.7-db-recovery"
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
