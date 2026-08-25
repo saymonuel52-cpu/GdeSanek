@@ -154,7 +154,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         invalidate()
     }
     override fun onDraw(canvas: Canvas) {
-        super.onDraw(canvas); canvas.drawColor(Color.parseColor("#121212"))
+        super.onDraw(canvas)
         canvas.save(); canvas.concat(matrix)
         underlay?.let { b -> underlayPaint.alpha = underlayAlpha; canvas.drawBitmap(b, null, RectF(underlayX, underlayY, underlayX + b.width * underlayScale, underlayY + b.height * underlayScale), underlayPaint) }
         var x = -5000f; while (x <= 5000f) { canvas.drawLine(x, -5000f, x, 5000f, gridPaint); x += gridSize }
