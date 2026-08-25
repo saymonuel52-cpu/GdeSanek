@@ -147,6 +147,7 @@ class PlanEditorActivity : AppCompatActivity() {
 
         catalogScroll = HorizontalScrollView(this).apply { setBackgroundColor(theme.panelBg); setPadding(8, 4, 8, 10); visibility = View.GONE }
         val catalogRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        catalogRow.addView(TextView(this).apply { text = " ✕ "; textSize = 20f; setTextColor(theme.textPrimary); setPadding(20, 8, 20, 8); setOnClickListener { catalogScroll.visibility = View.GONE } })
         for (item in Catalog.items) {
             val b = TextView(this).apply {
                 text = item.label; setTextColor(theme.textPrimary); textSize = 12f; gravity = Gravity.CENTER
@@ -156,7 +157,7 @@ class PlanEditorActivity : AppCompatActivity() {
                     planView.currentTool = PlanView.Tool.PLACE; planView.placeType = item.type
                     highlightCatalog(this); highlightTool(btnElec)
                     hideContext()
-                    catalogScroll.visibility = View.VISIBLE
+                    catalogScroll.visibility = View.GONE
                 }
             }
             catalogButtons.add(b); catalogRow.addView(b)

@@ -193,7 +193,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
             }
         }
         currentWall?.let { canvas.drawLine(it.x1, it.y1, it.x2, it.y2, tempWallPaint) }
-        currentWall?.let { w -> val dm = kotlin.math.sqrt((w.x2 - w.x1) * (w.x2 - w.x1) + (w.y2 - w.y1) * (w.y2 - w.y1)) * 0.01f; canvas.drawText(String.format("%.2f m", dm), (w.x1 + w.x2) / 2f + 20f, (w.y1 + w.y2) / 2f - 20f, hintPaint) }
+        currentWall?.let { w -> val dm = kotlin.math.sqrt((w.x2 - w.x1) * (w.x2 - w.x1) + (w.y2 - w.y1) * (w.y2 - w.y1)) * 0.01f; if (dm > 0.05f) canvas.drawText(String.format("%.2f m", dm), (w.x1 + w.x2) / 2f + 20f, (w.y1 + w.y2) / 2f - 20f, hintPaint) }
         snapIndicator?.let { s -> canvas.drawCircle(s.x, s.y, 15f, snapPaint) }
         currentWall?.let { w ->
             val lenM = sqrt((w.x2 - w.x1).pow(2) + (w.y2 - w.y1).pow(2)) / 100f
