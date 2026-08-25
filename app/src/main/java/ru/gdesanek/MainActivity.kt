@@ -2,6 +2,7 @@ package ru.gdesanek
 
 import android.app.AlertDialog
 import android.graphics.Color
+import android.graphics.Typeface
 import android.os.Bundle
 import android.widget.EditText
 import android.widget.LinearLayout
@@ -34,6 +35,14 @@ class MainActivity : AppCompatActivity() {
         window.decorView.setBackgroundColor(theme.canvasBg)
 
         repository = ProjectRepository(this)
+        val header = TextView(this).apply {
+            text = "Мои проекты"
+            textSize = 24f
+            setTextColor(theme.textPrimary)
+            typeface = Typeface.DEFAULT_BOLD
+            setPadding(32, 40, 32, 20)
+        }
+        (findViewById<LinearLayout>(R.id.rootLayout)).addView(header, 0)
         recyclerView = findViewById(R.id.recyclerView)
         recyclerView.setBackgroundColor(theme.canvasBg)
         fabAdd = findViewById(R.id.fabAdd)
@@ -61,6 +70,16 @@ class MainActivity : AppCompatActivity() {
         projects.clear()
         projects.addAll(repository.getAll())
         adapter.notifyDataSetChanged()
+        if (projects.isEmpty()) {
+            header.text = "Нет проектов"
+            val hint = TextView(this).apply {
+                text = "Нажмите + чтобы создать первый проект"
+                textSize = 16f
+                setTextColor(theme.hintColor)
+                setPadding(32, 20, 32, 20)
+            }
+            (findViewById<LinearLayout>(R.id.rootLayout)).addView(hint, 1)
+        }
     }
 
     private fun showAddDialog(theme: ru.gdesanek.theme.AppTheme) {
