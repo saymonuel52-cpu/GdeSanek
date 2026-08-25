@@ -75,6 +75,8 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     val objects = mutableListOf<PlanObject>()
     val tracks = mutableListOf<CableTrack>()
     private var currentWall: Wall? = null
+    private var snapIndicator: android.graphics.PointF? = null
+    private val snapPaint = Paint().apply { color = Color.parseColor("#FF9800"); style = Paint.Style.STROKE; strokeWidth = 3f }
     private val currentTrackPoints = mutableListOf<TrackPoint>()
     private var fingerX = 0f; private var fingerY = 0f; private var fingerOn = false
 
@@ -191,6 +193,8 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
             }
         }
         currentWall?.let { canvas.drawLine(it.x1, it.y1, it.x2, it.y2, tempWallPaint) }
+        currentWall?.let { w -> val dm = kotlin.math.sqrt((w.x2 - w.x1) * (w.x2 - w.x1) + (w.y2 - w.y1) * (w.y2 - w.y1)) * 0.01f; canvas.drawText(String.format("%.2f m", dm), (w.x1 + w.x2) / 2f + 20f, (w.y1 + w.y2) / 2f - 20f, hintPaint) }
+        snapIndicator?.let { s -> canvas.drawCircle(s.x, s.y, 15f, snapPaint) }
         currentWall?.let { w ->
             val lenM = sqrt((w.x2 - w.x1).pow(2) + (w.y2 - w.y1).pow(2)) / 100f
             val sizePaint = Paint(hintPaint).apply { color = Color.parseColor("#FFD700"); textSize = 32f }
@@ -339,6 +343,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         val row = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
         scroll.addView(row); box.addView(thick); box.addView(scroll)
         val dlg = AlertDialog.Builder(context).setTitle("Редактировать стену").setView(box)
+            .setNegativeButton("Удалить стену") { _, _ -> repository?.delete(wall.id); walls.removeAll { it.id == wall.id }; invalidate() }
             .setPositiveButton("Сохранить") { _, _ ->
                 val t = thick.text.toString().toFloatOrNull() ?: wall.thickness
                 val upd = wall.copy(thickness = t)
@@ -522,7 +527,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
                                 }
                             }
                         }
-                        Tool.DRAW_WALL -> { if (currentWall != null) { val pt = screenToCanvas(event.x, event.y); val sp = snapWallPoint(pt.x, pt.y); val op = applyOrtho(currentWall!!.x1, currentWall!!.y1, sp.x, sp.y); currentWall = currentWall!!.copy(x2 = op.x, y2 = op.y); invalidate() } }
+                        Tool.DRAW_WALL -> { if (currentWall != null) { val pt = screenToCanvas(event.x, event.y); val sp = snapWallPoint(pt.x, pt.y); val op = applyOrtho(currentWall!!.x1, currentWall!!.y1, sp.x, sp.y); currentWall = currentWall!!.copy(x2 = op.x, y2 = op.y); val ni = if (sp.x != pt.x || sp.y != pt.y) android.graphics.PointF(sp.x, sp.y) else null; if (ni != null && snapIndicator == null) performHapticFeedback(0); snapIndicator = ni; invalidate() } }
                         Tool.PAN -> { matrix.postTranslate(event.x - lastTouchX, event.y - lastTouchY); lastTouchX = event.x; lastTouchY = event.y; invalidate() }
                         Tool.DRAW_TRACK -> { val pt = screenToCanvas(event.x, event.y); fingerX = pt.x; fingerY = pt.y; fingerOn = true; invalidate() }
                         else -> {}
@@ -558,8 +563,12 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
                     invalidate()
                 } else if (touchMode == 1 && currentTool == Tool.DRAW_WALL && currentWall != null) {
                     val w = currentWall!!; val dx = w.x2 - w.x1; val dy = w.y2 - w.y1
-                    currentWall = null
-                    if (dx * dx + dy * dy > 100) { val id = repository?.insert(projectId, w.x1, w.y1, w.x2, w.y2, currentMaterial, currentThickness) ?: 0L; walls.add(Wall(id, projectId, w.x1, w.y1, w.x2, w.y2, currentMaterial, currentThickness)) }
+                    if (dx * dx + dy * dy > 100) {
+                        val id = repository?.insert(projectId, w.x1, w.y1, w.x2, w.y2, currentMaterial, currentThickness) ?: 0L
+                        walls.add(Wall(id, projectId, w.x1, w.y1, w.x2, w.y2, currentMaterial, currentThickness))
+                        currentWall = Wall(projectId = projectId, x1 = w.x2, y1 = w.y2, x2 = w.x2, y2 = w.y2)
+                    } else currentWall = null
+                    invalidate()
                     invalidate()
                 } else if (touchMode == 1 && currentTool == Tool.PLACE && placeType != null) {
                     val dxS = event.x - downX; val dyS = event.y - downY
