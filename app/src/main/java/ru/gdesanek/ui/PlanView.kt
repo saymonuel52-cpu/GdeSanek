@@ -179,6 +179,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         for (obj in objects) {
             symPaint.color = SymbolPalette.color(obj.type); GostSymbols.draw(canvas, obj.type, obj.x, obj.y, obj.rotation, symPaint)
             SymbolPalette.height(obj.type)?.let { h -> canvas.drawText("H=" + h, obj.x + 28f, obj.y - 28f, labelPaint) }
+            SymbolPalette.power(obj.type)?.let { w -> canvas.drawText(w.toString() + " Вт", obj.x + 28f, obj.y + 60f, labelPaint) }
             if (obj.id == selectedObjectId) canvas.drawCircle(obj.x, obj.y, 35f, selectionPaint)
         }
         for (p in calibPoints) { canvas.drawLine(p.x - 20f, p.y, p.x + 20f, p.y, calibPaint); canvas.drawLine(p.x, p.y - 20f, p.x, p.y + 20f, calibPaint) }

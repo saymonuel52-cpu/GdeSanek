@@ -43,6 +43,19 @@ object SymbolPalette {
         type.startsWith("cons_boiler") -> 100
         else -> null
     }
+
+    fun power(type: String): Int? = when {
+        type.startsWith("lamp_grig") -> 50
+        type.startsWith("lamp_lust") -> 180
+        type.startsWith("lamp_titan") -> 36
+        type.startsWith("lamp_flame") -> 72
+        type.startsWith("lamp_bra") -> 60
+        type.startsWith("lamp_led") -> 12
+        type.startsWith("lamp_street") -> 100
+        type.startsWith("lamp_ao") -> 5
+        type.startsWith("lamp_exit") -> 5
+        else -> null
+    }
 }
 
 object Themes {

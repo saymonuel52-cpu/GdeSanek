@@ -76,6 +76,7 @@ object PdfExporter {
             GostSymbols.draw(canvas, o.type, o.x, o.y, o.rotation, symPaint)
             canvas.restore()
             SymbolPalette.height(o.type)?.let { h -> canvas.drawText("H=$h", tx(o.x) + 6f, ty(o.y) - 4f, labelPaint) }
+            SymbolPalette.power(o.type)?.let { w -> canvas.drawText(w.toString() + " Вт", tx(o.x) + 6f, ty(o.y) + 8f, labelPaint) }
         }
 
         val legend = listOf(
