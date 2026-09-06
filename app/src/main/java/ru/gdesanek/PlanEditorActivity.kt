@@ -36,7 +36,7 @@ import java.io.File
 class PlanEditorActivity : AppCompatActivity() {
     private lateinit var planView: PlanView
     private lateinit var contextPanel: LinearLayout
-    private lateinit var catalogScroll: HorizontalScrollView
+    private lateinit var catalogScroll: View
     private lateinit var btnWall: ru.gdesanek.ui.SkewButton
     private lateinit var btnElec: ru.gdesanek.ui.SkewButton
     private lateinit var btnTrack: ru.gdesanek.ui.SkewButton
@@ -152,24 +152,68 @@ class PlanEditorActivity : AppCompatActivity() {
             visibility = View.GONE
         }
 
-        catalogScroll = HorizontalScrollView(this).apply { setBackgroundColor(theme.panelBg); setPadding(8, 4, 8, 10); visibility = View.GONE }
-        val catalogRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        catalogRow.addView(TextView(this).apply { text = " ✕ "; textSize = 20f; setTextColor(theme.textPrimary); setPadding(20, 8, 20, 8); setOnClickListener { catalogScroll.visibility = View.GONE } })
-        for (item in Catalog.items) {
-            val b = TextView(this).apply {
-                text = item.label; setTextColor(theme.textPrimary); textSize = 12f; gravity = Gravity.CENTER
-                setBackgroundColor(theme.btnBg); setPadding(18, 12, 18, 12)
-                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginEnd = 6 }
-                setOnClickListener {
-                    planView.currentTool = PlanView.Tool.PLACE; planView.placeType = item.type
-                    highlightCatalog(this); highlightTool(btnElec)
-                    hideContext()
-                    catalogScroll.visibility = View.GONE
-                }
+        catalogScroll = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(theme.panelBg); setPadding(8, 4, 8, 10); visibility = View.GONE }
+        val catalogPanel = catalogScroll as LinearLayout
+        val searchRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        val searchBox = EditText(this).apply { hint = "Поиск символа…"; textSize = 14f; setTextColor(theme.textPrimary); setHintTextColor(theme.hintColor); setBackgroundColor(theme.btnBg); setPadding(16, 10, 16, 10); layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f) }
+        searchRow.addView(searchBox)
+        searchRow.addView(TextView(this).apply { text = " ✕ "; textSize = 20f; setTextColor(theme.textPrimary); setPadding(20, 8, 20, 8); setOnClickListener { catalogScroll.visibility = View.GONE } })
+        catalogPanel.addView(searchRow)
+        val chipsScroll = HorizontalScrollView(this)
+        val chipsRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, 6, 0, 6) }
+        chipsScroll.addView(chipsRow); catalogPanel.addView(chipsScroll)
+        val recentScroll = HorizontalScrollView(this)
+        val recentRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, 0, 0, 6) }
+        recentScroll.addView(recentRow); catalogPanel.addView(recentScroll)
+        val itemsScroll = HorizontalScrollView(this)
+        val itemsRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        itemsScroll.addView(itemsRow); catalogPanel.addView(itemsScroll)
+
+        fun catalogBtn(label: String, type: String): TextView = TextView(this).apply {
+            text = label; setTextColor(theme.textPrimary); textSize = 12f; gravity = Gravity.CENTER
+            setBackgroundColor(theme.btnBg); setPadding(18, 12, 18, 12)
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginEnd = 6 }
+            setOnClickListener {
+                planView.currentTool = PlanView.Tool.PLACE; planView.placeType = type
+                catalogScroll.visibility = View.GONE
+                val prefs = getSharedPreferences("recent", MODE_PRIVATE)
+                val old = prefs.getString("list", "").orEmpty().split("|").filter { it.isNotEmpty() }.toMutableList()
+                old.remove(type); old.add(0, type)
+                prefs.edit().putString("list", old.take(6).joinToString("|")).apply()
+                rebuildRecent()
             }
-            catalogButtons.add(b); catalogRow.addView(b)
         }
-        catalogScroll.addView(catalogRow)
+        var currentGroup = ""
+        fun rebuildCatalog() {
+            val q = searchBox.text.toString().trim().lowercase()
+            itemsRow.removeAllViews()
+            for (item in ru.gdesanek.model.Catalog.items) {
+                if (currentGroup.isNotEmpty() && item.group != currentGroup) continue
+                if (q.isNotEmpty() && !item.label.lowercase().contains(q) && !item.type.contains(q)) continue
+                itemsRow.addView(catalogBtn(item.label, item.type))
+            }
+        }
+        fun rebuildRecent() {
+            recentRow.removeAllViews()
+            val prefs = getSharedPreferences("recent", MODE_PRIVATE)
+            for (t in prefs.getString("list", "").orEmpty().split("|").filter { it.isNotEmpty() }) {
+                val item = ru.gdesanek.model.Catalog.items.firstOrNull { it.type == t } ?: continue
+                recentRow.addView(catalogBtn("★ " + item.label, item.type))
+            }
+        }
+        fun chip(label: String, group: String): TextView = TextView(this).apply {
+            text = label; textSize = 12f; setTextColor(theme.textPrimary); setBackgroundColor(theme.btnActiveBg); setPadding(16, 8, 16, 8)
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginEnd = 6 }
+            setOnClickListener { currentGroup = group; rebuildCatalog() }
+        }
+        chipsRow.addView(chip("Все", ""))
+        for (g in ru.gdesanek.model.Catalog.groups) chipsRow.addView(chip(g, g))
+        searchBox.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+            override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+            override fun afterTextChanged(s: android.text.Editable?) { rebuildCatalog() }
+        })
+        rebuildCatalog(); rebuildRecent()
 
         root.addView(topBar)
         root.addView(View(this).apply { setBackgroundColor(theme.accent); layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 4) })
