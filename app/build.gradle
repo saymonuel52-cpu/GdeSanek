@@ -1,3 +1,4 @@
+def runCode = (System.getenv("GITHUB_RUN_NUMBER") ?: "1000").toInteger() + 1000
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
@@ -9,8 +10,8 @@ android {
         applicationId "ru.gdesanek"
         minSdk 24
         targetSdk 34
-        versionCode 58
-        versionName "5.0-D1-design-previews"
+        versionCode runCode
+        versionName "5.1-" + runCode
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
