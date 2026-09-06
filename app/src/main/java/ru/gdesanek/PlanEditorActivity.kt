@@ -417,8 +417,26 @@ class PlanEditorActivity : AppCompatActivity() {
         }.start()
     }
 
+    private fun renderPreview() {
+        try {
+            val walls = planView.walls
+            if (walls.isEmpty()) return
+            val minX = walls.minOf { minOf(it.x1, it.x2) } - 50f
+            val maxX = walls.maxOf { maxOf(it.x1, it.x2) } + 50f
+            val minY = walls.minOf { minOf(it.y1, it.y2) } - 50f
+            val maxY = walls.maxOf { maxOf(it.y1, it.y2) } + 50f
+            val size = 288
+            val bmp = android.graphics.Bitmap.createBitmap(size, size, android.graphics.Bitmap.Config.ARGB_8888)
+            val c = android.graphics.Canvas(bmp)
+            val sc = minOf(size / (maxX - minX), size / (maxY - minY))
+            val p = android.graphics.Paint().apply { color = ru.gdesanek.theme.Design.ACCENT; strokeWidth = 4f }
+            for (w in walls) c.drawLine((w.x1 - minX) * sc, (w.y1 - minY) * sc, (w.x2 - minX) * sc, (w.y2 - minY) * sc, p)
+            java.io.FileOutputStream(java.io.File(filesDir, "preview_$projectId.png")).use { bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 90, it) }
+        } catch (e: Exception) { }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
-        planView.commitPending()
+        planView.commitPending(); renderPreview()
     }
 }

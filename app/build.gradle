@@ -9,8 +9,8 @@ android {
         applicationId "ru.gdesanek"
         minSdk 24
         targetSdk 34
-        versionCode 57
-        versionName "4.1-catalog-collapse"
+        versionCode 58
+        versionName "5.0-D1-design-previews"
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17

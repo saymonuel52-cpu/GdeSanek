@@ -1,14 +1,17 @@
 package ru.gdesanek.ui
 
-import android.graphics.Color
+import android.graphics.BitmapFactory
 import android.graphics.Typeface
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import ru.gdesanek.model.Project
 import ru.gdesanek.theme.AppTheme
+import ru.gdesanek.theme.Design
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -19,73 +22,43 @@ class ProjectAdapter(
     private val onClick: (Project) -> Unit
 ) : RecyclerView.Adapter<ProjectAdapter.ViewHolder>() {
 
-    class ViewHolder(view: View) : RecyclerView.ViewHolder(view)
+    class ViewHolder(view: View, val title: TextView, val address: TextView, val date: TextView, val preview: ImageView) : RecyclerView.ViewHolder(view)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val card = LinearLayout(parent.context).apply {
+        val ctx = parent.context
+        val card = LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL
             setBackgroundColor(theme.panelBg)
-            layoutParams = RecyclerView.LayoutParams(
-                RecyclerView.LayoutParams.MATCH_PARENT,
-                RecyclerView.LayoutParams.WRAP_CONTENT
-            ).apply {
-                setMargins(16, 8, 16, 8)
-            }
+            layoutParams = RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT).apply { setMargins(Design.dp(10), Design.dp(6), Design.dp(10), Design.dp(6)) }
         }
-
-        // Teal-ребро слева
-        val stripe = View(parent.context).apply {
-            layoutParams = LinearLayout.LayoutParams(12, LinearLayout.LayoutParams.MATCH_PARENT)
-            setBackgroundColor(theme.accent)
-        }
-        card.addView(stripe)
-
-        // Контент
-        val content = LinearLayout(parent.context).apply {
+        val stripe = View(ctx).apply { layoutParams = LinearLayout.LayoutParams(Design.dp(4), LinearLayout.LayoutParams.MATCH_PARENT); setBackgroundColor(theme.accent) }
+        val content = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(24, 20, 24, 20)
-            layoutParams = LinearLayout.LayoutParams(
-                0,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                1f
-            )
+            setPadding(Design.dp(12), Design.dp(10), Design.dp(8), Design.dp(10))
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         }
-
-        val title = TextView(parent.context).apply {
-            textSize = 18f
-            setTextColor(theme.textPrimary)
-            typeface = Typeface.DEFAULT_BOLD
+        val title = TextView(ctx).apply { textSize = Design.sp(Design.TS_L); setTextColor(theme.textPrimary); typeface = Typeface.DEFAULT_BOLD }
+        val address = TextView(ctx).apply { textSize = Design.sp(Design.TS_S); setTextColor(theme.textSecondary); setPadding(0, Design.dp(3), 0, 0) }
+        val date = TextView(ctx).apply { textSize = Design.sp(Design.TS_S); setTextColor(theme.hintColor); setPadding(0, Design.dp(3), 0, 0) }
+        content.addView(title); content.addView(address); content.addView(date)
+        val preview = ImageView(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(Design.dp(76), Design.dp(76))
+            setPadding(Design.dp(8), Design.dp(8), Design.dp(8), Design.dp(8))
+            scaleType = ImageView.ScaleType.FIT_CENTER
         }
-        content.addView(title)
-
-        val address = TextView(parent.context).apply {
-            textSize = 14f
-            setTextColor(theme.textSecondary)
-            setPadding(0, 4, 0, 0)
-        }
-        content.addView(address)
-
-        val date = TextView(parent.context).apply {
-            textSize = 12f
-            setTextColor(theme.hintColor)
-            setPadding(0, 4, 0, 0)
-        }
-        content.addView(date)
-
-        card.addView(content)
-        card.tag = mapOf("title" to title, "address" to address, "date" to date)
-        return ViewHolder(card)
+        card.addView(stripe); card.addView(content); card.addView(preview)
+        return ViewHolder(card, title, address, date, preview)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val project = projects[position]
-        val views = holder.itemView.tag as Map<String, TextView>
-        
-        views["title"]?.text = project.name
-        views["address"]?.text = if (project.address.isNotEmpty()) project.address else "Адрес не указан"
-        views["date"]?.text = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date(project.createdAt))
-        
-        holder.itemView.setOnClickListener { onClick(project) }
+        val p = projects[position]
+        holder.title.text = p.name
+        holder.address.text = if (p.address.isNotEmpty()) p.address else "Адрес не указан"
+        holder.date.text = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date(p.createdAt))
+        val f = File(holder.itemView.context.filesDir, "preview_${p.id}.png")
+        if (f.exists()) { holder.preview.setImageBitmap(BitmapFactory.decodeFile(f.absolutePath)); holder.preview.visibility = View.VISIBLE }
+        else holder.preview.visibility = View.GONE
+        holder.itemView.setOnClickListener { onClick(p) }
     }
 
     override fun getItemCount() = projects.size
