@@ -180,7 +180,7 @@ class PlanEditorActivity : AppCompatActivity() {
                 val old = prefs.getString("list", "").orEmpty().split("|").filter { it.isNotEmpty() }.toMutableList()
                 old.remove(type); old.add(0, type)
                 prefs.edit().putString("list", old.take(6).joinToString("|")).apply()
-                rebuildRecent()
+                // rebuildRecent()
             }
         }
         var currentGroup = ""
