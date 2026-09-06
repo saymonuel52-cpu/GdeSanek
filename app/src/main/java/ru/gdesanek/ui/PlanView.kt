@@ -607,14 +607,25 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
 
     fun fit() {
         if (walls.isEmpty() && objects.isEmpty()) return
-        val minX = minOf(walls.minOf { minOf(it.x1, it.x2) }, objects.minOf { it.x }) - 100f
-        val maxX = maxOf(walls.maxOf { maxOf(it.x1, it.x2) }, objects.maxOf { it.x }) + 100f
-        val minY = minOf(walls.minOf { minOf(it.y1, it.y2) }, objects.minOf { it.y }) - 100f
-        val maxY = maxOf(walls.maxOf { maxOf(it.y1, it.y2) }, objects.maxOf { it.y }) + 100f
+        val wallMinX = if (walls.isNotEmpty()) walls.minOf { minOf(it.x1, it.x2) } else Float.MAX_VALUE
+        val wallMaxX = if (walls.isNotEmpty()) walls.maxOf { maxOf(it.x1, it.x2) } else Float.MIN_VALUE
+        val wallMinY = if (walls.isNotEmpty()) walls.minOf { minOf(it.y1, it.y2) } else Float.MAX_VALUE
+        val wallMaxY = if (walls.isNotEmpty()) walls.maxOf { maxOf(it.y1, it.y2) } else Float.MIN_VALUE
+        
+        val objMinX = if (objects.isNotEmpty()) objects.minOf { it.x } else Float.MAX_VALUE
+        val objMaxX = if (objects.isNotEmpty()) objects.maxOf { it.x } else Float.MIN_VALUE
+        val objMinY = if (objects.isNotEmpty()) objects.minOf { it.y } else Float.MAX_VALUE
+        val objMaxY = if (objects.isNotEmpty()) objects.maxOf { it.y } else Float.MIN_VALUE
+        
+        val minX = minOf(wallMinX, objMinX) - 100f
+        val maxX = maxOf(wallMaxX, objMaxX) + 100f
+        val minY = minOf(wallMinY, objMinY) - 100f
+        val maxY = maxOf(wallMaxY, objMaxY) + 100f
+        
         matrix.reset()
         val sc = minOf(width / (maxX - minX), height / (maxY - minY))
         matrix.postScale(sc, sc)
         matrix.postTranslate(width / 2f - (minX + maxX) / 2f * sc, height / 2f - (minY + maxY) / 2f * sc)
         invalidate()
     }
-}
+
