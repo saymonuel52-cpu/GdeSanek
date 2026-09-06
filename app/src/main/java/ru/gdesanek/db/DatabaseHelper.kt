@@ -21,5 +21,5 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         if (oldVersion < 6) { try { db.execSQL("ALTER TABLE tracks ADD COLUMN color INTEGER DEFAULT -11747600") } catch (e: Exception) {} }
         if (oldVersion < 7) { try { db.execSQL("ALTER TABLE tracks ADD COLUMN cable TEXT DEFAULT '3x2.5'") } catch (e: Exception) {} }
     }
-    companion object { const val DATABASE_NAME = "gdesanek.db"; const val DATABASE_VERSION = 7 }
+    companion object { const val DATABASE_NAME = "gdesanek.db"; const val DATABASE_VERSION = 12 }
 }
