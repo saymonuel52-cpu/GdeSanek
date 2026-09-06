@@ -602,4 +602,19 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         }
         return PlaceSnap(bestX, bestY, bestRot)
     }
+
+    fun zoomBy(f: Float) { matrix.postScale(f, f, width / 2f, height / 2f); invalidate() }
+
+    fun fit() {
+        if (walls.isEmpty() && objects.isEmpty()) return
+        val minX = minOf(walls.minOf { minOf(it.x1, it.x2) }, objects.minOf { it.x }) - 100f
+        val maxX = maxOf(walls.maxOf { maxOf(it.x1, it.x2) }, objects.maxOf { it.x }) + 100f
+        val minY = minOf(walls.minOf { minOf(it.y1, it.y2) }, objects.minOf { it.y }) - 100f
+        val maxY = maxOf(walls.maxOf { maxOf(it.y1, it.y2) }, objects.maxOf { it.y }) + 100f
+        matrix.reset()
+        val sc = minOf(width / (maxX - minX), height / (maxY - minY))
+        matrix.postScale(sc, sc)
+        matrix.postTranslate(width / 2f - (minX + maxX) / 2f * sc, height / 2f - (minY + maxY) / 2f * sc)
+        invalidate()
+    }
 }

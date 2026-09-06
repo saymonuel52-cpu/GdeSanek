@@ -37,6 +37,13 @@ class PlanEditorActivity : AppCompatActivity() {
     private lateinit var planView: PlanView
     private lateinit var contextPanel: LinearLayout
     private lateinit var catalogScroll: HorizontalScrollView
+    private lateinit var btnWall: ru.gdesanek.ui.SkewButton
+    private lateinit var btnElec: ru.gdesanek.ui.SkewButton
+    private lateinit var btnTrack: ru.gdesanek.ui.SkewButton
+    private lateinit var shareBtn: TextView
+    private val stepViews = mutableListOf<TextView>()
+    private lateinit var statusLine: TextView
+    private var currentStep = 0
     private lateinit var theme: AppTheme
     private var projectId = 0L
     private var projectName = "План"
@@ -81,7 +88,7 @@ class PlanEditorActivity : AppCompatActivity() {
             val p = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT); p.marginStart = 8; layoutParams = p
             setOnClickListener { startActivity(Intent(this@PlanEditorActivity, EstimateActivity::class.java).putExtra("PROJECT_ID", projectId)) }
         }
-        val shareBtn = TextView(this).apply { tooltipText = "Отправить PDF";
+        shareBtn = TextView(this).apply { tooltipText = "Отправить PDF";
             setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_share, 0, 0); setBackgroundColor(theme.btnBg); setTextColor(theme.textPrimary); setPadding(12, 8, 12, 8)
             val p = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT); p.marginStart = 8; layoutParams = p
             setOnClickListener { exportPdf() }
@@ -100,11 +107,11 @@ class PlanEditorActivity : AppCompatActivity() {
         fun makeTool(text: String, icon: Int = 0): SkewButton = SkewButton(this@PlanEditorActivity).apply {
             this.text = text; this.iconRes = icon; this.theme = this@PlanEditorActivity.theme; layoutParams = toolParams
         }
-        val btnWall = makeTool("СТЕНА", R.drawable.ic_wall)
+        btnWall = makeTool("СТЕНА", R.drawable.ic_wall)
         val btnPan = makeTool("РУКА", R.drawable.ic_pan)
-        val btnTrack = makeTool("ТРАССА", R.drawable.ic_track)
+        btnTrack = makeTool("ТРАССА", R.drawable.ic_track)
         val btnEdit = makeTool("РЕД", R.drawable.ic_edit)
-        val btnElec = makeTool("ЭЛЕКТ", R.drawable.ic_elec)
+        btnElec = makeTool("ЭЛЕКТ", R.drawable.ic_elec)
         val btnUndo = makeTool("УБРАТЬ", R.drawable.ic_undo)
         toolButtons.addAll(listOf(btnWall, btnPan, btnTrack, btnElec, btnEdit, btnUndo))
 
@@ -166,7 +173,37 @@ class PlanEditorActivity : AppCompatActivity() {
 
         root.addView(topBar)
         root.addView(View(this).apply { setBackgroundColor(theme.accent); layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 4) })
-        root.addView(planView, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
+        val stepper = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setBackgroundColor(theme.toolbarBg); setPadding(8, 6, 8, 6) }
+        val stepNames = arrayOf("1 План", "2 Электрика", "3 Трассы", "4 Смета", "5 PDF")
+        for (i in 0 until 5) {
+            val s = TextView(this).apply {
+                text = stepNames[i]; textSize = 12f; setTextColor(theme.textPrimary)
+                setBackgroundColor(theme.btnBg); setPadding(10, 10, 10, 10)
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { marginEnd = 4 }
+                gravity = android.view.Gravity.CENTER
+                setOnClickListener { onStepClick(i) }
+            }
+            stepViews.add(s); stepper.addView(s)
+        }
+        statusLine = TextView(this).apply { textSize = 12f; setTextColor(ru.gdesanek.theme.Design.DIM); setBackgroundColor(theme.toolbarBg); setPadding(16, 4, 16, 6); typeface = android.graphics.Typeface.MONOSPACE }
+        val frame = android.widget.FrameLayout(this)
+        planView.layoutParams = android.widget.FrameLayout.LayoutParams(android.widget.FrameLayout.LayoutParams.MATCH_PARENT, android.widget.FrameLayout.LayoutParams.MATCH_PARENT)
+        val zoomPanel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = android.widget.FrameLayout.LayoutParams(android.widget.FrameLayout.LayoutParams.WRAP_CONTENT, android.widget.FrameLayout.LayoutParams.WRAP_CONTENT).apply { gravity = android.view.Gravity.END or android.view.Gravity.CENTER_VERTICAL; marginEnd = 8 }
+        }
+        fun zoomBtn(t: String, f: Float): TextView = TextView(this).apply {
+            text = t; textSize = 20f; setTextColor(theme.textPrimary); setBackgroundColor(theme.panelBg)
+            setPadding(22, 14, 22, 14); setOnClickListener { planView.zoomBy(f) }
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { bottomMargin = 6 }
+        }
+        zoomPanel.addView(zoomBtn("+", 1.25f))
+        zoomPanel.addView(zoomBtn("−", 0.8f))
+        zoomPanel.addView(zoomBtn("⤢", 0f).apply { setOnClickListener { planView.fit() } })
+        frame.addView(planView); frame.addView(zoomPanel)
+        root.addView(stepper)
+        root.addView(statusLine)
+        root.addView(frame, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
         root.addView(toolsBar)
         root.addView(contextPanel)
         root.addView(catalogScroll)
@@ -177,6 +214,8 @@ class PlanEditorActivity : AppCompatActivity() {
         planView.loadObjects()
         planView.loadTracks()
         loadUnderlay()
+        updateStepper(); updateStatus()
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(object : Runnable { override fun run() { updateStatus(); updateStepper(); android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(this, 3000) } }, 3000)
 
     }
 
@@ -372,6 +411,8 @@ class PlanEditorActivity : AppCompatActivity() {
                 val f = File(filesDir, "underlay_$projectId.jpg")
                 contentResolver.openInputStream(data.data!!)?.use { inp -> f.outputStream().use { out -> inp.copyTo(out) } }
                 loadUnderlay()
+        updateStepper(); updateStatus()
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(object : Runnable { override fun run() { updateStatus(); updateStepper(); android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(this, 3000) } }, 3000)
 
                 Toast.makeText(this, "Подложка загружена", Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
@@ -435,6 +476,39 @@ class PlanEditorActivity : AppCompatActivity() {
         } catch (e: Exception) { }
     }
 
+
+    private fun onStepClick(i: Int) {
+        currentStep = i
+        when (i) {
+            0 -> btnWall.performClick()
+            1 -> btnElec.performClick()
+            2 -> btnTrack.performClick()
+            3 -> startActivity(android.content.Intent(this, EstimateActivity::class.java).putExtra("PROJECT_ID", projectId).putExtra("PROJECT_NAME", intent.getStringExtra("PROJECT_NAME") ?: ""))
+            4 -> shareBtn.performClick()
+        }
+        updateStepper(); updateStatus()
+    }
+
+    private fun updateStepper() {
+        val names = arrayOf("1 План", "2 Электрика", "3 Трассы", "4 Смета", "5 PDF")
+        for (i in stepViews.indices) {
+            val done = when (i) { 0 -> planView.walls.isNotEmpty(); 1 -> planView.objects.isNotEmpty(); 2 -> planView.tracks.isNotEmpty(); else -> false }
+            stepViews[i].text = names[i] + (if (done) " ✓" else "")
+            stepViews[i].setBackgroundColor(if (i == currentStep) theme.accent else theme.btnBg)
+            stepViews[i].setTextColor(if (i == currentStep) android.graphics.Color.WHITE else theme.textPrimary)
+        }
+    }
+
+    private fun updateStatus() {
+        val hint = when (currentStep) {
+            0 -> "тап — начало стены, тап — конец; оранжевый кружок = привязка"
+            1 -> "выбери символ в каталоге и тапай по плану"
+            2 -> "тапай точки трассы по порядку, финиш в первой точке"
+            3 -> "введи цены — итог снизу, PDF сметы там же"
+            else -> "проверь лист и отправь заказчику"
+        }
+        statusLine.text = String.format("Шаг %d · Стен:%d Точек:%d Трасс:%d · %s", currentStep + 1, planView.walls.size, planView.objects.size, planView.tracks.size, hint)
+    }
     override fun onDestroy() {
         super.onDestroy()
         planView.commitPending(); renderPreview()
