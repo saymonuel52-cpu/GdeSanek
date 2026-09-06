@@ -466,7 +466,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
                             dragObject = hitObj
                             dragStartObj = dragObject?.let { android.graphics.PointF(it.x, it.y) }
                             dragLinkedTracks.clear()
-                            if (dragObject != null) for (t in tracks) { if (t.points.isNotEmpty()) { val fp = t.points.first(); if (sqrt((fp.x - dragObject.x) * (fp.x - dragObject.x) + (fp.y - dragObject.y) * (fp.y - dragObject.y)) < 80f) dragLinkedTracks.add(t.id) } }
+                            val dragObj = dragObj ?: return@let; for (t in tracks) { if (t.points.isNotEmpty()) { val fp = t.points.first(); if (sqrt((fp.x - dragObj.x) * (fp.x - dragObj.x) + (fp.y - dragObj.y) * (fp.y - dragObj.y)) < 80f) dragLinkedTracks.add(t.id) } }
                             dragWall = hitW
                             val selW = walls.firstOrNull { it.id == selectedWallId }
                             dragWallEnd = 0
