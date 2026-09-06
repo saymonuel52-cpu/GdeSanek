@@ -58,6 +58,8 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     var selectedObjectId: Long? = null
     var selectedTrackId: Long? = null
     private var dragObject: PlanObject? = null
+    private var dragStartObj: android.graphics.PointF? = null
+    private val dragLinkedTracks = mutableListOf<Long>()
     private var dragWall: Wall? = null
     private var isDragging = false
     var currentMaterial = "beton"
@@ -462,6 +464,9 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
                             selectedWallId = hitW?.id
                             selectedTrackId = hitT?.id
                             dragObject = hitObj
+                            dragStartObj = android.graphics.PointF(hitObj.x, hitObj.y)
+                            dragLinkedTracks.clear()
+                            for (t in tracks) { if (t.points.isNotEmpty()) { val fp = t.points.first(); if (sqrt((fp.x - hitObj.x) * (fp.x - hitObj.x) + (fp.y - hitObj.y) * (fp.y - hitObj.y)) < 80f) dragLinkedTracks.add(t.id) } }
                             dragWall = hitW
                             val selW = walls.firstOrNull { it.id == selectedWallId }
                             dragWallEnd = 0
@@ -564,6 +569,16 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
                     } else
                     if (isDragging && dragObject != null) {
                         objectRepository?.update(dragObject!!)
+                        val st = dragStartObj
+                        if (st != null && dragLinkedTracks.isNotEmpty()) {
+                            val dx = dragObject!!.x - st.x; val dy = dragObject!!.y - st.y
+                            for (t in tracks) if (dragLinkedTracks.contains(t.id) && t.points.isNotEmpty()) {
+                                val np = t.points.toMutableList(); np[0] = TrackPoint(np[0].x + dx, np[0].y + dy)
+                                val nt = t.copy(points = np); trackRepository?.update(nt)
+                                val ti = tracks.indexOfFirst { it.id == t.id }; if (ti >= 0) tracks[ti] = nt
+                            }
+                        }
+                        dragLinkedTracks.clear(); dragStartObj = null
                     } else if (isDragging && dragWall != null) {
                         repository?.update(dragWall!!)
                     } else if (!isDragging) {

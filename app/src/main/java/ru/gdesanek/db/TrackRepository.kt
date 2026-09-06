@@ -12,6 +12,11 @@ class TrackRepository(context: Context) {
         val values = ContentValues().apply { put("project_id", projectId); put("kind", kind); put("points", points.joinToString(";") { "${it.x},${it.y}" }); put("wiring", wiring); put("color", color); put("cable", cable) }
         return dbHelper.writableDatabase.insert("tracks", null, values)
     }
+    fun update(track: CableTrack) {
+        val v = ContentValues().apply { put("points", track.points.joinToString(";") { "${it.x},${it.y}" }); put("wiring", track.wiring); put("color", track.color); put("cable", track.cable) }
+        dbHelper.writableDatabase.update("tracks", v, "id = ?", arrayOf(track.id.toString()))
+    }
+
     fun delete(id: Long) { dbHelper.writableDatabase.delete("tracks", "id = ?", arrayOf(id.toString())) }
     fun getAll(projectId: Long): List<CableTrack> {
         val cursor = dbHelper.readableDatabase.rawQuery("SELECT * FROM tracks WHERE project_id = ? ORDER BY id", arrayOf(projectId.toString()))
