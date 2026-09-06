@@ -1,8 +1,8 @@
-def runCode = (System.getenv("GITHUB_RUN_NUMBER") ?: "1000").toInteger() + 1000
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
 }
+def runCode = (System.getenv("GITHUB_RUN_NUMBER") ?: "1000").toInteger() + 1000
 android {
     namespace 'ru.gdesanek'
     compileSdk 34
