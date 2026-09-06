@@ -629,3 +629,4 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         invalidate()
     }
 
+}
