@@ -309,6 +309,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
             "Высота (сейчас H=$curH см)",
             "Повернуть на 45°",
             "Дублировать",
+            "Ряд (Array)",
             "Удалить"
         )) { _, i ->
             when (i) {
@@ -329,6 +330,19 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
                 2 -> {
                     val newId = objectRepository?.insert(obj.projectId, obj.type, obj.x + 60f, obj.y + 60f, obj.rotation, obj.name, obj.area) ?: 0L
                     objects.add(obj.copy(id = newId, x = obj.x + 60f, y = obj.y + 60f))
+                }
+                4 -> {
+                    val et = EditText(context).apply { inputType = InputType.TYPE_CLASS_NUMBER; setText("4") }
+                    AlertDialog.Builder(context).setTitle("Сколько в ряду?").setView(et).setPositiveButton("ОК") { _, _ ->
+                        val n = et.text.toString().toIntOrNull() ?: 4
+                        var x = obj.x
+                        for (i in 1 until n) {
+                            x += 100f
+                            val id = objectRepository?.insert(obj.projectId, obj.type, x, obj.y, obj.rotation, obj.name, obj.area, obj.height) ?: 0L
+                            objects.add(PlanObject(id, obj.projectId, obj.type, x, obj.y, obj.rotation, obj.name, obj.area, obj.height))
+                        }
+                        invalidate()
+                    }.setNegativeButton("Отмена", null).show()
                 }
                 3 -> { objectRepository?.delete(obj.id); objects.removeAll { it.id == obj.id }; selectedObjectId = null }
             }
