@@ -1,12 +1,13 @@
 <resources>
     <style name="Theme.GdeSanek" parent="Theme.MaterialComponents.NoActionBar">
-        <item name="colorPrimary">#008C9E</item>
-        <item name="colorPrimaryVariant">#00606D</item>
+        <item name="colorPrimary">#00BFA5</item>
+        <item name="colorPrimaryVariant">#008C9E</item>
         <item name="colorOnPrimary">#FFFFFF</item>
-        <item name="colorSecondary">#D50032</item>
-        <item name="colorSecondaryVariant">#B00020</item>
+        <item name="colorSecondary">#FFA000</item>
+        <item name="colorSecondaryVariant">#FF6D00</item>
         <item name="colorOnSecondary">#FFFFFF</item>
-        <item name="android:statusBarColor">#00606D</item>
-        <item name="android:windowBackground">#101418</item>
+        <item name="android:statusBarColor">#121212</item>
+        <item name="android:navigationBarColor">#121212</item>
+        <item name="android:windowBackground">#121212</item>
     </style>
 </resources>
