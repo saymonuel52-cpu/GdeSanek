@@ -329,7 +329,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
                     }.setNegativeButton("Отмена", null).show()
                 }
                 1 -> {
-                    val upd = obj.copy(rotation = obj.rotation + 45f); objectRepository?.update(upd)
+                    val oldRot = obj.rotation; val upd = obj.copy(rotation = obj.rotation + 45f); objectRepository?.update(upd); undoManager?.push(ru.gdesanek.core.Command.UpdateObject(apply = { objectRepository?.update(upd) }, revert = { objectRepository?.update(upd.copy(rotation = oldRot)) }))
                     val idx = objects.indexOfFirst { it.id == obj.id }; if (idx >= 0) objects[idx] = upd
                 }
                 2 -> {
@@ -591,6 +591,8 @@ undoManager?.push(ru.gdesanek.core.Command.InsertObject(apply = { trackRepositor
                                 val ti = tracks.indexOfFirst { it.id == t.id }; if (ti >= 0) tracks[ti] = nt
                             }
                         }
+                        val newObj = dragObject; val oldObj = if (st != null) newObj?.copy(x = st.x, y = st.y) else null
+                        if (newObj != null && oldObj != null && (newObj.x != oldObj.x || newObj.y != oldObj.y)) undoManager?.push(ru.gdesanek.core.Command.MoveObject(apply = { objectRepository?.update(newObj) }, revert = { objectRepository?.update(oldObj) }))
                         dragLinkedTracks.clear(); dragStartObj = null
                     } else if (isDragging && dragWall != null) {
                         repository?.update(dragWall!!)
