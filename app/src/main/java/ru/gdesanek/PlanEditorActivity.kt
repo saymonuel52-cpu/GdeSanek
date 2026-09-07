@@ -35,6 +35,7 @@ import java.io.File
 
 class PlanEditorActivity : AppCompatActivity() {
     private lateinit var planView: PlanView
+    private val undoManager = ru.gdesanek.core.UndoManager(50)
     private lateinit var contextPanel: LinearLayout
     private lateinit var catalogScroll: View
     private lateinit var btnWall: ru.gdesanek.ui.SkewButton
@@ -93,12 +94,15 @@ class PlanEditorActivity : AppCompatActivity() {
             val p = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT); p.marginStart = 8; layoutParams = p
             setOnClickListener { exportPdf() }
         }
+        val undoBtn = TextView(this).apply { text = "↶"; textSize = 20f; setTextColor(theme.textPrimary); setPadding(12, 8, 12, 8); setOnClickListener { if (undoManager.undo()) planView.invalidate() } }
+        val redoBtn = TextView(this).apply { text = "↷"; textSize = 20f; setTextColor(theme.textPrimary); setPadding(12, 8, 12, 8); setOnClickListener { if (undoManager.redo()) planView.invalidate() } }
         val clientBtn = TextView(this).apply { text = "👁"; textSize = 18f; setTextColor(theme.textPrimary); setPadding(12, 8, 12, 8); setOnClickListener { startActivity(android.content.Intent(this@PlanEditorActivity, ClientActivity::class.java).putExtra("PROJECT_ID", projectId).putExtra("PROJECT_NAME", intent.getStringExtra("PROJECT_NAME") ?: "План")) } }
-        topBar.addView(menuBtn); topBar.addView(backBtn); topBar.addView(title); topBar.addView(underlayBtn); topBar.addView(estimateBtn); topBar.addView(clientBtn); topBar.addView(shareBtn)
+        topBar.addView(menuBtn); topBar.addView(backBtn); topBar.addView(undoBtn); topBar.addView(redoBtn); topBar.addView(title); topBar.addView(underlayBtn); topBar.addView(estimateBtn); topBar.addView(clientBtn); topBar.addView(shareBtn)
 
         planView = PlanView(this)
         planView.projectId = projectId
         planView.repository = WallRepository(this)
+        planView.undoManager = undoManager
         planView.objectRepository = ObjectRepository(this)
         planView.trackRepository = TrackRepository(this)
         planView.applyTheme(theme)

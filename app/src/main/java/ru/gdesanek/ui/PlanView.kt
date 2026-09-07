@@ -41,6 +41,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     var currentTool = Tool.DRAW_WALL
     var placeType: String? = null
     var projectId: Long = 0
+    var undoManager: ru.gdesanek.core.UndoManager? = null
     var repository: WallRepository? = null
     var objectRepository: ObjectRepository? = null
     var trackRepository: TrackRepository? = null
@@ -349,7 +350,15 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
                         invalidate()
                     }.setNegativeButton("Отмена", null).show()
                 }
-                3 -> { objectRepository?.delete(obj.id); objects.removeAll { it.id == obj.id }; selectedObjectId = null; haptic(50) }
+                3 -> {
+                    val snapshot = obj.copy()
+                    val mgr = undoManager
+                    mgr?.push(ru.gdesanek.core.Command.DeleteObject(
+                        apply = { objectRepository?.delete(snapshot.id); objects.removeAll { it.id == snapshot.id }; invalidate() },
+                        revert = { objectRepository?.insert(snapshot.projectId, snapshot.type, snapshot.x, snapshot.y, snapshot.rotation, snapshot.name, snapshot.area, snapshot.height); reloadObjects() }
+                    ))
+                    objectRepository?.delete(obj.id); objects.removeAll { it.id == obj.id }; selectedObjectId = null; haptic(50)
+                }
             }
             invalidate()
         }.show()
@@ -674,5 +683,13 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
             val v = context.getSystemService(android.content.Context.VIBRATOR_SERVICE) as android.os.Vibrator
             if (android.os.Build.VERSION.SDK_INT >= 26) v.vibrate(android.os.VibrationEffect.createOneShot(ms, android.os.VibrationEffect.DEFAULT_AMPLITUDE)) else @Suppress("DEPRECATION") v.vibrate(ms)
         } catch (e: Exception) { }
+    }
+
+    private fun reloadObjects() {
+        objectRepository?.let { repo ->
+            objects.clear()
+            objects.addAll(repo.getAll(projectId))
+            invalidate()
+        }
     }
 }
