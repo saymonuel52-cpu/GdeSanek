@@ -93,6 +93,7 @@ class PlanEditorActivity : AppCompatActivity() {
             val p = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT); p.marginStart = 8; layoutParams = p
             setOnClickListener { exportPdf() }
         }
+        val clientBtn = TextView(this).apply { text = "👁"; textSize = 18f; setTextColor(theme.textPrimary); setPadding(12, 8, 12, 8); setOnClickListener { startActivity(android.content.Intent(this@PlanEditorActivity, ClientActivity::class.java).putExtra("PROJECT_ID", projectId).putExtra("PROJECT_NAME", intent.getStringExtra("PROJECT_NAME") ?: "План")) } }
         topBar.addView(menuBtn); topBar.addView(backBtn); topBar.addView(title); topBar.addView(underlayBtn); topBar.addView(estimateBtn); topBar.addView(clientBtn); topBar.addView(shareBtn)
 
         planView = PlanView(this)

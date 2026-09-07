@@ -28,7 +28,7 @@ class ClientActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        val theme = AppTheme.fromPrefs(this)
+        val theme = ru.gdesanek.theme.ThemeManager.current(this)
         projectId = intent.getLongExtra("PROJECT_ID", 0L)
         val projectName = intent.getStringExtra("PROJECT_NAME") ?: "План"
 
@@ -103,7 +103,7 @@ class ClientActivity : Activity() {
         val walls = WallRepository(this).getAll(projectId)
         val objects = ObjectRepository(this).getAll(projectId)
         val tracks = TrackRepository(this).getAll(projectId)
-        planView.bindData(walls, objects, tracks, emptyList(), emptyList())
+        planView.projectId = projectId; planView.repository = WallRepository(this); planView.objectRepository = ObjectRepository(this); planView.trackRepository = TrackRepository(this); planView.walls.addAll(walls); planView.objects.addAll(objects); planView.tracks.addAll(tracks); planView.invalidate()
         planView.post { planView.fit() }
     }
 
