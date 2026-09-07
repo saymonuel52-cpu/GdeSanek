@@ -445,6 +445,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
             val pts = currentTrackPoints.toList()
             Toast.makeText(context, String.format("Трасса: %.1f м (запас x1.1 = %.1f м)", meters, meters * 1.1f), Toast.LENGTH_LONG).show()
             val id = trackRepository?.insert(projectId, "power", pts, currentWiring) ?: 0L; tracks.add(CableTrack(id, projectId, "power", pts, currentWiring, currentTrackColor, currentCable))
+undoManager?.push(ru.gdesanek.core.Command.InsertObject(apply = { trackRepository?.insert(projectId, "power", pts, currentWiring) }, revert = { trackRepository?.delete(id) }))
         }
         currentTrackPoints.clear(); fingerOn = false
         invalidate()
@@ -607,6 +608,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
                     if (dx * dx + dy * dy > 100) {
                         val id = repository?.insert(projectId, w.x1, w.y1, w.x2, w.y2, currentMaterial, currentThickness) ?: 0L
                         walls.add(Wall(id, projectId, w.x1, w.y1, w.x2, w.y2, currentMaterial, currentThickness))
+undoManager?.push(ru.gdesanek.core.Command.InsertObject(apply = { repository?.insert(projectId, w.x1, w.y1, w.x2, w.y2, currentMaterial, currentThickness) }, revert = { repository?.delete(id) }))
                         currentWall = Wall(projectId = projectId, x1 = w.x2, y1 = w.y2, x2 = w.x2, y2 = w.y2)
                     } else currentWall = null
                     invalidate()
@@ -620,6 +622,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
                         else {
                             val s = snapPointForPlace(pt.x, pt.y)
                             val savedId = objectRepository?.insert(projectId, placeType!!, s.x, s.y, s.rot) ?: 0L
+undoManager?.push(ru.gdesanek.core.Command.InsertObject(apply = { objectRepository?.insert(projectId, placeType!!, s.x, s.y, s.rot) }, revert = { objectRepository?.delete(savedId) }))
                             haptic()
                             objects.add(PlanObject(savedId, projectId, placeType!!, s.x, s.y, s.rot)); invalidate()
                         }
@@ -692,4 +695,5 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
             invalidate()
         }
     }
+    fun reloadAll() { repository?.let { walls.clear(); walls.addAll(it.getAll(projectId)) }; objectRepository?.let { objects.clear(); objects.addAll(it.getAll(projectId)) }; trackRepository?.let { tracks.clear(); tracks.addAll(it.getAll(projectId)) }; invalidate() }
 }

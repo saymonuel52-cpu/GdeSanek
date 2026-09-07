@@ -94,8 +94,8 @@ class PlanEditorActivity : AppCompatActivity() {
             val p = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT); p.marginStart = 8; layoutParams = p
             setOnClickListener { exportPdf() }
         }
-        val undoBtn = TextView(this).apply { text = "↶"; textSize = 20f; setTextColor(theme.textPrimary); setPadding(12, 8, 12, 8); setOnClickListener { if (undoManager.undo()) planView.invalidate() } }
-        val redoBtn = TextView(this).apply { text = "↷"; textSize = 20f; setTextColor(theme.textPrimary); setPadding(12, 8, 12, 8); setOnClickListener { if (undoManager.redo()) planView.invalidate() } }
+        val undoBtn = TextView(this).apply { text = "↶"; textSize = 20f; setTextColor(theme.textPrimary); setPadding(12, 8, 12, 8); setOnClickListener { if (undoManager.undo()) planView.reloadAll() } }
+        val redoBtn = TextView(this).apply { text = "↷"; textSize = 20f; setTextColor(theme.textPrimary); setPadding(12, 8, 12, 8); setOnClickListener { if (undoManager.redo()) planView.reloadAll() } }
         val clientBtn = TextView(this).apply { text = "👁"; textSize = 18f; setTextColor(theme.textPrimary); setPadding(12, 8, 12, 8); setOnClickListener { startActivity(android.content.Intent(this@PlanEditorActivity, ClientActivity::class.java).putExtra("PROJECT_ID", projectId).putExtra("PROJECT_NAME", intent.getStringExtra("PROJECT_NAME") ?: "План")) } }
         topBar.addView(menuBtn); topBar.addView(backBtn); topBar.addView(undoBtn); topBar.addView(redoBtn); topBar.addView(title); topBar.addView(underlayBtn); topBar.addView(estimateBtn); topBar.addView(clientBtn); topBar.addView(shareBtn)
 
@@ -117,8 +117,6 @@ class PlanEditorActivity : AppCompatActivity() {
         btnTrack = makeTool("ТРАССА", R.drawable.ic_track)
         val btnEdit = makeTool("РЕД", R.drawable.ic_edit)
         btnElec = makeTool("ЭЛЕКТ", R.drawable.ic_elec)
-        val btnUndo = makeTool("УБРАТЬ", R.drawable.ic_undo)
-        toolButtons.addAll(listOf(btnWall, btnPan, btnTrack, btnElec, btnEdit, btnUndo))
 
         fun highlightTool(sel: SkewButton?) { toolButtons.forEach { it.isActive = it == sel } }
         fun highlightCatalog(sel: TextView?) { catalogButtons.forEach { it.setBackgroundColor(if (it == sel) theme.btnActiveBg else theme.btnBg) } }
@@ -133,21 +131,7 @@ class PlanEditorActivity : AppCompatActivity() {
             highlightTool(btnEdit); highlightCatalog(null); hideContext()
             planView.invalidate()
         }
-        btnUndo.setOnClickListener {
-            val t = when {
-                planView.tracks.isNotEmpty() -> "трасса"
-                planView.objects.isNotEmpty() -> "объект"
-                planView.walls.isNotEmpty() -> "стена"
-                else -> null
-            }
-            if (t == null) Toast.makeText(this, "Нечего убирать", Toast.LENGTH_SHORT).show()
-            else AlertDialog.Builder(this).setTitle("Убрать: $t?").setPositiveButton("Убрать") { _, _ ->
-                planView.undo()
-                com.google.android.material.snackbar.Snackbar.make(root, "Убрано: $t", 5000).setAction("Вернуть") { planView.restoreLast() }.show()
-            }.setNegativeButton("Отмена", null).show()
-        }
 
-        toolsBar.addView(btnWall); toolsBar.addView(btnPan); toolsBar.addView(btnTrack); toolsBar.addView(btnElec); toolsBar.addView(btnEdit); toolsBar.addView(btnUndo)
 
         contextPanel = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
