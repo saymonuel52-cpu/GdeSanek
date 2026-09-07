@@ -117,6 +117,8 @@ class PlanEditorActivity : AppCompatActivity() {
         btnTrack = makeTool("ТРАССА", R.drawable.ic_track)
         val btnEdit = makeTool("РЕД", R.drawable.ic_edit)
         btnElec = makeTool("ЭЛЕКТ", R.drawable.ic_elec)
+        toolsBar.addView(btnWall); toolsBar.addView(btnPan); toolsBar.addView(btnTrack); toolsBar.addView(btnElec); toolsBar.addView(btnEdit)
+        toolButtons.addAll(listOf(btnWall, btnPan, btnTrack, btnElec, btnEdit))
 
         fun highlightTool(sel: SkewButton?) { toolButtons.forEach { it.isActive = it == sel } }
         fun highlightCatalog(sel: TextView?) { catalogButtons.forEach { it.setBackgroundColor(if (it == sel) theme.btnActiveBg else theme.btnBg) } }
