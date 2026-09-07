@@ -551,7 +551,7 @@ class PlanEditorActivity : AppCompatActivity() {
             3 -> "введи цены — итог снизу, PDF сметы там же"
             else -> "проверь лист и отправь заказчику"
         }
-        statusLine.text = String.format("Шаг %d · Стен:%d Точек:%d Трасс:%d · %s", currentStep + 1, planView.walls.size, planView.objects.size, planView.tracks.size, hint)
+        val live = planView.liveTrackMeters(); statusLine.text = if (live > 0f) String.format("Кабель: %.1f m (запас 10%%)", live) else String.format("Шаг %d · Стен:%d Точек:%d Трасс:%d · %s", currentStep + 1, planView.walls.size, planView.objects.size, planView.tracks.size, hint)
     }
     override fun onDestroy() {
         super.onDestroy()

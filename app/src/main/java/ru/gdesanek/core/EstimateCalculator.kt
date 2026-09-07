@@ -13,7 +13,7 @@ object EstimateCalculator {
         for (t in tracks) for (i in 0 until t.points.size - 1) {
             s += sqrt((t.points[i+1].x - t.points[i].x).pow(2) + (t.points[i+1].y - t.points[i].y).pow(2))
         }
-        return s / 100f * 1.1f
+        return kotlin.math.ceil(s / 100f * 1.1f)
     }
 
     fun rows(objects: List<PlanObject>, tracks: List<CableTrack>): List<EstimateRow> {

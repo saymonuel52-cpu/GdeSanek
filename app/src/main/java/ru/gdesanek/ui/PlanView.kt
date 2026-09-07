@@ -204,6 +204,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         }
         for (i in 0 until currentTrackPoints.size - 1) canvas.drawLine(currentTrackPoints[i].x, currentTrackPoints[i].y, currentTrackPoints[i+1].x, currentTrackPoints[i+1].y, tempTrackPaint)
         if (currentTrackPoints.isNotEmpty() && fingerOn) { val l = currentTrackPoints.last(); canvas.drawLine(l.x, l.y, fingerX, fingerY, tempTrackPaint) }
+        if (currentTrackPoints.isNotEmpty() && fingerOn) { val lt = currentTrackPoints.last(); val total = (trackLength(currentTrackPoints) + sqrt((fingerX - lt.x).pow(2) + (fingerY - lt.y).pow(2))) * 1.1f / 100f; canvas.drawText(String.format("%.1f m (x1.1)", total), fingerX + 24f, fingerY - 24f, hintPaint) }
         for (obj in objects) {
             symPaint.color = SymbolPalette.color(obj.type); GostSymbols.draw(canvas, obj.type, obj.x, obj.y, obj.rotation, symPaint)
             SymbolPalette.height(obj.type)?.let { h -> canvas.drawText("H=" + h, obj.x + 28f, obj.y - 28f, labelPaint) }
@@ -658,4 +659,10 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         invalidate()
     }
 
+
+    fun liveTrackMeters(): Float {
+        if (currentTrackPoints.isEmpty() || !fingerOn) return 0f
+        val l = currentTrackPoints.last()
+        return (trackLength(currentTrackPoints) + sqrt((fingerX - l.x).pow(2) + (fingerY - l.y).pow(2))) * 1.1f / 100f
+    }
 }
