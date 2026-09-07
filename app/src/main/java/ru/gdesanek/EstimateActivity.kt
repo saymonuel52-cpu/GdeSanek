@@ -43,6 +43,40 @@ class EstimateActivity : AppCompatActivity() {
         val tracks = TrackRepository(this).getAll(projectId)
         rows = EstimateCalculator.rows(objects, tracks)
 
+        if (objects.isEmpty() && tracks.isEmpty()) {
+        val rootLayout = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(theme.canvasBg) }
+            val emptyBox = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = android.view.Gravity.CENTER
+                setBackgroundColor(theme.canvasBg)
+                setPadding(64, 64, 64, 64)
+            }
+            val icon = TextView(this).apply { text = "📋"; textSize = 72f; gravity = android.view.Gravity.CENTER; setTextColor(theme.textPrimary) }
+            val titleE = TextView(this).apply {
+                text = "Смета пока пуста"
+                textSize = 20f; setTextColor(theme.textPrimary); typeface = Typeface.DEFAULT_BOLD
+                gravity = android.view.Gravity.CENTER; setPadding(0, 24, 0, 8)
+            }
+            val msg = TextView(this).apply {
+                text = "Добавьте стены и точки в редакторе,\nчтобы увидеть расчёт материалов"
+                textSize = 15f; setTextColor(theme.textSecondary); gravity = android.view.Gravity.CENTER
+                setPadding(0, 0, 0, 32)
+            }
+            val openBtn = TextView(this).apply {
+                text = "← Открыть план"
+                textSize = 16f; setTextColor(Color.WHITE); typeface = Typeface.DEFAULT_BOLD
+                setBackgroundColor(theme.btnBg); setPadding(48, 20, 48, 20)
+                gravity = android.view.Gravity.CENTER
+                setOnClickListener { finish() }
+            }
+            emptyBox.addView(icon); emptyBox.addView(titleE); emptyBox.addView(msg); emptyBox.addView(openBtn)
+            rootLayout.addView(emptyBox, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f
+            ))
+            setContentView(rootLayout)
+            return
+        }
+
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(theme.canvasBg)
