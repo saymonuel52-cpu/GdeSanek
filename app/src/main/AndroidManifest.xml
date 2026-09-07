@@ -13,6 +13,7 @@
         <activity android:name=".PlanEditorActivity" />
         <activity android:name=".EstimateActivity" />
         <activity android:name=".ClientActivity" android:theme="@style/Theme.GdeSanek" />
+        <activity android:name=".OnboardingActivity" android:theme="@style/Theme.GdeSanek" />
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

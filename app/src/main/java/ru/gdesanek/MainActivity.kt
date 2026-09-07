@@ -30,6 +30,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (!getSharedPreferences("app", MODE_PRIVATE).getBoolean("onboarded", false)) startActivity(android.content.Intent(this, OnboardingActivity::class.java))
         showCrashLogIfAny()
         val theme = ThemeManager.current(this)
         try {

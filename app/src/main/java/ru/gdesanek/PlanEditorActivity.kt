@@ -483,8 +483,8 @@ class PlanEditorActivity : AppCompatActivity() {
         planView.onUnderlayChanged = {
             prefs.edit().putFloat("us_$projectId", planView.underlayScale).putFloat("ux_$projectId", planView.underlayX).putFloat("uy_$projectId", planView.underlayY).apply()
         }
-    }
 
+    }
     private fun exportPdf() {
         Toast.makeText(this, "Формируем PDF...", Toast.LENGTH_SHORT).show()
         Thread {
@@ -494,14 +494,50 @@ class PlanEditorActivity : AppCompatActivity() {
             val file = PdfExporter.export(this, projectName, projectId, walls, objects, tracks)
             runOnUiThread {
                 val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
-                val send = Intent(Intent.ACTION_SEND)
-                send.type = "application/pdf"
-                send.putExtra(Intent.EXTRA_STREAM, uri)
-                send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                startActivity(Intent.createChooser(send, "Отправить PDF"))
+                showShareDialog(uri, file)
             }
         }.start()
     }
+
+    private fun showShareDialog(uri: android.net.Uri, file: java.io.File) {
+        val names = arrayOf("WhatsApp", "Telegram", "Сохранить", "Другое…")
+        AlertDialog.Builder(this)
+            .setTitle("Отправить PDF")
+            .setItems(names) { _, which ->
+                when (which) {
+                    0 -> sendTo("com.whatsapp", uri)
+                    1 -> sendTo("org.telegram.messenger", uri)
+                    2 -> saveToFiles(file)
+                    3 -> {
+                        val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                            type = "application/pdf"; putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+                        startActivity(android.content.Intent.createChooser(send, "Отправить"))
+                    }
+                }
+            }
+            .setNegativeButton("Отмена", null)
+            .show()
+    }
+
+    private fun sendTo(pkg: String, uri: android.net.Uri) {
+        val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+            type = "application/pdf"; putExtra(android.content.Intent.EXTRA_STREAM, uri)
+            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            setPackage(pkg)
+        }
+        try { startActivity(send) } catch (e: Exception) { Toast.makeText(this, "Приложение не установлено", Toast.LENGTH_SHORT).show() }
+    }
+
+    private fun saveToFiles(file: java.io.File) {
+        val dir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
+        dir.mkdirs()
+        val dest = java.io.File(dir, file.name)
+        file.copyTo(dest, overwrite = true)
+        Toast.makeText(this, "Сохранено в Downloads/${file.name}", Toast.LENGTH_LONG).show()
+    }
+
 
     private fun renderPreview() {
         try {
