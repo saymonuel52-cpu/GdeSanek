@@ -4,3 +4,4 @@ app/build/
 local.properties
 hs_err_pid*.log
 local.properties
+release-key.jks

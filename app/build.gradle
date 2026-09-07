@@ -11,7 +11,7 @@ android {
         minSdk 24
         targetSdk 34
         versionCode runCode
-        versionName "5.1-" + runCode
+        versionName "1.0.0"
     }
     signingConfigs {
         debug {
@@ -21,14 +21,23 @@ android {
             keyPassword "android"
             storeType "PKCS12"
         }
+        release {
+            storeFile file("../release-key.jks")
+            storePassword "ChangeMe123"
+            keyAlias "gdesanek-release"
+            keyPassword "ChangeMe123"
+            storeType "JKS"
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            signingConfig signingConfigs.debug
-            minifyEnabled false
+            signingConfig signingConfigs.release
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
     compileOptions {
