@@ -21,21 +21,13 @@ android {
             keyPassword "android"
             storeType "PKCS12"
         }
-        if (rootProject.file("release-key.jks").exists()) {
-            release {
-                storeFile rootProject.file("release-key.jks")
-                storePassword System.getenv("KEY_STORE_PASSWORD") ?: "ChangeMe123"
-                keyAlias "gdesanek-release"
-                keyPassword System.getenv("KEY_PASSWORD") ?: "ChangeMe123"
-            }
-        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            if (signingConfigs.findByName("release") != null) signingConfig signingConfigs.release
+            signingConfig signingConfigs.debug
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
