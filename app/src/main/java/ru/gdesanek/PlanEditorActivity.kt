@@ -594,4 +594,13 @@ class PlanEditorActivity : AppCompatActivity() {
         super.onDestroy()
         planView.commitPending(); renderPreview()
     }
+
+    private fun showCatalogPanel() {
+        if (catalogScroll.visibility == View.VISIBLE) return
+        catalogScroll.visibility = View.VISIBLE
+        catalogScroll.post {
+            catalogScroll.translationY = catalogScroll.height.toFloat()
+            catalogScroll.animate().translationY(0f).setDuration(220).start()
+        }
+    }
 }

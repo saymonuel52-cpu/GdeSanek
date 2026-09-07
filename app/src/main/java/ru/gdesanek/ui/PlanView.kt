@@ -216,6 +216,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         if (calibrating) canvas.drawText("Калибровка: отметь 2 точки", width / 2f, height / 2f, hintPaint)
         else if (currentTool == Tool.EDIT) canvas.drawText("РЕДАКТ: тапни или перетащи", width / 2f, height / 2f, hintPaint)
         else if (currentTool == Tool.DRAW_TRACK && currentTrackPoints.isEmpty()) canvas.drawText("Трасса: тапай точки", width / 2f, height / 2f, hintPaint)
+        if (currentTool == Tool.DRAW_WALL && walls.isEmpty()) canvas.drawText("Стены: тапай начало и конец стены", width / 2f, height / 2f, hintPaint)
         else if (walls.isEmpty() && objects.isEmpty() && currentWall == null && underlay == null) canvas.drawText("Выбери инструмент снизу", width / 2f, height / 2f, hintPaint)
     }
 
@@ -332,6 +333,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
                 }
                 2 -> {
                     val newId = objectRepository?.insert(obj.projectId, obj.type, obj.x + 60f, obj.y + 60f, obj.rotation, obj.name, obj.area) ?: 0L
+                    haptic()
                     objects.add(obj.copy(id = newId, x = obj.x + 60f, y = obj.y + 60f))
                 }
                 4 -> {
@@ -347,7 +349,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
                         invalidate()
                     }.setNegativeButton("Отмена", null).show()
                 }
-                3 -> { objectRepository?.delete(obj.id); objects.removeAll { it.id == obj.id }; selectedObjectId = null }
+                3 -> { objectRepository?.delete(obj.id); objects.removeAll { it.id == obj.id }; selectedObjectId = null; haptic(50) }
             }
             invalidate()
         }.show()
@@ -609,6 +611,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
                         else {
                             val s = snapPointForPlace(pt.x, pt.y)
                             val savedId = objectRepository?.insert(projectId, placeType!!, s.x, s.y, s.rot) ?: 0L
+                            haptic()
                             objects.add(PlanObject(savedId, projectId, placeType!!, s.x, s.y, s.rot)); invalidate()
                         }
                     }
@@ -664,5 +667,12 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         if (currentTrackPoints.isEmpty() || !fingerOn) return 0f
         val l = currentTrackPoints.last()
         return (trackLength(currentTrackPoints) + sqrt((fingerX - l.x).pow(2) + (fingerY - l.y).pow(2))) * 1.1f / 100f
+    }
+
+    private fun haptic(ms: Long = 30) {
+        try {
+            val v = context.getSystemService(android.content.Context.VIBRATOR_SERVICE) as android.os.Vibrator
+            if (android.os.Build.VERSION.SDK_INT >= 26) v.vibrate(android.os.VibrationEffect.createOneShot(ms, android.os.VibrationEffect.DEFAULT_AMPLITUDE)) else @Suppress("DEPRECATION") v.vibrate(ms)
+        } catch (e: Exception) { }
     }
 }
