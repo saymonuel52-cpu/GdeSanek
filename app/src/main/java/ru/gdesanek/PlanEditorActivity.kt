@@ -103,6 +103,7 @@ class PlanEditorActivity : AppCompatActivity() {
         planView.projectId = projectId
         planView.repository = WallRepository(this)
         planView.undoManager = undoManager
+        planView.post { planView.fitToContent() }
         planView.objectRepository = ObjectRepository(this)
         planView.trackRepository = TrackRepository(this)
         planView.applyTheme(theme)

@@ -208,7 +208,6 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         if (currentTrackPoints.isNotEmpty() && fingerOn) { val lt = currentTrackPoints.last(); val total = (trackLength(currentTrackPoints) + sqrt((fingerX - lt.x).pow(2) + (fingerY - lt.y).pow(2))) * 1.1f / 100f; canvas.drawText(String.format("%.1f m (x1.1)", total), fingerX + 24f, fingerY - 24f, hintPaint) }
         for (obj in objects) {
             symPaint.color = SymbolPalette.color(obj.type); GostSymbols.draw(canvas, obj.type, obj.x, obj.y, obj.rotation, symPaint)
-            SymbolPalette.power(obj.type)?.let { w -> canvas.drawText(w.toString() + " Вт", obj.x + 28f, obj.y + 60f, labelPaint) }
             if (obj.id == selectedObjectId) canvas.drawCircle(obj.x, obj.y, 35f, selectionPaint)
         }
         for (p in calibPoints) { canvas.drawLine(p.x - 20f, p.y, p.x + 20f, p.y, calibPaint); canvas.drawLine(p.x, p.y - 20f, p.x, p.y + 20f, calibPaint) }
@@ -218,6 +217,23 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         else if (currentTool == Tool.DRAW_TRACK && currentTrackPoints.isEmpty()) canvas.drawText("Трасса: тапай точки", width / 2f, height / 2f, hintPaint)
         if (currentTool == Tool.DRAW_WALL && walls.isEmpty()) canvas.drawText("Стены: тапай начало и конец стены", width / 2f, height / 2f, hintPaint)
         else if (walls.isEmpty() && objects.isEmpty() && currentWall == null && underlay == null) canvas.drawText("Выбери инструмент снизу", width / 2f, height / 2f, hintPaint)
+    }
+
+    fun fitToContent() {
+        if (walls.isEmpty() && objects.isEmpty()) return
+        var minX = Float.MAX_VALUE; var minY = Float.MAX_VALUE; var maxX = -Float.MAX_VALUE; var maxY = -Float.MAX_VALUE
+        for (w in walls) {
+            minX = minOf(minX, w.x1, w.x2); maxX = maxOf(maxX, w.x1, w.x2)
+            minY = minOf(minY, w.y1, w.y2); maxY = maxOf(maxY, w.y1, w.y2)
+        }
+        for (o in objects) { minX = minOf(minX, o.x); maxX = maxOf(maxX, o.x); minY = minOf(minY, o.y); maxY = maxOf(maxY, o.y) }
+        val pad = 120f
+        val bw = maxX - minX + pad * 2; val bh = maxY - minY + pad * 2
+        val sc = minOf(width / bw, height / bh)
+        matrix.reset()
+        matrix.postScale(sc, sc)
+        matrix.postTranslate(width / 2f - (minX + maxX) / 2f * sc, height / 2f - (minY + maxY) / 2f * sc)
+        invalidate()
     }
 
     private fun screenToCanvas(x: Float, y: Float): PointF {
