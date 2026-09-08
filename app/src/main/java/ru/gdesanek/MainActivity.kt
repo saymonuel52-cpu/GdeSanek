@@ -66,7 +66,7 @@ class MainActivity : AppCompatActivity() {
                     setMargins(48, 48, 48, 48)
                 }
                 setOnClickListener {
-                    val pid = ru.gdesanek.demo.DemoProject.load(this@MainActivity)
+                    val pid: Long = ru.gdesanek.demo.DemoProject.load(this@MainActivity)
                     val intent = Intent(this@MainActivity, PlanEditorActivity::class.java)
                     intent.putExtra("PROJECT_ID", pid)
                     intent.putExtra("PROJECT_NAME", "Демо: Кухня-гостиная")
