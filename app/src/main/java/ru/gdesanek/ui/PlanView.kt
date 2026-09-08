@@ -208,7 +208,6 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         if (currentTrackPoints.isNotEmpty() && fingerOn) { val lt = currentTrackPoints.last(); val total = (trackLength(currentTrackPoints) + sqrt((fingerX - lt.x).pow(2) + (fingerY - lt.y).pow(2))) * 1.1f / 100f; canvas.drawText(String.format("%.1f m (x1.1)", total), fingerX + 24f, fingerY - 24f, hintPaint) }
         for (obj in objects) {
             symPaint.color = SymbolPalette.color(obj.type); GostSymbols.draw(canvas, obj.type, obj.x, obj.y, obj.rotation, symPaint)
-            SymbolPalette.height(obj.type)?.let { h -> canvas.drawText("H=" + h, obj.x + 28f, obj.y - 28f, labelPaint) }
             SymbolPalette.power(obj.type)?.let { w -> canvas.drawText(w.toString() + " Вт", obj.x + 28f, obj.y + 60f, labelPaint) }
             if (obj.id == selectedObjectId) canvas.drawCircle(obj.x, obj.y, 35f, selectionPaint)
         }

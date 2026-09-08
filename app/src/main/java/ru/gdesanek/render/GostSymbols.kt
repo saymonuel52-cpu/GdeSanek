@@ -54,7 +54,7 @@ object GostSymbols {
 
     private fun stroke(paint: Paint, w: Float = 4f) = Paint(paint).apply { style = Paint.Style.STROKE; strokeWidth = w; isAntiAlias = true }
     private fun fill(paint: Paint) = Paint(paint).apply { style = Paint.Style.FILL; isAntiAlias = true }
-    private fun text(paint: Paint, s: Float) = Paint(paint).apply { textSize = s; textAlign = Paint.Align.CENTER; isAntiAlias = true }
+    private fun text(paint: Paint, s: Float) = Paint(paint).apply { style = Paint.Style.FILL; textSize = s; textAlign = Paint.Align.CENTER; isAntiAlias = true }
 
     private fun drawSocketN(canvas: Canvas, x: Float, y: Float, rot: Float, paint: Paint, n: Int, ip44: Boolean) {
         canvas.save(); canvas.translate(x, y); canvas.rotate(rot)
@@ -206,8 +206,8 @@ object GostSymbols {
 
     private fun drawWeakCurrent(canvas: Canvas, x: Float, y: Float, rot: Float, paint: Paint, label: String) {
         canvas.save(); canvas.translate(x, y); canvas.rotate(rot)
-        canvas.drawRect(RectF(-17f, -12f, 17f, 12f), stroke(paint, 3f))
-        canvas.drawText(label, 0f, 4f, text(paint, 10f))
+        canvas.drawRect(RectF(-19f, -13f, 19f, 13f), stroke(paint, 3f))
+        canvas.drawText(label, 0f, 4f, text(paint, 12f))
         canvas.restore()
     }
 
