@@ -91,7 +91,19 @@ class MainActivity : AppCompatActivity() {
 
             repository = ProjectRepository(this)
             recyclerView.layoutManager = LinearLayoutManager(this)
-            adapter = ProjectAdapter(projects, theme) { project ->
+            adapter = ProjectAdapter(projects, theme, onLongClick = { project ->
+                AlertDialog.Builder(this)
+                    .setTitle("Удалить проект?")
+                    .setMessage("«" + project.name + "» будет удалён вместе со всеми стенами, точками и трассами.")
+                    .setPositiveButton("Удалить") { _, _ ->
+                        repository.deleteProject(project.id)
+                        java.io.File(filesDir, "preview_" + project.id + ".png").delete()
+                        projects.clear(); projects.addAll(repository.getAll()); adapter.notifyDataSetChanged()
+                        hint.visibility = if (projects.isEmpty()) android.view.View.VISIBLE else android.view.View.GONE
+                    }
+                    .setNegativeButton("Отмена", null)
+                    .show()
+            }) { project ->
                 val intent = Intent(this, PlanEditorActivity::class.java)
                 intent.putExtra("PROJECT_ID", project.id)
                 intent.putExtra("PROJECT_NAME", project.name)

@@ -19,6 +19,7 @@ import java.util.Locale
 class ProjectAdapter(
     private val projects: List<Project>,
     private val theme: AppTheme,
+    private val onLongClick: (Project) -> Unit = {},
     private val onClick: (Project) -> Unit
 ) : RecyclerView.Adapter<ProjectAdapter.ViewHolder>() {
 
@@ -59,6 +60,7 @@ class ProjectAdapter(
         if (f.exists()) { holder.preview.setImageBitmap(BitmapFactory.decodeFile(f.absolutePath)); holder.preview.visibility = View.VISIBLE }
         else holder.preview.visibility = View.GONE
         holder.itemView.setOnClickListener { onClick(p) }
+        holder.itemView.setOnLongClickListener { onLongClick(p); true }
     }
 
     override fun getItemCount() = projects.size

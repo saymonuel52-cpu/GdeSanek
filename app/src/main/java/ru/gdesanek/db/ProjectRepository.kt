@@ -34,4 +34,12 @@ class ProjectRepository(context: Context) {
         cursor.close()
         return projects
     }
+
+    fun deleteProject(id: Long) {
+        val db = dbHelper.writableDatabase
+        db.delete("walls", "project_id = ?", arrayOf(id.toString()))
+        db.delete("objects", "project_id = ?", arrayOf(id.toString()))
+        db.delete("tracks", "project_id = ?", arrayOf(id.toString()))
+        db.delete("projects", "id = ?", arrayOf(id.toString()))
+    }
 }
