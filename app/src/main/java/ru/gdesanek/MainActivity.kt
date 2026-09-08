@@ -58,6 +58,23 @@ class MainActivity : AppCompatActivity() {
             }
             frame.addView(recyclerView)
 
+            val demoBtn = TextView(this).apply {
+                text = "📋 Открыть пример"; setTextColor(theme.textPrimary); textSize = 16f
+                setBackgroundColor(theme.btnBg); setPadding(32, 16, 32, 16); gravity = android.view.Gravity.CENTER
+                layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT).apply {
+                    gravity = android.view.Gravity.BOTTOM or android.view.Gravity.START
+                    setMargins(48, 48, 48, 48)
+                }
+                setOnClickListener {
+                    val pid = ru.gdesanek.demo.DemoProject.load(this@MainActivity)
+                    val intent = Intent(this@MainActivity, PlanEditorActivity::class.java)
+                    intent.putExtra("PROJECT_ID", pid)
+                    intent.putExtra("PROJECT_NAME", "Демо: Кухня-гостиная")
+                    startActivity(intent)
+                }
+            }
+            frame.addView(demoBtn)
+
             fabAdd = FloatingActionButton(this).apply {
                 imageTintList = android.content.res.ColorStateList.valueOf(Color.WHITE)
                 backgroundTintList = android.content.res.ColorStateList.valueOf(theme.accent)
