@@ -32,6 +32,8 @@ class EstimateActivity : AppCompatActivity() {
     private lateinit var projectName: String
     private lateinit var totalView: TextView
     private lateinit var list: LinearLayout
+    private lateinit var objects: List<ru.gdesanek.model.PlanObject>
+    private lateinit var tracks: List<ru.gdesanek.model.CableTrack>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,8 +42,8 @@ class EstimateActivity : AppCompatActivity() {
         prefs = getSharedPreferences("estimate", MODE_PRIVATE)
         theme = ThemeManager.current(this)
 
-        val objects = ObjectRepository(this).getAll(projectId)
-        val tracks = TrackRepository(this).getAll(projectId)
+        objects = ObjectRepository(this).getAll(projectId)
+        tracks = TrackRepository(this).getAll(projectId)
         rows = EstimateCalculator.rows(objects, tracks)
 
         if (objects.isEmpty() && tracks.isEmpty()) {
