@@ -17,6 +17,7 @@ import androidx.core.content.FileProvider
 import ru.gdesanek.core.EstimateCalculator
 import ru.gdesanek.db.ObjectRepository
 import ru.gdesanek.db.TrackRepository
+import ru.gdesanek.pdf.PanelPage
 import ru.gdesanek.theme.ThemeManager
 import java.io.File
 import java.text.SimpleDateFormat
@@ -305,6 +306,9 @@ class EstimateActivity : AppCompatActivity() {
         canvas.drawText(String.format("ИТОГО: %.0f ₽", total), 500f, y, paint)
 
         doc.finishPage(page)
+
+        // Третья страница: Щит и группы
+        PanelPage.generate(doc, pageInfo, tracks, objects, projectName)
 
         try {
             val file = File(cacheDir, "Estimate_$projectId.pdf")
