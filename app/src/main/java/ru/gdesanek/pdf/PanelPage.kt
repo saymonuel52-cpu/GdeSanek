@@ -3,7 +3,6 @@ package ru.gdesanek.pdf
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
-import android.graphics.PdfDocument
 import android.graphics.Typeface
 import ru.gdesanek.model.CableTrack
 import ru.gdesanek.model.PlanObject
