@@ -42,7 +42,7 @@ object PanelPage {
             val breaker = breakerBySection(parseSection(cable))
             val hasWet = g.objects.any { isWetZone(it.type) }
             val uzo = if (hasWet) "30 мА" else "—"
-            val name = if (g.objects.isEmpty()) "(пусто)" else g.objects.first().name.ifEmpty { g.objects.first().type }
+            val name = groupName(g.objects)
 
             c.drawText(idx.toString(), cols[0].toFloat(), y, paint)
             c.drawText(name.take(16), cols[1].toFloat(), y, paint)
@@ -74,14 +74,27 @@ object PanelPage {
     }
 
     private fun groupByTrack(tracks: List<CableTrack>, objects: List<PlanObject>): List<Group> {
-        val result = mutableListOf<Group>(); val used = mutableSetOf<Long>()
-        for (tr in tracks) {
-            val attached = objects.filter { minDistToTrack(it, tr) < 150f }
-            if (attached.isNotEmpty()) { attached.forEach { used.add(it.id) }; result.add(Group(tr, attached)) }
+        val assigned = mutableMapOf<Long, MutableList<PlanObject>>()
+        tracks.forEach { assigned[it.id] = mutableListOf() }
+        val orphans = mutableListOf<PlanObject>()
+        for (obj in objects) {
+            var best: CableTrack? = null; var bestD = Float.MAX_VALUE
+            for (tr in tracks) { val d = minDistToTrack(obj, tr); if (d < bestD) { bestD = d; best = tr } }
+            if (best != null && bestD < 300f) assigned[best.id]!!.add(obj) else orphans.add(obj)
         }
-        val orphans = objects.filter { it.id !in used }
+        val result = mutableListOf<Group>()
+        for (tr in tracks) { val list = assigned[tr.id]!!; if (list.isNotEmpty()) result.add(Group(tr, list)) }
         if (orphans.isNotEmpty()) result.add(Group(null, orphans))
         return result
+    }
+
+    private fun groupName(objs: List<PlanObject>): String {
+        val lamps = objs.count { it.type.startsWith("lamp") }
+        val sockets = objs.count { it.type.startsWith("socket") }
+        val sks = objs.count { it.type.startsWith("sks") || it.type.startsWith("rj45") }
+        val climate = objs.count { it.type.startsWith("cond") || it.type.startsWith("cons") }
+        val best = listOf("Освещение" to lamps, "Розетки" to sockets, "Слаботочка" to sks, "Климат/нагрузка" to climate).maxByOrNull { it.second }!!
+        return if (best.second == 0) objs.first().name.ifEmpty { objs.first().type } else best.first + " (" + objs.size + " шт)"
     }
 
     private fun minDistToTrack(obj: PlanObject, tr: CableTrack): Float {
