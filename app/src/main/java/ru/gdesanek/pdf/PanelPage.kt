@@ -95,7 +95,7 @@ object PanelPage {
         return result
     }
 
-    private fun groupName(objs: List<PlanObject>): String {
+    fun groupName(objs: List<PlanObject>): String {
         val lamps = objs.count { it.type.startsWith("lamp") }
         val sockets = objs.count { it.type.startsWith("socket") }
         val sks = objs.count { it.type.startsWith("sks") || it.type.startsWith("rj45") }
