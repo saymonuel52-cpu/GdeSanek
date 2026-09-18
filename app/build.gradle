@@ -10,7 +10,7 @@ android {
         applicationId "ru.gdesanek"
         minSdk 24
         targetSdk 34
-        versionCode runCode
+    versionCode 2000 + (System.getenv("GITHUB_RUN_NUMBER")?.toInteger() ?: 0)
         versionName "1.0.0"
     }
     signingConfigs {
