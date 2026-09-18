@@ -21,7 +21,7 @@ object Checks {
             if (len > 40f) out.add("Гр.$n: ${String.format("%.0f", len)} м — проверьте падение напряжения")
             val cores = Regex("^(\\d+)x").find(cable)?.groupValues?.get(1)?.toIntOrNull() ?: 3
             if (g.track != null && cores < 3) out.add("Гр.$n: кабель $cores жилы — нет PE-заземления")
-            val heavy = g.objects.filter { PanelPage.defaultPower(it.type) >= 2.0 }
+            val heavy = g.objects.filter { it.type.startsWith("cons_") || it.type.startsWith("cond_") || it.type == "socket_380" }
             if (heavy.size > 1 || (heavy.isNotEmpty() && g.objects.size > heavy.size + 1))
                 out.add("Гр.$n: мощный (${heavy.joinToString { it.name.ifEmpty { it.type } }}) — рекомендую отдельную линию")
         }
