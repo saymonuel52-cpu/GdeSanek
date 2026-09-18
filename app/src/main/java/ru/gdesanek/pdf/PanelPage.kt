@@ -10,7 +10,7 @@ import ru.gdesanek.model.TrackPoint
 import kotlin.math.sqrt
 
 object PanelPage {
-    private data class Group(val track: CableTrack?, val objects: List<PlanObject>)
+    data class Group(val track: CableTrack?, val objects: List<PlanObject>)
 
     fun generate(doc: PdfDocument, pageInfo: PdfDocument.PageInfo, tracks: List<CableTrack>, objects: List<PlanObject>, projectName: String) {
         val page = doc.startPage(pageInfo)
@@ -70,10 +70,17 @@ object PanelPage {
         c.drawText("• Автомат подбирается по допустимому току кабеля (ПУЭ табл. 1.3.4).", 50f, y, paint); y += 12f
         c.drawText("• Длина кабеля указана с запасом ×1.10 на запас и спуски.", 50f, y, paint)
 
+        y += 22f
+        paint.typeface = Typeface.DEFAULT_BOLD; paint.textSize = 11f; paint.color = Color.BLACK
+        c.drawText("Замечания (автопроверка):", 40f, y, paint); y += 14f
+        paint.typeface = Typeface.DEFAULT; paint.textSize = 9f; paint.color = Color.DKGRAY
+        val remarks = ru.gdesanek.core.Checks.run(objects, tracks)
+        if (remarks.isEmpty()) { c.drawText("— нет замечаний", 50f, y, paint) } else { for (r in remarks) { c.drawText("• " + r, 50f, y, paint); y += 12f } }
+
         doc.finishPage(page)
     }
 
-    private fun groupByTrack(tracks: List<CableTrack>, objects: List<PlanObject>): List<Group> {
+    fun groupByTrack(tracks: List<CableTrack>, objects: List<PlanObject>): List<Group> {
         val assigned = mutableMapOf<Long, MutableList<PlanObject>>()
         tracks.forEach { assigned[it.id] = mutableListOf() }
         val orphans = mutableListOf<PlanObject>()
@@ -116,24 +123,24 @@ object PanelPage {
         return sqrt((px - nx) * (px - nx) + (py - ny) * (py - ny))
     }
 
-    private fun trackLength(pts: List<TrackPoint>): Float {
+    fun trackLength(pts: List<TrackPoint>): Float {
         var s = 0f
         for (i in 0 until pts.size - 1) { val dx = pts[i+1].x-pts[i].x; val dy = pts[i+1].y-pts[i].y; s += sqrt(dx*dx+dy*dy) }
         return s
     }
 
-    private fun parseSection(cable: String): Float {
+    fun parseSection(cable: String): Float {
         val m = Regex("(\\d+)[xхХ×*](\\d+(?:\\.\\d+)?)").find(cable)
         return m?.groupValues?.get(2)?.toFloatOrNull() ?: 2.5f
     }
 
-    private fun breakerBySection(s: Float): Int = when {
+    fun breakerBySection(s: Float): Int = when {
         s < 1.5f -> 10; s < 2.5f -> 10; s < 4f -> 16; s < 6f -> 25; s < 10f -> 32; s < 16f -> 40; s < 25f -> 63; else -> 80
     }
 
     private fun isWetZone(t: String): Boolean = t == "socket_b3" || t == "cons_boiler" || t == "sks_smoke"
 
-    private fun defaultPower(t: String): Double = when (t) {
+    fun defaultPower(t: String): Double = when (t) {
         "socket_b1", "socket_b2", "socket_b4", "socket_k", "socket_double",
         "socket_block2", "socket_block3", "socket_block4", "socket_b3" -> 2.2
         "socket_380" -> 10.0
