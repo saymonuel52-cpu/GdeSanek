@@ -38,9 +38,9 @@ class PlanEditorActivity : AppCompatActivity() {
     private val undoManager = ru.gdesanek.core.UndoManager(50)
     private lateinit var contextPanel: LinearLayout
     private lateinit var catalogScroll: View
-    private lateinit var btnWall: ru.gdesanek.ui.SkewButton
-    private lateinit var btnElec: ru.gdesanek.ui.SkewButton
-    private lateinit var btnTrack: ru.gdesanek.ui.SkewButton
+    private lateinit var btnWall: TextView
+    private lateinit var btnElec: TextView
+    private lateinit var btnTrack: TextView
     private lateinit var shareBtn: TextView
     private val stepViews = mutableListOf<TextView>()
     private lateinit var statusLine: TextView
@@ -106,6 +106,9 @@ class PlanEditorActivity : AppCompatActivity() {
             }
         }
         topBar.addView(menuBtn); topBar.addView(title); topBar.addView(undoBtn); topBar.addView(redoBtn); topBar.addView(moreBtn)
+        
+        // shareBtn (используется в stepper, но не виден в UI)
+        shareBtn = TextView(this).apply { visibility = View.GONE }
 
         planView = PlanView(this)
         planView.projectId = projectId
@@ -259,13 +262,29 @@ class PlanEditorActivity : AppCompatActivity() {
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginEnd = 6 }
             setOnClickListener { currentGroup = group; rebuildCatalog() }
         }
+        // FrameLayout с planView и карточкой "Начнём?"
+        val frame = android.widget.FrameLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)
+        }
+        frame.addView(planView, android.widget.FrameLayout.LayoutParams(android.widget.FrameLayout.LayoutParams.MATCH_PARENT, android.widget.FrameLayout.LayoutParams.MATCH_PARENT))
+        frame.addView(startCard, android.widget.FrameLayout.LayoutParams(android.widget.FrameLayout.LayoutParams.MATCH_PARENT, android.widget.FrameLayout.LayoutParams.MATCH_PARENT))
+        
+        // statusLine (пилюля подсказок) - оставляем для updateStatus
+        statusLine = TextView(this).apply { 
+            textSize = 12f; setTextColor(theme.textPrimary)
+            setBackgroundColor(theme.toolbarBg); setPadding(16, 4, 16, 6)
+            visibility = View.GONE  // скрыта по умолчанию, П5: подсказки-пилюли
+        }
+        
         root.addView(frame, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
         root.addView(toolsBar)
         root.addView(contextPanel)
         root.addView(catalogScroll)
+        root.addView(statusLine)
         setContentView(root)
 
-        btnWall.performClick()
+        // П1: вход всегда в Выбор
+        btnPan.performClick()
         planView.loadWalls()
         planView.loadObjects()
         planView.loadTracks()
