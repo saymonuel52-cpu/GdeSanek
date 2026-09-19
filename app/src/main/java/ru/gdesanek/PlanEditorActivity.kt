@@ -329,56 +329,72 @@ class PlanEditorActivity : AppCompatActivity() {
         contextPanel.removeAllViews()
         contextPanel.visibility = View.VISIBLE
         catalogScroll.visibility = View.GONE
-
-        val scroll = HorizontalScrollView(this)
-        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        val wrap = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(12, 10, 12, 10) }
+        wrap.addView(TextView(this).apply { text = "МАТЕРИАЛ"; textSize = 12f; setTextColor(theme.hintColor); setPadding(4, 0, 0, 6) })
+        val mScroll = HorizontalScrollView(this)
+        val mRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         for ((code, name) in WallMaterials.list) {
-            val b = TextView(this).apply {
-                text = name; setTextColor(theme.textPrimary); textSize = 12f; gravity = Gravity.CENTER
+            mRow.addView(TextView(this).apply {
+                text = name; textSize = 14f; gravity = Gravity.CENTER; setTextColor(theme.textPrimary)
                 setBackgroundColor(if (code == planView.currentMaterial) theme.btnActiveBg else theme.btnBg)
-                setPadding(16, 10, 16, 10)
+                setPadding(22, 14, 22, 14)
                 layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginEnd = 6 }
                 setOnClickListener { planView.currentMaterial = code; showWallContext() }
-            }
-            row.addView(b)
+            })
         }
-        scroll.addView(row)
-        contextPanel.addView(scroll, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-
-        val thickEdit = EditText(this).apply {
+        mScroll.addView(mRow)
+        wrap.addView(mScroll)
+        wrap.addView(TextView(this).apply { text = "ТОЛЩИНА, ММ"; textSize = 12f; setTextColor(theme.hintColor); setPadding(4, 10, 0, 6) })
+        val tRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+        val tEdit = EditText(this).apply {
             setText(planView.currentThickness.toInt().toString())
             inputType = InputType.TYPE_CLASS_NUMBER
-            setTextColor(theme.textPrimary)
-            setPadding(16, 10, 16, 10)
-            setBackgroundColor(theme.btnBg)
-            layoutParams = LinearLayout.LayoutParams(150, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginStart = 8 }
+            textSize = 16f; gravity = Gravity.CENTER
+            setTextColor(theme.textPrimary); setBackgroundColor(theme.btnBg); setPadding(8, 12, 8, 12)
+            layoutParams = LinearLayout.LayoutParams(90.dpToPx(), LinearLayout.LayoutParams.WRAP_CONTENT)
             addTextChangedListener(object : TextWatcher {
                 override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
                 override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
                 override fun afterTextChanged(s: Editable?) { planView.currentThickness = s.toString().toFloatOrNull() ?: 100f }
             })
         }
-        contextPanel.addView(thickEdit)
-
-        val orthoBtn = TextView(this).apply {
-            text = if (planView.orthoMode) "90° ✓" else "90°"
-            setTextColor(theme.textPrimary); textSize = 12f; gravity = Gravity.CENTER
-            setBackgroundColor(if (planView.orthoMode) theme.btnActiveBg else theme.btnBg)
-            setPadding(16, 10, 16, 10)
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginStart = 8 }
+        fun step(d: Float): TextView = TextView(this).apply {
+            text = if (d > 0) "+" else "−"; textSize = 22f; gravity = Gravity.CENTER
+            setTextColor(theme.textPrimary); setBackgroundColor(theme.btnBg)
+            layoutParams = LinearLayout.LayoutParams(52.dpToPx(), 48.dpToPx()).apply { marginStart = 6 }
+            setOnClickListener {
+                val v = ((tEdit.text.toString().toFloatOrNull() ?: 100f) + d).coerceIn(50f, 1000f)
+                planView.currentThickness = v
+                tEdit.setText(v.toInt().toString())
+            }
+        }
+        tRow.addView(tEdit); tRow.addView(step(-50f)); tRow.addView(step(50f))
+        for (q in listOf(100f, 150f, 200f, 380f)) {
+            tRow.addView(TextView(this).apply {
+                text = q.toInt().toString(); textSize = 13f; gravity = Gravity.CENTER
+                setTextColor(theme.textPrimary); setBackgroundColor(if (planView.currentThickness.toInt() == q.toInt()) theme.btnActiveBg else theme.btnBg)
+                setPadding(14, 12, 14, 12)
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginStart = 6 }
+                setOnClickListener { planView.currentThickness = q; showWallContext() }
+            })
+        }
+        wrap.addView(tRow)
+        val oRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, 10, 0, 0) }
+        oRow.addView(TextView(this).apply {
+            text = if (planView.orthoMode) "90° точно ✓" else "90° точно"; textSize = 14f; gravity = Gravity.CENTER
+            setTextColor(theme.textPrimary); setBackgroundColor(if (planView.orthoMode) theme.btnActiveBg else theme.btnBg)
+            setPadding(22, 14, 22, 14)
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginEnd = 6 }
             setOnClickListener { planView.orthoMode = !planView.orthoMode; showWallContext() }
-        }
-        contextPanel.addView(orthoBtn)
-
-        val snapBtn = TextView(this).apply {
-            text = if (planView.snapEnd) "⚓ ✓" else "⚓"
-            setTextColor(theme.textPrimary); textSize = 12f; gravity = Gravity.CENTER
-            setBackgroundColor(if (planView.snapEnd) theme.btnActiveBg else theme.btnBg)
-            setPadding(16, 10, 16, 10)
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginStart = 8 }
+        })
+        oRow.addView(TextView(this).apply {
+            text = if (planView.snapEnd) "⚓ Привязка ✓" else "⚓ Привязка"; textSize = 14f; gravity = Gravity.CENTER
+            setTextColor(theme.textPrimary); setBackgroundColor(if (planView.snapEnd) theme.btnActiveBg else theme.btnBg)
+            setPadding(22, 14, 22, 14)
             setOnClickListener { planView.snapEnd = !planView.snapEnd; showWallContext() }
-        }
-        contextPanel.addView(snapBtn)
+        })
+        wrap.addView(oRow)
+        contextPanel.addView(wrap)
     }
 
     private fun showTrackContext() {
