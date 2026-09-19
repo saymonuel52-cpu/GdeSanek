@@ -219,6 +219,14 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         else if (walls.isEmpty() && objects.isEmpty() && currentWall == null && underlay == null) canvas.drawText("Выбери инструмент снизу", width / 2f, height / 2f, hintPaint)
     }
 
+
+    fun focusOn(x: Float, y: Float, scale: Float = 2f) {
+        matrix.reset()
+        matrix.postScale(scale, scale)
+        matrix.postTranslate(width / 2f - x * scale, height / 2f - y * scale)
+        invalidate()
+    }
+
     fun fitToContent() {
         if (walls.isEmpty() && objects.isEmpty()) return
         var minX = Float.MAX_VALUE; var minY = Float.MAX_VALUE; var maxX = -Float.MAX_VALUE; var maxY = -Float.MAX_VALUE

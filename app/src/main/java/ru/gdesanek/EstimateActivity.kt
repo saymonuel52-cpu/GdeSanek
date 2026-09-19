@@ -175,7 +175,17 @@ class EstimateActivity : AppCompatActivity() {
             gravity = android.view.Gravity.CENTER
         }
         val exportBtn = TextView(this).apply {
-            text = "Экспорт сметы в PDF"
+            text = "📄 PDF"
+        }
+        val csvBtn = TextView(this).apply {
+            text = "📊 CSV"
+            textSize = 14f
+            setTextColor(Color.WHITE)
+            setBackgroundColor(theme.accent)
+            setPadding(32, 16, 32, 16)
+            gravity = Gravity.CENTER
+            setOnClickListener { exportCsv() }
+        }
             textSize = 16f
             setTextColor(Color.WHITE)
             gravity = android.view.Gravity.CENTER
@@ -257,6 +267,37 @@ class EstimateActivity : AppCompatActivity() {
         var total = 0f
         for (r in rows) total += r.qty * prefs.getFloat(r.key, 0f)
         totalView.text = String.format("ИТОГО: %.0f ₽", total)
+    }
+
+
+    private fun exportCsv() {
+        val sp = getSharedPreferences("settings", MODE_PRIVATE)
+        val mn = sp.getString("masterName", "").orEmpty()
+        val mp = sp.getString("masterPhone", "").orEmpty()
+        val sb = StringBuilder()
+        // UTF-8 BOM для корректного открытия кириллицы в Excel
+        sb.append("\uFEFF")
+        if (mn.isNotEmpty() || mp.isNotEmpty()) sb.appendLine("$mn;$mp")
+        sb.appendLine("Наименование;Количество;Ед.;Цена;Сумма")
+        for (r in rows) {
+            val price = prefs.getFloat(r.key, 0f)
+            val sum = r.qty * price
+            sb.appendLine("${r.name};${r.qty};${r.unit};${String.format("%.0f", price)};${String.format("%.0f", sum)}")
+        }
+        val total = rows.sumOf { it.qty * prefs.getFloat(it.key, 0f) }
+        sb.appendLine("ИТОГО;;;;${String.format("%.0f", total)}")
+        
+        val fileName = "smeta_$projectName.csv"
+        val file = File(filesDir, fileName)
+        file.writeText(sb.toString(), Charsets.UTF_8)
+        
+        val uri = androidx.core.content.FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/csv"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        startActivity(Intent.createChooser(intent, "Отправить CSV"))
     }
 
     private fun exportEstimatePdf() {
