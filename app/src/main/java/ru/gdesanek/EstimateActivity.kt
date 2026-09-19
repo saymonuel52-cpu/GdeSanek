@@ -14,6 +14,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
+import ru.gdesanek.core.DefaultPrices
 import ru.gdesanek.core.EstimateCalculator
 import ru.gdesanek.db.ObjectRepository
 import ru.gdesanek.db.TrackRepository
@@ -40,6 +41,13 @@ class EstimateActivity : AppCompatActivity() {
         projectId = intent.getLongExtra("PROJECT_ID", 0)
         projectName = intent.getStringExtra("PROJECT_NAME") ?: "Проект"
         prefs = getSharedPreferences("estimate", MODE_PRIVATE)
+        
+        // Инициализация цен из дефолтных если prefs пустой
+        if (!prefs.contains("cable")) {
+            val ed = prefs.edit()
+            DefaultPrices.prices.forEach { (k, v) -> ed.putFloat(k, v) }
+            ed.apply()
+        }
         theme = ThemeManager.current(this)
 
         objects = ObjectRepository(this).getAll(projectId)
@@ -229,6 +237,15 @@ class EstimateActivity : AppCompatActivity() {
             rowBox.addView(nameView)
             rowBox.addView(qtyView)
             rowBox.addView(priceInput)
+            rowBox.setOnLongClickListener {
+                showPriceDialog(row, prefs) { newPrice ->
+                    priceInput.setText(String.format("%.0f", newPrice))
+                    prefs.edit().putFloat(row.key, newPrice).apply()
+                    sumView.text = String.format("%.0f ₽", row.qty * newPrice)
+                    recalcTotal()
+                }
+                true
+            }
             rowBox.addView(sumView)
             list.addView(rowBox)
         }
@@ -327,5 +344,22 @@ class EstimateActivity : AppCompatActivity() {
         } catch (e: Exception) {
             e.printStackTrace()
         }
+    }
+    private fun showPriceDialog(row: ru.gdesanek.core.EstimateRow, prefs: android.content.SharedPreferences, onConfirm: (Float) -> Unit) {
+        val input = android.widget.EditText(this).apply {
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+            setText(prefs.getFloat(row.key, 0f).toInt().toString())
+            setPadding(60, 40, 60, 40)
+        }
+        android.app.AlertDialog.Builder(this)
+            .setTitle("Цена: " + row.name)
+            .setMessage("Количество: " + row.qty + " " + row.unit)
+            .setView(input)
+            .setPositiveButton("Сохранить") { _, _ ->
+                val v = input.text.toString().toFloatOrNull() ?: 0f
+                onConfirm(v)
+            }
+            .setNegativeButton("Отмена", null)
+            .show()
     }
 }
