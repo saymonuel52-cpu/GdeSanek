@@ -1,6 +1,7 @@
 package ru.gdesanek.export
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.DashPathEffect
@@ -19,6 +20,10 @@ import kotlin.math.sqrt
 
 object PdfExporter {
     fun export(context: Context, projectName: String, projectId: Long, walls: List<Wall>, objects: List<PlanObject>, tracks: List<CableTrack>): File {
+        val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
+        val masterName = prefs.getString("masterName", "ГдеСанёк").orEmpty()
+        val masterPhone = prefs.getString("masterPhone", "").orEmpty()
+        val masterInn = prefs.getString("masterInn", "").orEmpty()
         val doc = PdfDocument()
         val page = doc.startPage(PdfDocument.PageInfo.Builder(842, 595, 1).create())
         val canvas = page.canvas
@@ -107,12 +112,13 @@ object PdfExporter {
         canvas.drawLine(sL, sT + 36f, R, sT + 36f, thinPaint)
         canvas.drawLine(sL + 95f, sT + 18f, sL + 95f, B, thinPaint)
         textPaint.textSize = 11f
-        canvas.drawText("ГдеСанёк", sL + 6f, sT + 12f, textPaint)
+        canvas.drawText(masterName, sL + 6f, sT + 12f, textPaint)
         textPaint.textSize = 9f
         canvas.drawText("Лист Э1    Масштаб 1:100", sL + 6f, sT + 30f, textPaint)
         canvas.drawText(projectName, sL + 6f, sT + 48f, textPaint)
         canvas.drawText("Дата: " + SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date()), sL + 100f, sT + 30f, textPaint)
-        canvas.drawText("Разработал: Электромонтажник", sL + 100f, sT + 48f, textPaint)
+        canvas.drawText(if (masterPhone.isNotEmpty()) "Тел: $masterPhone" else "", sL + 100f, sT + 48f, textPaint)
+        if (masterInn.isNotEmpty()) canvas.drawText("ИНН: $masterInn", sL + 100f, sT + 62f, textPaint)
 
         doc.finishPage(page)
         val file = File(context.cacheDir, "GdeSanek_$projectId.pdf")

@@ -51,6 +51,25 @@ class SettingsActivity : AppCompatActivity() {
             val next = when (cur) { 100 -> 150; 150 -> 200; 200 -> 380; else -> 100 }
             prefs.edit().putInt("defThickness", next).apply()
         }
+        section("РЕКВИЗИТЫ МАСТЕРА")
+        row("Имя / компания", { prefs.getString("masterName", "").orEmpty().ifEmpty { "—" } }) {
+            val input = EditText(this).apply { setText(prefs.getString("masterName", "").orEmpty()); setPadding(60, 40, 60, 40) }
+            android.app.AlertDialog.Builder(this).setTitle("Имя / компания").setView(input)
+                .setPositiveButton("Сохранить") { _, _ -> prefs.edit().putString("masterName", input.text.toString()).apply(); recreate() }
+                .setNegativeButton("Отмена", null).show()
+        }
+        row("Телефон", { prefs.getString("masterPhone", "").orEmpty().ifEmpty { "—" } }) {
+            val input = EditText(this).apply { setText(prefs.getString("masterPhone", "").orEmpty()); setPadding(60, 40, 60, 40); inputType = android.text.InputType.TYPE_CLASS_PHONE }
+            android.app.AlertDialog.Builder(this).setTitle("Телефон").setView(input)
+                .setPositiveButton("Сохранить") { _, _ -> prefs.edit().putString("masterPhone", input.text.toString()).apply(); recreate() }
+                .setNegativeButton("Отмена", null).show()
+        }
+        row("ИНН", { prefs.getString("masterInn", "").orEmpty().ifEmpty { "—" } }) {
+            val input = EditText(this).apply { setText(prefs.getString("masterInn", "").orEmpty()); setPadding(60, 40, 60, 40); inputType = android.text.InputType.TYPE_CLASS_NUMBER }
+            android.app.AlertDialog.Builder(this).setTitle("ИНН").setView(input)
+                .setPositiveButton("Сохранить") { _, _ -> prefs.edit().putString("masterInn", input.text.toString()).apply(); recreate() }
+                .setNegativeButton("Отмена", null).show()
+        }
         section("ДАННЫЕ")
         row("Проектов сохранено", { getSharedPreferences("projects_meta", MODE_PRIVATE).all.size.toString() }) { }
         wrap.addView(TextView(this).apply { text = "ГдеСанёк v1.1 · офлайн, без сбора данных"; textSize = 12f; setTextColor(theme.hintColor); setPadding(0, 28, 0, 0) })
