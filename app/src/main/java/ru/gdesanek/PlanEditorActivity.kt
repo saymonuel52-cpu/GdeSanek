@@ -31,7 +31,6 @@ import ru.gdesanek.ui.Design
 import ru.gdesanek.theme.ThemeManager
 import ru.gdesanek.theme.Themes
 import ru.gdesanek.ui.PlanView
-import ru.gdesanek.ui.SkewButton
 import java.io.File
 
 class PlanEditorActivity : AppCompatActivity() {
@@ -51,7 +50,7 @@ class PlanEditorActivity : AppCompatActivity() {
     private var projectName = "План"
     private var currentCatalogGroup = "Розетки"
     private val catalogButtons = mutableListOf<TextView>()
-    private val toolButtons = mutableListOf<SkewButton>()
+    private val toolButtons = mutableListOf<TextView>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -158,6 +157,7 @@ class PlanEditorActivity : AppCompatActivity() {
             setCompoundDrawablesWithIntrinsicBounds(0, icon, 0, 0)
             compoundDrawablePadding = 4.dpToPx()
             this.text = text
+            tag = color
             textSize = 11f
             setTextColor(theme.textPrimary)
             gravity = Gravity.CENTER
@@ -173,7 +173,7 @@ class PlanEditorActivity : AppCompatActivity() {
                     else -> PlanView.Tool.PAN
                 }
                 if (text == "Элект") planView.placeType = "socket_b1" else planView.placeType = null
-                highlightTool(this, color)
+                highlightTool(this)
                 when (text) {
                     "Стена" -> showWallContext()
                     "Трасса" -> showTrackContext()
@@ -182,11 +182,7 @@ class PlanEditorActivity : AppCompatActivity() {
                 }
             }
         }
-        fun TextView.highlightSelf(color: Int) {
-            setBackgroundColor(color.copy(alpha = Design.Colors.ACTIVE_ALPHA))
-            toolButtons.forEach { if (it != this) it.setBackgroundColor(0x00000000) }
-        }
-        fun highlightTool(sel: TextView, color: Int) { sel.highlightSelf(color) }
+        fun highlightTool(sel: TextView?) { toolButtons.forEach { b -> b.setBackgroundColor(if (b == sel) (b.tag as? Int ?: 0xFF333333.toInt()) else 0x00000000) } }
         
         btnWall = makeTool("Стена", R.drawable.ic_wall, Design.Colors.WALL)
         val btnPan = makeTool("Выбор", R.drawable.ic_pan, Design.Colors.OBJECT)
@@ -199,7 +195,7 @@ class PlanEditorActivity : AppCompatActivity() {
         
         // П1: вход всегда в Выбор
         planView.currentTool = PlanView.Tool.PAN
-        highlightTool(btnPan, Design.Colors.OBJECT)
+        highlightTool(btnPan)
 
         contextPanel = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
