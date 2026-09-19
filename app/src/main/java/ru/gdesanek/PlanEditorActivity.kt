@@ -184,6 +184,7 @@ class PlanEditorActivity : AppCompatActivity() {
                     "Элект" -> showCatalog()
                     else -> hideContext()
                 }
+                showHint(hintFor(text))
             }
         }
         
@@ -277,18 +278,22 @@ class PlanEditorActivity : AppCompatActivity() {
         frame.addView(planView, android.widget.FrameLayout.LayoutParams(android.widget.FrameLayout.LayoutParams.MATCH_PARENT, android.widget.FrameLayout.LayoutParams.MATCH_PARENT))
         frame.addView(startCard, android.widget.FrameLayout.LayoutParams(android.widget.FrameLayout.LayoutParams.MATCH_PARENT, android.widget.FrameLayout.LayoutParams.MATCH_PARENT))
         
-        // statusLine (пилюля подсказок) - оставляем для updateStatus
-        statusLine = TextView(this).apply { 
-            textSize = 12f; setTextColor(theme.textPrimary)
-            setBackgroundColor(theme.toolbarBg); setPadding(16, 4, 16, 6)
-            visibility = View.GONE  // скрыта по умолчанию, П5: подсказки-пилюли
+        // П5: пилюля-подсказка поверх холста
+        statusLine = TextView(this).apply {
+            textSize = 13f; setTextColor(0xFFFFFFFF.toInt()); gravity = Gravity.CENTER
+            setPadding(24, 10, 24, 10); elevation = 6f
+            background = android.graphics.drawable.GradientDrawable().apply {
+                cornerRadius = 16f * resources.displayMetrics.density
+                setColor(0xCC1A1A1A.toInt())
+            }
+            visibility = View.GONE
         }
+        frame.addView(statusLine, android.widget.FrameLayout.LayoutParams(android.widget.FrameLayout.LayoutParams.MATCH_PARENT, android.widget.FrameLayout.LayoutParams.WRAP_CONTENT).apply { gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL; topMargin = 12.dpToPx(); leftMargin = 24.dpToPx(); rightMargin = 24.dpToPx() })
         
         root.addView(frame, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
         root.addView(toolsBar)
         root.addView(contextPanel)
         root.addView(catalogScroll)
-        root.addView(statusLine)
         root.addView(topBar, 0)
         setContentView(root)
 
@@ -302,6 +307,22 @@ class PlanEditorActivity : AppCompatActivity() {
         updateStepper(); updateStatus()
         android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(object : Runnable { override fun run() { updateStatus(); updateStepper(); android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(this, 3000) } }, 3000)
 
+    }
+
+    private val hintHideRunnable = Runnable { statusLine.visibility = View.GONE }
+    private fun showHint(text: String) {
+        statusLine.text = text
+        statusLine.visibility = View.VISIBLE
+        statusLine.removeCallbacks(hintHideRunnable)
+        statusLine.postDelayed(hintHideRunnable, 4000)
+    }
+    private fun hintFor(mode: String) = when (mode) {
+        "Выбор" -> "Выбор: тап по объекту — свойства, перетаскивание — перемещение"
+        "Стена" -> "Стена: тап — начало, тап — конец; оранжевый кружок = привязка"
+        "Элект" -> "Элект: выбери символ в каталоге и тапай по плану"
+        "Трасса" -> "Трасса: тапай точки по порядку, финиш в первой точке"
+        "Правка" -> "Правка: тап по объекту или стене → ручки; долгий тап → удалить"
+        else -> ""
     }
 
     private fun showWallContext() {
@@ -622,14 +643,8 @@ class PlanEditorActivity : AppCompatActivity() {
     }
 
     private fun updateStatus() {
-        val hint = when (currentStep) {
-            0 -> "тап — начало стены, тап — конец; оранжевый кружок = привязка"
-            1 -> "выбери символ в каталоге и тапай по плану"
-            2 -> "тапай точки трассы по порядку, финиш в первой точке"
-            3 -> "введи цены — итог снизу, PDF сметы там же"
-            else -> "проверь лист и отправь заказчику"
-        }
-        val live = planView.liveTrackMeters(); statusLine.text = if (live > 0f) String.format("Кабель: %.1f m (запас 10%%)", live) else String.format("Шаг %d · Стен:%d Точек:%d Трасс:%d · %s", currentStep + 1, planView.walls.size, planView.objects.size, planView.tracks.size, hint)
+        val live = planView.liveTrackMeters()
+        if (live > 0f) showHint(String.format("Кабель: %.1f м (запас 10%%)", live))
     }
     override fun onDestroy() {
         super.onDestroy()
