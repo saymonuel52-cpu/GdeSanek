@@ -21,8 +21,8 @@ object SpecificationPage {
         canvas.drawText("СПЕЦИФИКАЦИЯ ОБОРУДОВАНИЯ И МАТЕРИАЛОВ — $projectName", 40f, 40f, title)
         if (masterName.isNotEmpty()) canvas.drawText("Исполнитель: $masterName", 40f, 56f, text)
         fun segLen(t: CableTrack): Float { var s = 0f; for (i in 0 until t.points.size - 1) s += sqrt((t.points[i+1].x - t.points[i].x).let { it * it } + (t.points[i+1].y - t.points[i].y).let { it * it }); return s }
-        fun cableM(c: String) = ceil(tracks.filter { it.cable == c }.sumOf { segLen(it) } / 100f * 1.1f)
-        fun wiringM(w: String) = ceil(tracks.filter { it.wiring == w }.sumOf { segLen(it) } / 100f * 1.1f)
+        fun cableM(c: String): Float { var s = 0f; for (t in tracks) if (t.cable == c) s += segLen(t); return ceil(s / 100f * 1.1f) }
+        fun wiringM(w: String): Float { var s = 0f; for (t in tracks) if (t.wiring == w) s += segLen(t); return ceil(s / 100f * 1.1f) }
         val points = objects.count { it.type.startsWith("socket") || it.type.startsWith("switch") }
         val lamps = objects.count { it.type.startsWith("lamp") }
         val rk = ceil(points / 6f).toInt() + 1
