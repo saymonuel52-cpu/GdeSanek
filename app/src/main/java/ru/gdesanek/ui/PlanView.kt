@@ -708,6 +708,7 @@ undoManager?.push(ru.gdesanek.core.Command.InsertObject(apply = { objectReposito
 
     private fun haptic(ms: Long = 30) {
         try {
+            if (!context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE).getBoolean("haptics", true)) return
             val v = context.getSystemService(android.content.Context.VIBRATOR_SERVICE) as android.os.Vibrator
             if (android.os.Build.VERSION.SDK_INT >= 26) v.vibrate(android.os.VibrationEffect.createOneShot(ms, android.os.VibrationEffect.DEFAULT_AMPLITUDE)) else @Suppress("DEPRECATION") v.vibrate(ms)
         } catch (e: Exception) { }
