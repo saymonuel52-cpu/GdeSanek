@@ -27,6 +27,7 @@ import ru.gdesanek.model.Catalog
 import ru.gdesanek.model.WallMaterials
 import ru.gdesanek.model.WiringTypes
 import ru.gdesanek.theme.AppTheme
+import ru.gdesanek.ui.Design
 import ru.gdesanek.theme.ThemeManager
 import ru.gdesanek.theme.Themes
 import ru.gdesanek.ui.PlanView
@@ -59,45 +60,53 @@ class PlanEditorActivity : AppCompatActivity() {
         theme = ThemeManager.current(this)
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(theme.canvasBg) }
 
-        val topBar = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setBackgroundColor(theme.toolbarBg); setPadding(12, 12, 12, 12) }
-        val menuBtn = TextView(this).apply { setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_menu, 0, 0, 0); setTextColor(theme.textPrimary); setPadding(16, 4, 16, 4); setOnClickListener { showThemeDialog() }; tooltipText = "Меню и темы" }
-        val backBtn = TextView(this).apply { setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_back, 0, 0, 0); setTextColor(theme.textPrimary); setPadding(16, 4, 16, 4); setOnClickListener { finish() }; tooltipText = "Назад" }
-        val title = TextView(this).apply { text = projectName; textSize = 17f; setTextColor(theme.textPrimary); try { typeface = androidx.core.content.res.ResourcesCompat.getFont(this@PlanEditorActivity, R.font.russoone) } catch (e: Exception) {}; layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f) }
-        val underlayBtn = TextView(this).apply {
-            setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_underlay, 0, 0)
-            setPadding(12, 8, 12, 8); setBackgroundColor(theme.btnBg)
-            tooltipText = "Подложка: фото помещения"
-            setOnClickListener {
-                if (planView.underlay == null) pickUnderlay()
-                else AlertDialog.Builder(this@PlanEditorActivity).setTitle("Подложка").setItems(arrayOf("Калибровать масштаб", "Прозрачность", "Заменить фото", "Убрать")) { _, i ->
-                    when (i) { 0 -> planView.startCalibration(); 1 -> showUnderlayDialog(); 2 -> pickUnderlay(); 3 -> removeUnderlay() }
-                }.show()
+        // Новый топбар: ☰ | имя | ↺ | ⋮
+        val topBar = LinearLayout(this).apply { 
+            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+            setBackgroundColor(theme.toolbarBg); setPadding(Design.Spacing.MEDIUM, 8, Design.Spacing.MEDIUM, 8)
+            elevation = Design.ELEVATION
+        }
+        val menuBtn = TextView(this).apply { 
+            text = "☰"; textSize = 24f; setTextColor(theme.textPrimary)
+            setPadding(Design.Spacing.SMALL, Design.Spacing.SMALL, Design.Spacing.SMALL, Design.Spacing.SMALL)
+            setOnClickListener { showThemeDialog() }
+        }
+        val title = TextView(this).apply { 
+            text = projectName; textSize = 18f; setTextColor(theme.textPrimary)
+            try { typeface = androidx.core.content.res.ResourcesCompat.getFont(this@PlanEditorActivity, R.font.russoone) } catch (e: Exception) {}
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            setOnClickListener { startActivity(Intent(this@PlanEditorActivity, MainActivity::class.java)) }
+        }
+        val undoBtn = TextView(this).apply { 
+            text = "↶"; textSize = 22f; setTextColor(theme.textPrimary)
+            setPadding(Design.Spacing.SMALL, Design.Spacing.SMALL, Design.Spacing.SMALL, Design.Spacing.SMALL)
+            setOnClickListener { if (undoManager.undo()) planView.reloadAll() }
+        }
+        val redoBtn = TextView(this).apply { 
+            text = "↷"; textSize = 22f; setTextColor(theme.textPrimary)
+            setPadding(Design.Spacing.SMALL, Design.Spacing.SMALL, Design.Spacing.SMALL, Design.Spacing.SMALL)
+            setOnClickListener { if (undoManager.redo()) planView.reloadAll() }
+        }
+        val moreBtn = TextView(this).apply { 
+            text = "⋮"; textSize = 24f; setTextColor(theme.textPrimary)
+            setPadding(Design.Spacing.SMALL, Design.Spacing.SMALL, Design.Spacing.SMALL, Design.Spacing.SMALL)
+            setOnClickListener { 
+                android.widget.PopupMenu(this@PlanEditorActivity, this).apply {
+                    menu.add("Подложка").setOnMenuItemClickListener { 
+                        if (planView.underlay == null) pickUnderlay()
+                        else android.app.AlertDialog.Builder(this@PlanEditorActivity).setTitle("Подложка").setItems(arrayOf("Калибровать", "Прозрачность", "Заменить", "Убрать")) { _, i ->
+                            when (i) { 0 -> planView.startCalibration(); 1 -> showUnderlayDialog(); 2 -> pickUnderlay(); 3 -> removeUnderlay() }
+                        }.show()
+                        true
+                    }
+                    menu.add("Смета").setOnMenuItemClickListener { startActivity(Intent(this@PlanEditorActivity, EstimateActivity::class.java).putExtra("PROJECT_ID", projectId)); true }
+                    menu.add("Экспорт PDF").setOnMenuItemClickListener { exportPdf(); true }
+                    menu.add("Заказчик").setOnMenuItemClickListener { startActivity(Intent(this@PlanEditorActivity, ClientActivity::class.java).putExtra("PROJECT_ID", projectId)); true }
+                    show()
+                }
             }
         }
-        val calibBtn = TextView(this).apply {
-            setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_calib, 0, 0); setBackgroundColor(theme.btnBg); setTextColor(theme.textPrimary); setPadding(12, 8, 12, 8)
-            val p = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT); p.marginStart = 8; layoutParams = p
-            setOnClickListener { planView.startCalibration() }
-        }
-        val dimBtn = TextView(this).apply {
-            setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_dim, 0, 0); setBackgroundColor(theme.btnBg); setTextColor(theme.textPrimary); setPadding(12, 8, 12, 8)
-            val p = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT); p.marginStart = 8; layoutParams = p
-            setOnClickListener { showUnderlayDialog() }
-        }
-        val estimateBtn = TextView(this).apply { tooltipText = "Смета";
-            setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_estimate, 0, 0); setBackgroundColor(theme.btnBg); setTextColor(theme.textPrimary); setPadding(12, 8, 12, 8)
-            val p = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT); p.marginStart = 8; layoutParams = p
-            setOnClickListener { startActivity(Intent(this@PlanEditorActivity, EstimateActivity::class.java).putExtra("PROJECT_ID", projectId)) }
-        }
-        shareBtn = TextView(this).apply { tooltipText = "Отправить PDF";
-            setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_share, 0, 0); setBackgroundColor(theme.btnBg); setTextColor(theme.textPrimary); setPadding(12, 8, 12, 8)
-            val p = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT); p.marginStart = 8; layoutParams = p
-            setOnClickListener { exportPdf() }
-        }
-        val undoBtn = TextView(this).apply { text = "↶"; textSize = 20f; setTextColor(theme.textPrimary); setPadding(12, 8, 12, 8); setOnClickListener { if (undoManager.undo()) planView.reloadAll() } }
-        val redoBtn = TextView(this).apply { text = "↷"; textSize = 20f; setTextColor(theme.textPrimary); setPadding(12, 8, 12, 8); setOnClickListener { if (undoManager.redo()) planView.reloadAll() } }
-        val clientBtn = TextView(this).apply { text = "👁"; textSize = 18f; setTextColor(theme.textPrimary); setPadding(12, 8, 12, 8); setOnClickListener { startActivity(android.content.Intent(this@PlanEditorActivity, ClientActivity::class.java).putExtra("PROJECT_ID", projectId).putExtra("PROJECT_NAME", intent.getStringExtra("PROJECT_NAME") ?: "План")) } }
-        topBar.addView(menuBtn); topBar.addView(backBtn); topBar.addView(undoBtn); topBar.addView(redoBtn); topBar.addView(title); topBar.addView(underlayBtn); topBar.addView(estimateBtn); topBar.addView(clientBtn); topBar.addView(shareBtn)
+        topBar.addView(menuBtn); topBar.addView(title); topBar.addView(undoBtn); topBar.addView(redoBtn); topBar.addView(moreBtn)
 
         planView = PlanView(this)
         planView.projectId = projectId
@@ -108,46 +117,102 @@ class PlanEditorActivity : AppCompatActivity() {
         planView.trackRepository = TrackRepository(this)
         planView.applyTheme(theme)
 
-        val toolsBar = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setBackgroundColor(theme.panelBg); setPadding(8, 10, 8, 4) }
-        val toolParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { setMargins(2, 0, 2, 0) }
-        fun makeTool(text: String, icon: Int = 0): SkewButton = SkewButton(this@PlanEditorActivity).apply {
-            this.text = text; this.iconRes = icon; this.theme = this@PlanEditorActivity.theme; layoutParams = toolParams
+        // Карточка "Начнём?" на пустом холсте (П2)
+        val startCard = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
+            setBackgroundColor(0x80000000.toInt()); setPadding(Design.Spacing.LARGE, Design.Spacing.LARGE, Design.Spacing.LARGE, Design.Spacing.LARGE)
+            visibility = if (planView.walls.isEmpty() && planView.objects.isEmpty() && planView.tracks.isEmpty()) View.VISIBLE else View.GONE
         }
-        btnWall = makeTool("СТЕНА", R.drawable.ic_wall)
-        val btnPan = makeTool("РУКА", R.drawable.ic_pan)
-        btnTrack = makeTool("ТРАССА", R.drawable.ic_track)
-        val btnEdit = makeTool("РЕД", R.drawable.ic_edit)
-        btnElec = makeTool("ЭЛЕКТ", R.drawable.ic_elec)
-        toolsBar.addView(btnWall); toolsBar.addView(btnPan); toolsBar.addView(btnTrack); toolsBar.addView(btnElec); toolsBar.addView(btnEdit)
+        val cardTitle = TextView(this).apply { 
+            text = "Начнём?"; textSize = 24f; setTextColor(0xFFFFFFFF.toInt()); gravity = Gravity.CENTER
+            setPadding(0, 0, 0, Design.Spacing.MEDIUM)
+        }
+        val btnStartWall = TextView(this).apply { 
+            text = "🧱 Нарисовать стены"; textSize = 16f; setTextColor(0xFF000000.toInt()); setBackgroundColor(0xFFFFFFFF.toInt())
+            setPadding(Design.Spacing.LARGE, Design.Spacing.MEDIUM, Design.Spacing.LARGE, Design.Spacing.MEDIUM)
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { bottomMargin = Design.Spacing.SMALL }
+            setOnClickListener { btnWall.performClick(); startCard.visibility = View.GONE }
+        }
+        val btnStartDemo = TextView(this).apply { 
+            text = "📋 Открыть пример"; textSize = 16f; setTextColor(0xFFFFFFFF.toInt())
+            setPadding(Design.Spacing.LARGE, Design.Spacing.MEDIUM, Design.Spacing.LARGE, Design.Spacing.MEDIUM)
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { bottomMargin = Design.Spacing.SMALL }
+            setOnClickListener { ru.gdesanek.demo.DemoProject.fill(this@PlanEditorActivity); planView.reloadAll(); startCard.visibility = View.GONE }
+        }
+        val btnStartPhoto = TextView(this).apply { 
+            text = "🖼 План с фото"; textSize = 16f; setTextColor(0xFFFFFFFF.toInt())
+            setPadding(Design.Spacing.LARGE, Design.Spacing.MEDIUM, Design.Spacing.LARGE, Design.Spacing.MEDIUM)
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+            setOnClickListener { pickUnderlay(); startCard.visibility = View.GONE }
+        }
+        startCard.addView(cardTitle); startCard.addView(btnStartWall); startCard.addView(btnStartDemo); startCard.addView(btnStartPhoto)
+
+        // Новый тулбар: плоские кнопки с подписью, 64dp
+        val toolsBar = LinearLayout(this).apply { 
+            orientation = LinearLayout.HORIZONTAL; setBackgroundColor(theme.panelBg)
+            setPadding(Design.Spacing.SMALL, Design.Spacing.SMALL, Design.Spacing.SMALL, Design.Spacing.SMALL)
+            elevation = Design.ELEVATION
+        }
+        val toolParams = LinearLayout.LayoutParams(0, Design.TOOL_HEIGHT.dpToPx(), 1f).apply { setMargins(2, 0, 2, 0) }
+        fun makeTool(text: String, icon: Int, color: Int): TextView = TextView(this@PlanEditorActivity).apply {
+            setCompoundDrawablesWithIntrinsicBounds(0, icon, 0, 0)
+            compoundDrawablePadding = 4.dpToPx()
+            this.text = text
+            textSize = 11f
+            setTextColor(theme.textPrimary)
+            gravity = Gravity.CENTER
+            setBackgroundColor(0x00000000)
+            layoutParams = toolParams
+            setOnClickListener {
+                planView.currentTool = when (text) {
+                    "Выбор" -> PlanView.Tool.PAN
+                    "Стена" -> PlanView.Tool.DRAW_WALL
+                    "Трасса" -> PlanView.Tool.DRAW_TRACK
+                    "Элект" -> PlanView.Tool.PLACE
+                    "Правка" -> PlanView.Tool.EDIT
+                    else -> PlanView.Tool.PAN
+                }
+                if (text == "Элект") planView.placeType = "socket_b1" else planView.placeType = null
+                highlightTool(this, color)
+                when (text) {
+                    "Стена" -> showWallContext()
+                    "Трасса" -> showTrackContext()
+                    "Элект" -> showCatalog()
+                    else -> hideContext()
+                }
+            }
+        }
+        fun TextView.highlightSelf(color: Int) {
+            setBackgroundColor(color.copy(alpha = Design.Colors.ACTIVE_ALPHA))
+            toolButtons.forEach { if (it != this) it.setBackgroundColor(0x00000000) }
+        }
+        fun highlightTool(sel: TextView, color: Int) { sel.highlightSelf(color) }
+        
+        btnWall = makeTool("Стена", R.drawable.ic_wall, Design.Colors.WALL)
+        val btnPan = makeTool("Выбор", R.drawable.ic_pan, Design.Colors.OBJECT)
+        btnTrack = makeTool("Трасса", R.drawable.ic_track, Design.Colors.TRACK)
+        val btnEdit = makeTool("Правка", R.drawable.ic_edit, Design.Colors.EDIT)
+        btnElec = makeTool("Элект", R.drawable.ic_elec, Design.Colors.ELEC)
+        
+        toolsBar.addView(btnPan); toolsBar.addView(btnWall); toolsBar.addView(btnElec); toolsBar.addView(btnTrack); toolsBar.addView(btnEdit)
         toolButtons.addAll(listOf(btnWall, btnPan, btnTrack, btnElec, btnEdit))
-
-        fun highlightTool(sel: SkewButton?) { toolButtons.forEach { it.isActive = it == sel } }
-        fun highlightCatalog(sel: TextView?) { catalogButtons.forEach { it.setBackgroundColor(if (it == sel) theme.btnActiveBg else theme.btnBg) } }
-
-        btnWall.setOnClickListener { planView.currentTool = PlanView.Tool.DRAW_WALL; planView.placeType = null; highlightTool(btnWall); highlightCatalog(null); showWallContext() }
-        btnPan.setOnClickListener { planView.currentTool = PlanView.Tool.PAN; planView.placeType = null; highlightTool(btnPan); highlightCatalog(null); hideContext() }
-        btnTrack.setOnClickListener { planView.currentTool = PlanView.Tool.DRAW_TRACK; planView.placeType = null; highlightTool(btnTrack); highlightCatalog(null); showTrackContext() }
-        btnElec.setOnClickListener { planView.currentTool = PlanView.Tool.PLACE; planView.placeType = "socket_b1"; highlightTool(btnElec); highlightCatalog(null); showCatalog() }
-        btnEdit.setOnClickListener {
-            planView.currentTool = PlanView.Tool.EDIT; planView.placeType = null
-            planView.selectedWallId = null; planView.selectedObjectId = null; planView.selectedTrackId = null
-            highlightTool(btnEdit); highlightCatalog(null); hideContext()
-            planView.invalidate()
-        }
-
+        
+        // П1: вход всегда в Выбор
+        planView.currentTool = PlanView.Tool.PAN
+        highlightTool(btnPan, Design.Colors.OBJECT)
 
         contextPanel = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             setBackgroundColor(theme.panelBg)
-            setPadding(8, 6, 8, 6)
+            setPadding(Design.Spacing.SMALL, Design.Spacing.SMALL, Design.Spacing.SMALL, Design.Spacing.SMALL)
             visibility = View.GONE
         }
 
-        catalogScroll = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(theme.panelBg); setPadding(8, 4, 8, 10); visibility = View.GONE }
+        catalogScroll = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(theme.panelBg); setPadding(Design.Spacing.SMALL, Design.Spacing.SMALL, Design.Spacing.SMALL, Design.Spacing.MEDIUM); visibility = View.GONE }
         val catalogPanel = catalogScroll as LinearLayout
         val searchRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        val searchBox = EditText(this).apply { hint = "Поиск символа…"; textSize = 14f; setTextColor(theme.textPrimary); setHintTextColor(theme.hintColor); setBackgroundColor(theme.btnBg); setPadding(16, 10, 16, 10); layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f) }
+        val searchBox = EditText(this).apply { hint = "Поиск символа…"; textSize = 14f; setTextColor(theme.textPrimary); setHintTextColor(theme.hintColor); setBackgroundColor(theme.btnBg); setPadding(Design.Spacing.MEDIUM, 10, Design.Spacing.MEDIUM, 10); layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f) }
         searchRow.addView(searchBox)
         searchRow.addView(TextView(this).apply { text = " ✕ "; textSize = 20f; setTextColor(theme.textPrimary); setPadding(20, 8, 20, 8); setOnClickListener { catalogScroll.visibility = View.GONE } })
         catalogPanel.addView(searchRow)
@@ -161,10 +226,10 @@ class PlanEditorActivity : AppCompatActivity() {
         val itemsRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         itemsScroll.addView(itemsRow); catalogPanel.addView(itemsScroll)
 
-        fun catalogBtn(label: String, type: String): TextView = TextView(this).apply {
+        fun catalogButton(label: String, type: String): TextView = TextView(this).apply {
             text = label; setTextColor(theme.textPrimary); textSize = 12f; gravity = Gravity.CENTER
             setBackgroundColor(theme.btnBg); setPadding(18, 12, 18, 12)
-                val bmp = android.graphics.Bitmap.createBitmap(44, 44, android.graphics.Bitmap.Config.ARGB_8888); val bcv = android.graphics.Canvas(bmp); bcv.scale(0.7f, 0.7f, 22f, 22f); val pp = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = ru.gdesanek.render.CategoryPalette.color(type); style = android.graphics.Paint.Style.STROKE; strokeWidth = 4f }; ru.gdesanek.render.GostSymbols.draw(bcv, type, 22f, 24f, 0f, pp); compoundDrawablePadding = 6; setCompoundDrawablesWithIntrinsicBounds(null, android.graphics.drawable.BitmapDrawable(resources, bmp), null, null)
+            val bmp = android.graphics.Bitmap.createBitmap(44, 44, android.graphics.Bitmap.Config.ARGB_8888); val bcv = android.graphics.Canvas(bmp); bcv.scale(0.7f, 0.7f, 22f, 22f); val pp = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = ru.gdesanek.render.CategoryPalette.color(type); style = android.graphics.Paint.Style.STROKE; strokeWidth = 4f }; ru.gdesanek.render.GostSymbols.draw(bcv, type, 22f, 24f, 0f, pp); compoundDrawablePadding = 6; setCompoundDrawablesWithIntrinsicBounds(null, android.graphics.drawable.BitmapDrawable(resources, bmp), null, null)
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginEnd = 6 }
             setOnClickListener {
                 planView.currentTool = PlanView.Tool.PLACE; planView.placeType = type
@@ -173,7 +238,6 @@ class PlanEditorActivity : AppCompatActivity() {
                 val old = prefs.getString("list", "").orEmpty().split("|").filter { it.isNotEmpty() }.toMutableList()
                 old.remove(type); old.add(0, type)
                 prefs.edit().putString("list", old.take(6).joinToString("|")).apply()
-                // rebuildRecent()
             }
         }
         var currentGroup = ""
@@ -183,7 +247,7 @@ class PlanEditorActivity : AppCompatActivity() {
             for (item in ru.gdesanek.model.Catalog.items) {
                 if (currentGroup.isNotEmpty() && item.group != currentGroup) continue
                 if (q.isNotEmpty() && !item.label.lowercase().contains(q) && !item.type.contains(q)) continue
-                itemsRow.addView(catalogBtn(item.label, item.type))
+                itemsRow.addView(catalogButton(item.label, item.type))
             }
         }
         fun rebuildRecent() {
@@ -191,7 +255,7 @@ class PlanEditorActivity : AppCompatActivity() {
             val prefs = getSharedPreferences("recent", MODE_PRIVATE)
             for (t in prefs.getString("list", "").orEmpty().split("|").filter { it.isNotEmpty() }) {
                 val item = ru.gdesanek.model.Catalog.items.firstOrNull { it.type == t } ?: continue
-                recentRow.addView(catalogBtn("★ " + item.label, item.type))
+                recentRow.addView(catalogButton("★ " + item.label, item.type))
             }
         }
         fun chip(label: String, group: String): TextView = TextView(this).apply {
@@ -199,47 +263,6 @@ class PlanEditorActivity : AppCompatActivity() {
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginEnd = 6 }
             setOnClickListener { currentGroup = group; rebuildCatalog() }
         }
-        chipsRow.addView(chip("Все", ""))
-        for (g in ru.gdesanek.model.Catalog.groups) chipsRow.addView(chip(g, g))
-        searchBox.addTextChangedListener(object : android.text.TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
-            override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
-            override fun afterTextChanged(s: android.text.Editable?) { rebuildCatalog() }
-        })
-        rebuildCatalog(); rebuildRecent()
-
-        root.addView(topBar)
-        root.addView(View(this).apply { setBackgroundColor(theme.accent); layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 4) })
-        val stepper = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setBackgroundColor(theme.toolbarBg); setPadding(8, 6, 8, 6) }
-        val stepNames = arrayOf("1 План", "2 Электрика", "3 Трассы", "4 Смета", "5 PDF")
-        for (i in 0 until 5) {
-            val s = TextView(this).apply {
-                text = stepNames[i]; textSize = 12f; setTextColor(theme.textPrimary)
-                setBackgroundColor(theme.btnBg); setPadding(10, 10, 10, 10)
-                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { marginEnd = 4 }
-                gravity = android.view.Gravity.CENTER
-                setOnClickListener { onStepClick(i) }
-            }
-            stepViews.add(s); stepper.addView(s)
-        }
-        statusLine = TextView(this).apply { textSize = 12f; setTextColor(ru.gdesanek.theme.Design.DIM); setBackgroundColor(theme.toolbarBg); setPadding(16, 4, 16, 6); typeface = android.graphics.Typeface.MONOSPACE }
-        val frame = android.widget.FrameLayout(this)
-        planView.layoutParams = android.widget.FrameLayout.LayoutParams(android.widget.FrameLayout.LayoutParams.MATCH_PARENT, android.widget.FrameLayout.LayoutParams.MATCH_PARENT)
-        val zoomPanel = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = android.widget.FrameLayout.LayoutParams(android.widget.FrameLayout.LayoutParams.WRAP_CONTENT, android.widget.FrameLayout.LayoutParams.WRAP_CONTENT).apply { gravity = android.view.Gravity.END or android.view.Gravity.CENTER_VERTICAL; marginEnd = 8 }
-        }
-        fun zoomBtn(t: String, f: Float): TextView = TextView(this).apply {
-            text = t; textSize = 20f; setTextColor(theme.textPrimary); setBackgroundColor(theme.panelBg)
-            setPadding(22, 14, 22, 14); setOnClickListener { planView.zoomBy(f) }
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { bottomMargin = 6 }
-        }
-        zoomPanel.addView(zoomBtn("+", 1.25f))
-        zoomPanel.addView(zoomBtn("−", 0.8f))
-        zoomPanel.addView(zoomBtn("⤢", 0f).apply { setOnClickListener { planView.fit() } })
-        frame.addView(planView); frame.addView(zoomPanel)
-        root.addView(stepper)
-        root.addView(statusLine)
         root.addView(frame, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
         root.addView(toolsBar)
         root.addView(contextPanel)
@@ -597,3 +620,6 @@ class PlanEditorActivity : AppCompatActivity() {
         }
     }
 }
+
+
+fun Int.dpToPx(): Int = (this * android.content.res.Resources.getSystem().displayMetrics.density).toInt()
