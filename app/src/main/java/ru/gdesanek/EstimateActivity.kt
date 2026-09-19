@@ -12,6 +12,7 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import android.view.Gravity
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
 import ru.gdesanek.core.DefaultPrices
@@ -276,7 +277,7 @@ class EstimateActivity : AppCompatActivity() {
             val sum = r.qty * price
             sb.appendLine("${r.name};${r.qty};${r.unit};${String.format("%.0f", price)};${String.format("%.0f", sum)}")
         }
-        val total = rows.sumOf { it.qty * prefs.getFloat(it.key, 0f) }
+        val total = rows.sumOf { (it.qty * prefs.getFloat(it.key, 0f)).toDouble() }.toFloat()
         sb.appendLine("ИТОГО;;;;${String.format("%.0f", total)}")
         
         val fileName = "smeta_$projectName.csv"
