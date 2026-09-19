@@ -1,7 +1,9 @@
 package ru.gdesanek
 
+import android.content.DialogInterface
 import android.os.Bundle
 import android.view.Gravity
+import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -52,28 +54,28 @@ class SettingsActivity : AppCompatActivity() {
             prefs.edit().putInt("defThickness", next).apply()
         }
         section("РЕКВИЗИТЫ МАСТЕРА")
-        row("Имя / компания", { prefs.getString("masterName", "").orEmpty().ifEmpty { "—" } }) {
-            val input = EditText(this).apply { setText(prefs.getString("masterName", "").orEmpty()); setPadding(60, 40, 60, 40) }
-            android.app.AlertDialog.Builder(this).setTitle("Имя / компания").setView(input)
-                .setPositiveButton("Сохранить") { _, _ -> prefs.edit().putString("masterName", input.text.toString()).apply(); recreate() }
-                .setNegativeButton("Отмена", null).show()
-        }
-        row("Телефон", { prefs.getString("masterPhone", "").orEmpty().ifEmpty { "—" } }) {
-            val input = EditText(this).apply { setText(prefs.getString("masterPhone", "").orEmpty()); setPadding(60, 40, 60, 40); inputType = android.text.InputType.TYPE_CLASS_PHONE }
-            android.app.AlertDialog.Builder(this).setTitle("Телефон").setView(input)
-                .setPositiveButton("Сохранить") { _, _ -> prefs.edit().putString("masterPhone", input.text.toString()).apply(); recreate() }
-                .setNegativeButton("Отмена", null).show()
-        }
-        row("ИНН", { prefs.getString("masterInn", "").orEmpty().ifEmpty { "—" } }) {
-            val input = EditText(this).apply { setText(prefs.getString("masterInn", "").orEmpty()); setPadding(60, 40, 60, 40); inputType = android.text.InputType.TYPE_CLASS_NUMBER }
-            android.app.AlertDialog.Builder(this).setTitle("ИНН").setView(input)
-                .setPositiveButton("Сохранить") { _, _ -> prefs.edit().putString("masterInn", input.text.toString()).apply(); recreate() }
-                .setNegativeButton("Отмена", null).show()
-        }
+        row("Имя / компания", { prefs.getString("masterName", "").orEmpty().ifEmpty { "—" } }) { textDialog("Имя / компания", "masterName", android.text.InputType.TYPE_CLASS_TEXT) }
+        row("Телефон", { prefs.getString("masterPhone", "").orEmpty().ifEmpty { "—" } }) { textDialog("Телефон", "masterPhone", android.text.InputType.TYPE_CLASS_PHONE) }
+        row("ИНН", { prefs.getString("masterInn", "").orEmpty().ifEmpty { "—" } }) { textDialog("ИНН", "masterInn", android.text.InputType.TYPE_CLASS_NUMBER) }
         section("ДАННЫЕ")
         row("Проектов сохранено", { getSharedPreferences("projects_meta", MODE_PRIVATE).all.size.toString() }) { }
         wrap.addView(TextView(this).apply { text = "ГдеСанёк v1.1 · офлайн, без сбора данных"; textSize = 12f; setTextColor(theme.hintColor); setPadding(0, 28, 0, 0) })
         root.addView(ScrollView(this).apply { addView(wrap) })
         setContentView(root)
+    }
+
+    private fun textDialog(title: String, key: String, inputType: Int) {
+        val prefs = getSharedPreferences("settings", MODE_PRIVATE)
+        val input = EditText(this).apply {
+            setText(prefs.getString(key, "").orEmpty())
+            this.inputType = inputType
+            setPadding(60, 40, 60, 40)
+        }
+        android.app.AlertDialog.Builder(this).setTitle(title).setView(input)
+            .setPositiveButton("Сохранить", DialogInterface.OnClickListener { _, _ ->
+                prefs.edit().putString(key, input.text.toString()).apply()
+                recreate()
+            })
+            .setNegativeButton("Отмена", null).show()
     }
 }
