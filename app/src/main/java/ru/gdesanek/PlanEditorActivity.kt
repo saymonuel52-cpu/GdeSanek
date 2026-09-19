@@ -156,6 +156,7 @@ class PlanEditorActivity : AppCompatActivity() {
             elevation = Design.ELEVATION
         }
         val toolParams = LinearLayout.LayoutParams(0, Design.TOOL_HEIGHT.dpToPx(), 1f).apply { setMargins(2, 0, 2, 0) }
+        fun highlightTool(sel: TextView?) { toolButtons.forEach { b -> b.setBackgroundColor(if (b == sel) (b.tag as? Int ?: 0xFF333333.toInt()) else 0x00000000) } }
         fun makeTool(text: String, icon: Int, color: Int): TextView = TextView(this@PlanEditorActivity).apply {
             setCompoundDrawablesWithIntrinsicBounds(0, icon, 0, 0)
             compoundDrawablePadding = 4.dpToPx()
@@ -165,7 +166,7 @@ class PlanEditorActivity : AppCompatActivity() {
             setTextColor(theme.textPrimary)
             gravity = Gravity.CENTER
             setBackgroundColor(0x00000000)
-            layoutParams = toolParams
+            layoutParams = LinearLayout.LayoutParams(0, Design.TOOL_HEIGHT.dpToPx(), 1f).apply { setMargins(2, 0, 2, 0) }
             setOnClickListener {
                 planView.currentTool = when (text) {
                     "Выбор" -> PlanView.Tool.PAN
@@ -185,7 +186,6 @@ class PlanEditorActivity : AppCompatActivity() {
                 }
             }
         }
-        fun highlightTool(sel: TextView?) { toolButtons.forEach { b -> b.setBackgroundColor(if (b == sel) (b.tag as? Int ?: 0xFF333333.toInt()) else 0x00000000) } }
         
         btnWall = makeTool("Стена", R.drawable.ic_wall, Design.Colors.WALL)
         val btnPan = makeTool("Выбор", R.drawable.ic_pan, Design.Colors.OBJECT)
