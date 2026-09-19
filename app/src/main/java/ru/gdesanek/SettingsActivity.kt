@@ -58,6 +58,8 @@ class SettingsActivity : AppCompatActivity() {
         row("Телефон", { prefs.getString("masterPhone", "").orEmpty().ifEmpty { "—" } }) { textDialog("Телефон", "masterPhone", android.text.InputType.TYPE_CLASS_PHONE) }
         row("ИНН", { prefs.getString("masterInn", "").orEmpty().ifEmpty { "—" } }) { textDialog("ИНН", "masterInn", android.text.InputType.TYPE_CLASS_NUMBER) }
         section("ДАННЫЕ")
+        section("ДАННЫЕ")
+        row("Резервная копия", { "Экспорт / Восстановить" }) { startActivity(Intent(this, BackupActivity::class.java)) }
         row("Проектов сохранено", { ru.gdesanek.db.ProjectRepository(this).getAll().size.toString() }) { }
         wrap.addView(TextView(this).apply { text = "ГдеСанёк v1.1 · офлайн, без сбора данных"; textSize = 12f; setTextColor(theme.hintColor); setPadding(0, 28, 0, 0) })
         root.addView(ScrollView(this).apply { addView(wrap) })

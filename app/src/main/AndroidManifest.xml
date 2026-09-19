@@ -26,5 +26,6 @@
         </provider>
             <activity android:name=".SettingsActivity" android:exported="false" />
             <activity android:name=".IssuesActivity" android:exported="false" />
+        <activity android:name=".BackupActivity" android:exported="false" />
     </application>
 </manifest>

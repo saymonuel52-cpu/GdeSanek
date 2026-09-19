@@ -479,7 +479,7 @@ class PlanEditorActivity : AppCompatActivity() {
     }
 
     private fun showMainMenu() {
-        val items = arrayOf("Подложка", "Смета", "Экспорт PDF", "Заказчик", "Замечания", "Настройки…")
+        val items = arrayOf("Подложка", "Смета", "Экспорт PDF", "Заказчик", "Замечания", "Резервная копия", "Настройки…")
         AlertDialog.Builder(this).setTitle(projectName).setItems(items) { _, i ->
             when (i) {
                 0 -> if (planView.underlay == null) pickUnderlay() else AlertDialog.Builder(this).setTitle("Подложка").setItems(arrayOf("Калибровать", "Прозрачность", "Заменить", "Убрать")) { _, j ->
@@ -489,7 +489,8 @@ class PlanEditorActivity : AppCompatActivity() {
                 2 -> exportPdf()
                 3 -> startActivity(Intent(this, ClientActivity::class.java).putExtra("PROJECT_ID", projectId))
                 4 -> startActivity(Intent(this, IssuesActivity::class.java).putExtra("PROJECT_ID", projectId).putExtra("PROJECT_NAME", projectName))
-                5 -> startActivity(Intent(this, SettingsActivity::class.java))
+                5 -> startActivity(Intent(this, BackupActivity::class.java))
+                6 -> startActivity(Intent(this, SettingsActivity::class.java))
             }
         }.show()
     }
