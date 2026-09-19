@@ -31,7 +31,13 @@ object DefaultPrices {
         "vk" to 25000f,         // Кондиционер
         "boiler" to 8000f,      // Бойлер
         "stove" to 3500f,       // Плита электрическая
-        "pump" to 12000f        // Насос
+        "pump" to 12000f,       // Насос
+        "work_point" to 450f,   // Монтаж точки
+        "work_lamp" to 350f,    // Монтаж светильника
+        "work_shtroba" to 150f, // Штроба, ₽/м
+        "work_gofra" to 40f,    // Затяжка в гофру, ₽/м
+        "work_open" to 80f,     // Открытая прокладка, ₽/м
+        "work_panel" to 3500f   // Сборка щита
     )
 
     fun get(key: String): Float = prices[key] ?: 0f

@@ -16,6 +16,14 @@ object EstimateCalculator {
         return kotlin.math.ceil(s / 100f * 1.1f)
     }
 
+    fun trackMetersByWiring(tracks: List<CableTrack>, wiring: String): Float {
+        var s = 0f
+        for (t in tracks) if (t.wiring == wiring) for (i in 0 until t.points.size - 1) {
+            s += sqrt((t.points[i+1].x - t.points[i].x).pow(2) + (t.points[i+1].y - t.points[i].y).pow(2))
+        }
+        return kotlin.math.ceil(s / 100f * 1.1f)
+    }
+
     fun rows(objects: List<PlanObject>, tracks: List<CableTrack>): List<EstimateRow> {
         val r = mutableListOf<EstimateRow>()
         fun add(key: String, name: String, qty: Float, unit: String) {
@@ -53,6 +61,19 @@ object EstimateCalculator {
         add("boiler", "Бойлер", count("cons_boiler"), "шт")
         add("stove", "Плита электрическая", count("cons_stove"), "шт")
         add("pump", "Насос", count("cons_pump"), "шт")
+        // РАБОТЫ (авто-количества из плана)
+        val points = count("socket_b1","socket_b2","socket_b3","socket_b4","socket_k","socket_double","socket_380","switch_1","switch_2","switch_3","switch_pass","switch_dim","switch_move")
+        add("work_point", "Монтаж точки (розетка/выключатель)", points, "шт")
+        val lamps = count("lamp_titan","lamp_flame","lamp_grig","lamp_lust","lamp_bra","lamp_street","lamp_ao","lamp_exit")
+        add("work_lamp", "Монтаж светильника", lamps, "шт")
+        val allM = trackMeters(tracks)
+        val shtrobaM = trackMetersByWiring(tracks, "shtroba")
+        val gofraM = trackMetersByWiring(tracks, "gofra") + trackMetersByWiring(tracks, "truba")
+        val openM = maxOf(0f, allM - shtrobaM - gofraM)
+        add("work_shtroba", "Штроба под кабель", shtrobaM, "м")
+        add("work_gofra", "Затяжка кабеля в гофру/трубу", gofraM, "м")
+        add("work_open", "Прокладка открыто / в коробе", openM, "м")
+        if (objects.any { it.type == "panel_shr" }) add("work_panel", "Сборка и монтаж щита", 1f, "шт")
         return r
     }
 }

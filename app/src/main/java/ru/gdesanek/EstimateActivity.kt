@@ -43,10 +43,10 @@ class EstimateActivity : AppCompatActivity() {
         projectName = intent.getStringExtra("PROJECT_NAME") ?: "Проект"
         prefs = getSharedPreferences("estimate", MODE_PRIVATE)
         
-        if (!prefs.contains("cable")) {
-            val ed = prefs.edit()
-            DefaultPrices.prices.forEach { (k, v) -> ed.putFloat(k, v) }
-            ed.apply()
+        run {
+            val ed = prefs.edit(); var changed = false
+            DefaultPrices.prices.forEach { (k, v) -> if (!prefs.contains(k)) { ed.putFloat(k, v); changed = true } }
+            if (changed) ed.apply()
         }
         theme = ThemeManager.current(this)
 
@@ -195,6 +195,9 @@ class EstimateActivity : AppCompatActivity() {
         setContentView(root)
 
         for ((index, row) in rows.withIndex()) {
+            if (index == 0) list.addView(TextView(this).apply { text = "МАТЕРИАЛЫ"; textSize = 12f; setTextColor(theme.hintColor); setPadding(24, 16, 24, 4) })
+            if (row.key.startsWith("work_") && (index == 0 || !rows[index - 1].key.startsWith("work_")))
+                list.addView(TextView(this).apply { text = "РАБОТЫ"; textSize = 12f; setTextColor(theme.hintColor); setPadding(24, 20, 24, 4) })
             val rowBox = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 setBackgroundColor(if (index % 2 == 0) theme.canvasBg else theme.panelBg)
