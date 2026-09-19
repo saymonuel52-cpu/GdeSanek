@@ -20,6 +20,7 @@ import ru.gdesanek.core.EstimateCalculator
 import ru.gdesanek.db.ObjectRepository
 import ru.gdesanek.db.TrackRepository
 import ru.gdesanek.pdf.PanelPage
+import ru.gdesanek.pdf.SpecificationPage
 import ru.gdesanek.theme.ThemeManager
 import java.io.File
 import java.text.SimpleDateFormat
@@ -360,6 +361,7 @@ class EstimateActivity : AppCompatActivity() {
         doc.finishPage(page)
 
         PanelPage.generate(doc, pageInfo, tracks, objects, projectName)
+        SpecificationPage.generate(doc, pageInfo, tracks, objects, projectName, getSharedPreferences("settings", MODE_PRIVATE).getString("masterName", "").orEmpty())
 
         try {
             val file = File(cacheDir, "Estimate_$projectId.pdf")
