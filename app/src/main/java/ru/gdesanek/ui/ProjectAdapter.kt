@@ -8,6 +8,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import ru.gdesanek.R
+import ru.gdesanek.db.ProjectRepository
 import ru.gdesanek.model.Project
 import ru.gdesanek.theme.AppTheme
 import java.io.File
@@ -35,9 +36,11 @@ class ProjectAdapter(
         val p = projects[position]
         holder.name.text = p.name
         holder.address.text = p.address.ifEmpty { "—" }
-        holder.date.text = "ID: ${p.id}"
-        
-        // Загрузка превью
+
+        val repo = ProjectRepository(holder.itemView.context)
+        val (walls, objects, tracks) = repo.getCounts(p.id)
+        holder.date.text = "🧱 $walls  🔌 $objects  ⚡ $tracks"
+
         val previewFile = File(holder.itemView.context.filesDir, "preview_${p.id}.png")
         if (previewFile.exists()) {
             val bmp = BitmapFactory.decodeFile(previewFile.absolutePath)

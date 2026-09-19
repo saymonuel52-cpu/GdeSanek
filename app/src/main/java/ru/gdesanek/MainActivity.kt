@@ -30,17 +30,36 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (!getSharedPreferences("app", MODE_PRIVATE).getBoolean("onboarded", false)) startActivity(android.content.Intent(this, OnboardingActivity::class.java))
+        if (!getSharedPreferences("app", MODE_PRIVATE).getBoolean("onboarded", false)) startActivity(Intent(this, OnboardingActivity::class.java))
         showCrashLogIfAny()
         val theme = ThemeManager.current(this)
         try {
             val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(theme.canvasBg) }
 
+            val headerRow = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = android.view.Gravity.CENTER_VERTICAL
+                setPadding(32, 40, 32, 20)
+            }
             header = TextView(this).apply {
                 text = "Мои проекты"; textSize = 24f; setTextColor(theme.textPrimary)
-                typeface = Typeface.DEFAULT_BOLD; setPadding(32, 40, 32, 20)
+                typeface = Typeface.DEFAULT_BOLD
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             }
-            root.addView(header)
+            headerRow.addView(header)
+            val demoChip = TextView(this).apply {
+                text = "📋 Пример"; textSize = 14f; setTextColor(Color.WHITE)
+                setBackgroundColor(theme.accent); setPadding(24, 8, 24, 8)
+                setOnClickListener {
+                    val pid: Long = ru.gdesanek.demo.DemoProject.load(this@MainActivity)
+                    val intent = Intent(this@MainActivity, PlanEditorActivity::class.java)
+                    intent.putExtra("PROJECT_ID", pid)
+                    intent.putExtra("PROJECT_NAME", "Демо: Кухня-гостиная")
+                    startActivity(intent)
+                }
+            }
+            headerRow.addView(demoChip)
+            root.addView(headerRow)
 
             hint = TextView(this).apply {
                 text = "Нажмите + чтобы создать первый проект"; textSize = 16f
@@ -57,23 +76,6 @@ class MainActivity : AppCompatActivity() {
                 layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
             }
             frame.addView(recyclerView)
-
-            val demoBtn = TextView(this).apply {
-                text = "📋 Открыть пример"; setTextColor(theme.textPrimary); textSize = 16f
-                setBackgroundColor(theme.btnBg); setPadding(32, 16, 32, 16); gravity = android.view.Gravity.CENTER
-                layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT).apply {
-                    gravity = android.view.Gravity.BOTTOM or android.view.Gravity.START
-                    setMargins(48, 48, 48, 48)
-                }
-                setOnClickListener {
-                    val pid: Long = ru.gdesanek.demo.DemoProject.load(this@MainActivity)
-                    val intent = Intent(this@MainActivity, PlanEditorActivity::class.java)
-                    intent.putExtra("PROJECT_ID", pid)
-                    intent.putExtra("PROJECT_NAME", "Демо: Кухня-гостиная")
-                    startActivity(intent)
-                }
-            }
-            frame.addView(demoBtn)
 
             fabAdd = FloatingActionButton(this).apply {
                 imageTintList = android.content.res.ColorStateList.valueOf(Color.WHITE)
@@ -93,15 +95,26 @@ class MainActivity : AppCompatActivity() {
             recyclerView.layoutManager = LinearLayoutManager(this)
             adapter = ProjectAdapter(projects, theme, onLongClick = { project ->
                 AlertDialog.Builder(this)
-                    .setTitle("Удалить проект?")
-                    .setMessage("«" + project.name + "» будет удалён вместе со всеми стенами, точками и трассами.")
-                    .setPositiveButton("Удалить") { _, _ ->
-                        repository.deleteProject(project.id)
-                        java.io.File(filesDir, "preview_" + project.id + ".png").delete()
-                        projects.clear(); projects.addAll(repository.getAll()); adapter.notifyDataSetChanged()
-                        hint.visibility = if (projects.isEmpty()) android.view.View.VISIBLE else android.view.View.GONE
+                    .setTitle(project.name)
+                    .setItems(arrayOf("Переименовать", "Дублировать", "Удалить")) { _, which ->
+                        when (which) {
+                            0 -> showRenameDialog(project, theme)
+                            1 -> {
+                                repository.duplicateProject(project.id)
+                                loadProjects()
+                            }
+                            2 -> AlertDialog.Builder(this)
+                                .setTitle("Удалить проект?")
+                                .setMessage("«" + project.name + "» будет удалён вместе со всеми стенами, точками и трассами.")
+                                .setPositiveButton("Удалить") { _, _ ->
+                                    repository.deleteProject(project.id)
+                                    java.io.File(filesDir, "preview_" + project.id + ".png").delete()
+                                    loadProjects()
+                                }
+                                .setNegativeButton("Отмена", null)
+                                .show()
+                        }
                     }
-                    .setNegativeButton("Отмена", null)
                     .show()
             }) { project ->
                 val intent = Intent(this, PlanEditorActivity::class.java)
@@ -117,6 +130,24 @@ class MainActivity : AppCompatActivity() {
             val et = EditText(this).apply { setText(sw.toString()) }
             AlertDialog.Builder(this).setTitle("ОШИБКА — скопируй и пришли").setView(et).setPositiveButton("ОК", null).show()
         }
+    }
+
+    private fun showRenameDialog(project: ru.gdesanek.model.Project, theme: ru.gdesanek.theme.AppTheme) {
+        val input = EditText(this).apply {
+            setText(project.name)
+            setTextColor(theme.textPrimary)
+            setPadding(60, 40, 60, 20)
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Переименовать")
+            .setView(input)
+            .setPositiveButton("Сохранить") { _, _ ->
+                val newName = input.text.toString().ifEmpty { project.name }
+                repository.updateName(project.id, newName)
+                loadProjects()
+            }
+            .setNegativeButton("Отмена", null)
+            .show()
     }
 
     private fun showCrashLogIfAny() {
