@@ -289,6 +289,7 @@ class PlanEditorActivity : AppCompatActivity() {
         root.addView(contextPanel)
         root.addView(catalogScroll)
         root.addView(statusLine)
+        root.addView(topBar, 0)
         setContentView(root)
 
         // П1: вход всегда в Выбор
@@ -296,6 +297,7 @@ class PlanEditorActivity : AppCompatActivity() {
         planView.loadWalls()
         planView.loadObjects()
         planView.loadTracks()
+        startCard.visibility = if (planView.walls.isEmpty() && planView.objects.isEmpty() && planView.tracks.isEmpty()) View.VISIBLE else View.GONE
         loadUnderlay()
         updateStepper(); updateStatus()
         android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(object : Runnable { override fun run() { updateStatus(); updateStepper(); android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(this, 3000) } }, 3000)
