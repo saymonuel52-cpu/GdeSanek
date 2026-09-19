@@ -42,7 +42,6 @@ class EstimateActivity : AppCompatActivity() {
         projectName = intent.getStringExtra("PROJECT_NAME") ?: "Проект"
         prefs = getSharedPreferences("estimate", MODE_PRIVATE)
         
-        // Инициализация цен из дефолтных если prefs пустой
         if (!prefs.contains("cable")) {
             val ed = prefs.edit()
             DefaultPrices.prices.forEach { (k, v) -> ed.putFloat(k, v) }
@@ -93,7 +92,6 @@ class EstimateActivity : AppCompatActivity() {
             setBackgroundColor(theme.canvasBg)
         }
 
-        // Заголовок
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             setBackgroundColor(theme.toolbarBg)
@@ -118,7 +116,6 @@ class EstimateActivity : AppCompatActivity() {
         header.addView(title)
         root.addView(header)
 
-        // Заголовок таблицы
         val tableHeader = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             setBackgroundColor(theme.panelBg)
@@ -153,7 +150,6 @@ class EstimateActivity : AppCompatActivity() {
         tableHeader.addView(hSum)
         root.addView(tableHeader)
 
-        // Скролл
         val scroll = ScrollView(this)
         list = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -162,7 +158,6 @@ class EstimateActivity : AppCompatActivity() {
         scroll.addView(list)
         root.addView(scroll, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
 
-        // Итого + экспорт
         val totalBox = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(theme.accent)
@@ -176,6 +171,11 @@ class EstimateActivity : AppCompatActivity() {
         }
         val exportBtn = TextView(this).apply {
             text = "📄 PDF"
+            textSize = 16f
+            setTextColor(Color.WHITE)
+            gravity = android.view.Gravity.CENTER
+            setPadding(0, 16, 0, 0)
+            setOnClickListener { exportEstimatePdf() }
         }
         val csvBtn = TextView(this).apply {
             text = "📊 CSV"
@@ -186,19 +186,13 @@ class EstimateActivity : AppCompatActivity() {
             gravity = Gravity.CENTER
             setOnClickListener { exportCsv() }
         }
-            textSize = 16f
-            setTextColor(Color.WHITE)
-            gravity = android.view.Gravity.CENTER
-            setPadding(0, 16, 0, 0)
-            setOnClickListener { exportEstimatePdf() }
-        }
         totalBox.addView(totalView)
         totalBox.addView(exportBtn)
+        totalBox.addView(csvBtn)
         root.addView(totalBox)
 
         setContentView(root)
 
-        // Строки таблицы
         for ((index, row) in rows.withIndex()) {
             val rowBox = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
@@ -269,13 +263,11 @@ class EstimateActivity : AppCompatActivity() {
         totalView.text = String.format("ИТОГО: %.0f ₽", total)
     }
 
-
     private fun exportCsv() {
         val sp = getSharedPreferences("settings", MODE_PRIVATE)
         val mn = sp.getString("masterName", "").orEmpty()
         val mp = sp.getString("masterPhone", "").orEmpty()
         val sb = StringBuilder()
-        // UTF-8 BOM для корректного открытия кириллицы в Excel
         sb.append("\uFEFF")
         if (mn.isNotEmpty() || mp.isNotEmpty()) sb.appendLine("$mn;$mp")
         sb.appendLine("Наименование;Количество;Ед.;Цена;Сумма")
@@ -310,7 +302,6 @@ class EstimateActivity : AppCompatActivity() {
         val paint = android.graphics.Paint()
         paint.color = Color.BLACK
 
-        // Заголовок
         paint.textSize = 20f
         paint.typeface = Typeface.DEFAULT_BOLD
         canvas.drawText("СМЕТА", 40f, 40f, paint)
@@ -319,7 +310,6 @@ class EstimateActivity : AppCompatActivity() {
         canvas.drawText("Проект: $projectName", 40f, 60f, paint)
         canvas.drawText("Дата: ${SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date())}", 40f, 75f, paint)
 
-        // Заголовок таблицы
         var y = 110f
         paint.textSize = 12f
         paint.typeface = Typeface.DEFAULT_BOLD
@@ -333,7 +323,6 @@ class EstimateActivity : AppCompatActivity() {
         canvas.drawLine(40f, y, 555f, y, paint)
         paint.color = Color.BLACK
 
-        // Строки
         paint.textSize = 11f
         paint.typeface = Typeface.DEFAULT
         y = 130f
@@ -356,7 +345,6 @@ class EstimateActivity : AppCompatActivity() {
             }
         }
 
-        // Итого
         y += 10f
         paint.color = Color.GRAY
         canvas.drawLine(40f, y - 10f, 555f, y - 10f, paint)
@@ -367,7 +355,6 @@ class EstimateActivity : AppCompatActivity() {
 
         doc.finishPage(page)
 
-        // Третья страница: Щит и группы
         PanelPage.generate(doc, pageInfo, tracks, objects, projectName)
 
         try {
