@@ -68,7 +68,7 @@ class PlanEditorActivity : AppCompatActivity() {
         val menuBtn = TextView(this).apply { 
             text = "☰"; textSize = 24f; setTextColor(theme.textPrimary)
             setPadding(Design.Spacing.SMALL, Design.Spacing.SMALL, Design.Spacing.SMALL, Design.Spacing.SMALL)
-            setOnClickListener { showThemeDialog() }
+            setOnClickListener { showMainMenu() }
         }
         val title = TextView(this).apply { 
             text = projectName; textSize = 18f; setTextColor(theme.textPrimary)
@@ -86,26 +86,7 @@ class PlanEditorActivity : AppCompatActivity() {
             setPadding(Design.Spacing.SMALL, Design.Spacing.SMALL, Design.Spacing.SMALL, Design.Spacing.SMALL)
             setOnClickListener { if (undoManager.redo()) planView.reloadAll() }
         }
-        val moreBtn = TextView(this).apply { 
-            text = "⋮"; textSize = 24f; setTextColor(theme.textPrimary)
-            setPadding(Design.Spacing.SMALL, Design.Spacing.SMALL, Design.Spacing.SMALL, Design.Spacing.SMALL)
-            setOnClickListener { 
-                android.widget.PopupMenu(this@PlanEditorActivity, this).apply {
-                    menu.add("Подложка").setOnMenuItemClickListener { 
-                        if (planView.underlay == null) pickUnderlay()
-                        else android.app.AlertDialog.Builder(this@PlanEditorActivity).setTitle("Подложка").setItems(arrayOf("Калибровать", "Прозрачность", "Заменить", "Убрать")) { _, i ->
-                            when (i) { 0 -> planView.startCalibration(); 1 -> showUnderlayDialog(); 2 -> pickUnderlay(); 3 -> removeUnderlay() }
-                        }.show()
-                        true
-                    }
-                    menu.add("Смета").setOnMenuItemClickListener { startActivity(Intent(this@PlanEditorActivity, EstimateActivity::class.java).putExtra("PROJECT_ID", projectId)); true }
-                    menu.add("Экспорт PDF").setOnMenuItemClickListener { exportPdf(); true }
-                    menu.add("Заказчик").setOnMenuItemClickListener { startActivity(Intent(this@PlanEditorActivity, ClientActivity::class.java).putExtra("PROJECT_ID", projectId)); true }
-                    show()
-                }
-            }
-        }
-        topBar.addView(menuBtn); topBar.addView(title); topBar.addView(undoBtn); topBar.addView(redoBtn); topBar.addView(moreBtn)
+        topBar.addView(menuBtn); topBar.addView(title); topBar.addView(undoBtn); topBar.addView(redoBtn)
         
         // shareBtn (используется в stepper, но не виден в UI)
         shareBtn = TextView(this).apply { visibility = View.GONE }
@@ -490,6 +471,22 @@ class PlanEditorActivity : AppCompatActivity() {
         contextPanel.removeAllViews()
         contextPanel.visibility = View.GONE
         catalogScroll.visibility = View.GONE
+    }
+
+    private fun showMainMenu() {
+        val items = arrayOf("Подложка", "Смета", "Экспорт PDF", "Заказчик", "Темы…", "Настройки…")
+        AlertDialog.Builder(this).setTitle(projectName).setItems(items) { _, i ->
+            when (i) {
+                0 -> if (planView.underlay == null) pickUnderlay() else AlertDialog.Builder(this).setTitle("Подложка").setItems(arrayOf("Калибровать", "Прозрачность", "Заменить", "Убрать")) { _, j ->
+                    when (j) { 0 -> planView.startCalibration(); 1 -> showUnderlayDialog(); 2 -> pickUnderlay(); 3 -> removeUnderlay() }
+                }.show()
+                1 -> startActivity(Intent(this, EstimateActivity::class.java).putExtra("PROJECT_ID", projectId))
+                2 -> exportPdf()
+                3 -> startActivity(Intent(this, ClientActivity::class.java).putExtra("PROJECT_ID", projectId))
+                4 -> showThemeDialog()
+                5 -> startActivity(Intent(this, SettingsActivity::class.java))
+            }
+        }.show()
     }
 
     private fun showThemeDialog() {
