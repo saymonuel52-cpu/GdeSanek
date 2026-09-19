@@ -10,8 +10,8 @@ import kotlin.math.ceil
 import kotlin.math.sqrt
 
 object SpecificationPage {
-    fun generate(doc: PdfDocument, pageInfo: PdfDocument.PageInfo.Builder, tracks: List<CableTrack>, objects: List<PlanObject>, projectName: String, masterName: String) {
-        val page = doc.startPage(pageInfo.create())
+    fun generate(doc: PdfDocument, pageInfo: PdfDocument.PageInfo, tracks: List<CableTrack>, objects: List<PlanObject>, projectName: String, masterName: String) {
+        val page = doc.startPage(pageInfo)
         val canvas = page.canvas
         canvas.drawColor(Color.WHITE)
         val title = Paint().apply { color = Color.BLACK; textSize = 15f; typeface = Typeface.DEFAULT_BOLD }

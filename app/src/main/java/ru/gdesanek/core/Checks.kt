@@ -18,6 +18,11 @@ object Checks {
             val br = PanelPage.breakerBySection(PanelPage.parseSection(cable))
             if (g.track != null && cur > br) out.add("Гр.$n: ток ${String.format("%.0f", cur)} А выше автомата C$br")
             val len = if (g.track != null) PanelPage.trackLength(g.track.points) / 100f * 1.1f else 0f
+            val sec = PanelPage.parseSection(cable)
+            if (sec > 0f && cur > 0.0 && len > 0f) {
+                val dU = 2 * 0.0175 * len.toDouble() * cur / sec.toDouble() / 220.0 * 100.0
+                if (dU > 2.0) out.add("Гр.$n: падение напряжения ${String.format("%.1f", dU)}% > 2% — увеличьте сечение")
+            }
             if (len > 40f) out.add("Гр.$n: ${String.format("%.0f", len)} м — проверьте падение напряжения")
             val cores = Regex("^(\\d+)x").find(cable)?.groupValues?.get(1)?.toIntOrNull() ?: 3
             if (g.track != null && cores < 3) out.add("Гр.$n: кабель $cores жилы — нет PE-заземления")
