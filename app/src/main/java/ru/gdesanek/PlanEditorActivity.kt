@@ -136,10 +136,10 @@ class PlanEditorActivity : AppCompatActivity() {
             setOnClickListener { btnWall.performClick(); startCard.visibility = View.GONE }
         }
         val btnStartDemo = TextView(this).apply { 
-            text = "📋 Открыть пример"; textSize = 16f; setTextColor(0xFFFFFFFF.toInt())
+            text = "📋 Примеры: список проектов"; textSize = 16f; setTextColor(0xFFFFFFFF.toInt())
             setPadding(Design.Spacing.LARGE, Design.Spacing.MEDIUM, Design.Spacing.LARGE, Design.Spacing.MEDIUM)
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { bottomMargin = Design.Spacing.SMALL }
-            setOnClickListener { ru.gdesanek.demo.DemoProject.fill(this@PlanEditorActivity); planView.reloadAll(); startCard.visibility = View.GONE }
+            setOnClickListener { finish() }
         }
         val btnStartPhoto = TextView(this).apply { 
             text = "🖼 План с фото"; textSize = 16f; setTextColor(0xFFFFFFFF.toInt())
@@ -262,6 +262,14 @@ class PlanEditorActivity : AppCompatActivity() {
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginEnd = 6 }
             setOnClickListener { currentGroup = group; rebuildCatalog() }
         }
+        chipsRow.addView(chip("Все", ""))
+        for (g in ru.gdesanek.model.Catalog.items.map { it.group }.distinct()) chipsRow.addView(chip(g, g))
+        searchBox.addTextChangedListener(object : android.text.TextWatcher {
+            override fun afterTextChanged(s: android.text.Editable?) { rebuildCatalog() }
+            override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+            override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+        })
+        rebuildRecent(); rebuildCatalog()
         // FrameLayout с planView и карточкой "Начнём?"
         val frame = android.widget.FrameLayout(this).apply {
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)
