@@ -382,48 +382,46 @@ class PlanEditorActivity : AppCompatActivity() {
         contextPanel.removeAllViews()
         contextPanel.visibility = View.VISIBLE
         catalogScroll.visibility = View.GONE
-        val wrap = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT) }
-        val scroll = HorizontalScrollView(this)
-        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        val wrap = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(12, 10, 12, 10) }
+        wrap.addView(TextView(this).apply { text = "СПОСОБ ПРОКЛАДКИ"; textSize = 12f; setTextColor(theme.hintColor); setPadding(4, 0, 0, 6) })
+        val wScroll = HorizontalScrollView(this)
+        val wRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         for ((code, name) in WiringTypes.list) {
-            val b = TextView(this).apply {
-                text = name; setTextColor(theme.textPrimary); textSize = 12f; gravity = Gravity.CENTER
+            wRow.addView(TextView(this).apply {
+                text = name; textSize = 14f; gravity = Gravity.CENTER; setTextColor(theme.textPrimary)
                 setBackgroundColor(if (code == planView.currentWiring) theme.btnActiveBg else theme.btnBg)
-                setPadding(16, 10, 16, 10)
+                setPadding(22, 14, 22, 14)
                 layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginEnd = 6 }
                 setOnClickListener { planView.currentWiring = code; showTrackContext() }
-            }
-            row.addView(b)
+            })
         }
-        scroll.addView(row); wrap.addView(scroll)
-        val cableScroll = HorizontalScrollView(this)
-        val cableRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, 6, 0, 0) }
+        wScroll.addView(wRow); wrap.addView(wScroll)
+        wrap.addView(TextView(this).apply { text = "КАБЕЛЬ"; textSize = 12f; setTextColor(theme.hintColor); setPadding(4, 10, 0, 6) })
+        val cRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         for (cbl in listOf("3x1.5", "3x2.5", "3x4", "3x6")) {
-            val b = TextView(this).apply {
-                text = cbl; setTextColor(theme.textPrimary); textSize = 12f; gravity = Gravity.CENTER
+            cRow.addView(TextView(this).apply {
+                text = cbl; textSize = 14f; gravity = Gravity.CENTER; setTextColor(theme.textPrimary)
                 setBackgroundColor(if (cbl == planView.currentCable) theme.btnActiveBg else theme.btnBg)
-                setPadding(18, 10, 18, 10)
+                setPadding(22, 14, 22, 14)
                 layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginEnd = 6 }
                 setOnClickListener { planView.currentCable = cbl; showTrackContext() }
-            }
-            cableRow.addView(b)
+            })
         }
-        cableScroll.addView(cableRow); wrap.addView(cableScroll)
-        val colorScroll = HorizontalScrollView(this)
-        val colorRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, 6, 0, 0) }
+        wrap.addView(cRow)
+        wrap.addView(TextView(this).apply { text = "ЦВЕТ ЛИНИИ"; textSize = 12f; setTextColor(theme.hintColor); setPadding(4, 10, 0, 6) })
+        val colRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         val palette = listOf(Color.parseColor("#4CAF50"), Color.parseColor("#FF5252"), Color.parseColor("#2196F3"), Color.parseColor("#FF9800"), Color.parseColor("#FFEB3B"), Color.parseColor("#9C27B0"), Color.parseColor("#00BCD4"), Color.parseColor("#FFFFFF"))
         for (c in palette) {
-            val b = TextView(this).apply {
+            colRow.addView(TextView(this).apply {
                 text = if (planView.currentTrackColor == c) "✓" else ""
-                textSize = 14f; gravity = Gravity.CENTER
-                setTextColor(if (c == -1) Color.BLACK else Color.WHITE)
+                textSize = 16f; gravity = Gravity.CENTER
+                setTextColor(if (c == Color.parseColor("#FFEB3B") || c == Color.parseColor("#FFFFFF")) Color.BLACK else Color.WHITE)
                 setBackgroundColor(c)
-                layoutParams = LinearLayout.LayoutParams(70, 50).apply { marginEnd = 8 }
+                layoutParams = LinearLayout.LayoutParams(48.dpToPx(), 48.dpToPx()).apply { marginEnd = 8 }
                 setOnClickListener { planView.currentTrackColor = c; showTrackContext() }
-            }
-            colorRow.addView(b)
+            })
         }
-        colorScroll.addView(colorRow); wrap.addView(colorScroll)
+        wrap.addView(colRow)
         contextPanel.addView(wrap)
     }
 
@@ -438,9 +436,9 @@ class PlanEditorActivity : AppCompatActivity() {
         val groupRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         for (g in Catalog.groups) {
             val b = TextView(this).apply {
-                text = g; setTextColor(theme.textPrimary); textSize = 12f; gravity = Gravity.CENTER
+                text = g; setTextColor(theme.textPrimary); textSize = 13f; gravity = Gravity.CENTER
                 setBackgroundColor(if (g == currentCatalogGroup) theme.btnActiveBg else theme.btnBg)
-                setPadding(16, 10, 16, 10)
+                setPadding(20, 12, 20, 12)
                 layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginEnd = 6 }
                 setOnClickListener { currentCatalogGroup = g; showCatalog() }
             }
@@ -453,9 +451,9 @@ class PlanEditorActivity : AppCompatActivity() {
         val itemRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, 6, 0, 0) }
         for (item in Catalog.byGroup(currentCatalogGroup)) {
             val b = TextView(this).apply {
-                text = item.label; setTextColor(theme.textPrimary); textSize = 12f; gravity = Gravity.CENTER
+                text = item.label; setTextColor(theme.textPrimary); textSize = 14f; gravity = Gravity.CENTER
                 setBackgroundColor(if (item.type == planView.placeType) theme.btnActiveBg else theme.btnBg)
-                setPadding(18, 12, 18, 12)
+                setPadding(22, 16, 22, 16)
                 val bmp = android.graphics.Bitmap.createBitmap(44, 44, android.graphics.Bitmap.Config.ARGB_8888); val bcv = android.graphics.Canvas(bmp); bcv.scale(0.7f, 0.7f, 22f, 22f); val pp = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = ru.gdesanek.render.CategoryPalette.color(item.type); style = android.graphics.Paint.Style.STROKE; strokeWidth = 4f }; ru.gdesanek.render.GostSymbols.draw(bcv, item.type, 22f, 24f, 0f, pp); compoundDrawablePadding = 6; setCompoundDrawablesWithIntrinsicBounds(null, android.graphics.drawable.BitmapDrawable(resources, bmp), null, null)
                 layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginEnd = 6 }
                 setOnClickListener { planView.currentTool = PlanView.Tool.PLACE; planView.placeType = item.type; showCatalog() }
