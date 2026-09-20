@@ -318,7 +318,7 @@ object GostSymbols {
         val p = stroke(paint, 4f).apply { color = doorColor }
         canvas.drawLine(0f, 0f, size, 0f, p)
         val arcPaint = stroke(paint, 3f).apply { color = doorColor; pathEffect = android.graphics.DashPathEffect(floatArrayOf(10f, 5f), 0f) }
-        canvas.drawArc(0f, -size, size * 2, size, 270f, 90f, false, arcPaint)
+        canvas.drawArc(-size, -size, size, size, 0f, 90f, false, arcPaint)
         canvas.drawCircle(0f, 0f, 6f, fill(paint).apply { color = doorColor })
         canvas.restore()
     }
@@ -331,8 +331,7 @@ object GostSymbols {
         val wallThick = 10f
         val p = stroke(paint, 3f).apply { color = winColor }
         canvas.drawRect(0f, -wallThick / 2, size, wallThick / 2, p)
-        canvas.drawLine(0f, -wallThick / 4, size, -wallThick / 4, p)
-        canvas.drawLine(0f, wallThick / 4, size, wallThick / 4, p)
+        canvas.drawLine(0f, 0f, size, 0f, p)
         canvas.restore()
     }
 

@@ -449,7 +449,22 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     }
 
     private fun hitObject(wx: Float, wy: Float): PlanObject? =
-        objects.lastOrNull { (it.x - wx) * (it.x - wx) + (it.y - wy) * (it.y - wy) < 45f * 45f }
+        objects.lastOrNull { o ->
+            if (ru.gdesanek.core.ArchTypes.isArch(o.type)) {
+                val rot = if (o.rotation >= 1000f) o.rotation - 1000f else o.rotation
+                val rad = Math.toRadians(rot.toDouble())
+                val dx = kotlin.math.cos(rad).toFloat(); val dy = kotlin.math.sin(rad).toFloat()
+                val len = ru.gdesanek.core.ArchTypes.size(o.type)
+                val ldx = dx * len; val ldy = dy * len
+                val lenSq = ldx * ldx + ldy * ldy
+                var t = if (lenSq == 0f) 0f else ((wx - o.x) * ldx + (wy - o.y) * ldy) / lenSq
+                t = t.coerceIn(0f, 1f)
+                val px = o.x + t * ldx; val py = o.y + t * ldy
+                (wx - px) * (wx - px) + (wy - py) * (wy - py) < 50f * 50f
+            } else {
+                (o.x - wx) * (o.x - wx) + (o.y - wy) * (o.y - wy) < 45f * 45f
+            }
+        }
 
     private fun hitWall(wx: Float, wy: Float): Wall? {
         for (wall in walls.reversed()) {
