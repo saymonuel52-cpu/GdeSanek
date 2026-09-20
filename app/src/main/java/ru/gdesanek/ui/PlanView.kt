@@ -333,15 +333,32 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
 
     private fun showObjectDialog(obj: PlanObject) {
         val curH = if (obj.height >= 0) obj.height else (ru.gdesanek.theme.SymbolPalette.height(obj.type) ?: 0)
-        AlertDialog.Builder(context).setTitle("Объект: ${obj.type}").setItems(arrayOf(
+        val isArch = ru.gdesanek.core.ArchTypes.isArch(obj.type)
+        val menuItems = if (isArch) arrayOf(
+            "Отзеркалить (сторона открывания)",
+            "Повернуть на 45°",
+            "Дублировать",
+            "Ряд (Array)",
+            "Удалить"
+        ) else arrayOf(
             "Высота (сейчас H=$curH см)",
             "Повернуть на 45°",
             "Дублировать",
             "Ряд (Array)",
             "Удалить"
-        )) { _, i ->
+        )
+        AlertDialog.Builder(context).setTitle("Объект: ${obj.type}").setItems(menuItems) { _, i ->
             when (i) {
                 0 -> {
+                    if (isArch) {
+                        val isMirror = obj.rotation >= 1000f
+                        val newRot = if (isMirror) obj.rotation - 1000f else obj.rotation + 1000f
+                        val upd = obj.copy(rotation = newRot)
+                        objectRepository?.update(upd)
+                        val idx = objects.indexOfFirst { it.id == obj.id }; if (idx >= 0) objects[idx] = upd
+                        invalidate()
+                        return@setItems
+                    }
                     val et = EditText(context).apply { inputType = InputType.TYPE_CLASS_NUMBER; setText(curH.toString()) }
                     AlertDialog.Builder(context).setTitle("Высота установки, см").setView(et).setPositiveButton("ОК") { _, _ ->
                         val h = et.text.toString().toIntOrNull() ?: -1

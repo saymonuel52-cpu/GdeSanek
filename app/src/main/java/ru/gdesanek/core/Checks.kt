@@ -7,6 +7,8 @@ import ru.gdesanek.pdf.PanelPage
 object Checks {
     fun run(objects: List<PlanObject>, tracks: List<CableTrack>): List<String> {
         val out = mutableListOf<String>()
+        val filteredObjects = objects.filterNot { ArchTypes.isArch(it.type) }
+        val objects = filteredObjects
         val groups = PanelPage.groupByTrack(tracks, objects)
         var totalA = 0.0
         groups.forEachIndexed { i, g ->

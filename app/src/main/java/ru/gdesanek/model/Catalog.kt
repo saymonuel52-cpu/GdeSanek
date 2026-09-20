@@ -3,7 +3,7 @@ package ru.gdesanek.model
 data class CatalogItem(val type: String, val label: String, val group: String)
 
 object Catalog {
-    val groups = listOf("Розетки", "Выключатели", "Освещение", "Слаботочка", "Щиты", "Климат и нагрузка")
+    val groups = listOf("Розетки", "Выключатели", "Освещение", "Слаботочка", "Щиты", "Климат и нагрузка", "Проёмы")
 
     val items = listOf(
         CatalogItem("socket_b1", "Розетка 1", "Розетки"),
@@ -28,6 +28,12 @@ object Catalog {
         CatalogItem("lamp_bra", "Бра настенное", "Освещение"),
         CatalogItem("lamp_led", "LED-лента", "Освещение"),
         CatalogItem("lamp_street", "Уличный фонарь", "Освещение"),
+        CatalogItem("arch_door800", "Дверь 800", "Проёмы"),
+        CatalogItem("arch_door900", "Дверь 900", "Проёмы"),
+        CatalogItem("arch_win1200", "Окно 1200", "Проёмы"),
+        CatalogItem("arch_win1400", "Окно 1400", "Проёмы"),
+        CatalogItem("arch_win1800", "Окно 1800", "Проёмы"),
+        CatalogItem("arch_open900", "Проём 900", "Проёмы"),
         CatalogItem("lamp_ao", "Аварийный свет", "Освещение"),
         CatalogItem("lamp_exit", "Табло ВЫХОД", "Освещение"),
         CatalogItem("rj45", "Интернет RJ45", "Слаботочка"),
