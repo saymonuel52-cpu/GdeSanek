@@ -78,7 +78,10 @@ object PdfExporter {
             canvas.translate(tx(o.x), ty(o.y))
             canvas.scale(scale, scale)
             canvas.translate(-o.x, -o.y)
-            GostSymbols.draw(canvas, o.type, o.x, o.y, o.rotation, symPaint)
+            if (ru.gdesanek.core.ArchTypes.isArch(o.type)) {
+                val ap = android.graphics.Paint(symPaint).apply { color = android.graphics.Color.parseColor("#9E9E9E"); strokeWidth = 2f }
+                GostSymbols.draw(canvas, o.type, o.x, o.y, o.rotation, ap)
+            } else GostSymbols.draw(canvas, o.type, o.x, o.y, o.rotation, symPaint)
             canvas.restore()
             SymbolPalette.height(o.type)?.let { h -> canvas.drawText("H=$h", tx(o.x) + 6f, ty(o.y) - 4f, labelPaint) }
             SymbolPalette.power(o.type)?.let { w -> canvas.drawText(w.toString() + " Вт", tx(o.x) + 6f, ty(o.y) + 8f, labelPaint) }

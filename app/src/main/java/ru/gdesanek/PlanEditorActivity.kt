@@ -307,7 +307,7 @@ class PlanEditorActivity : AppCompatActivity() {
     private fun hintFor(mode: String) = when (mode) {
         "Выбор" -> "Выбор: тап по объекту — свойства, перетаскивание — перемещение"
         "Стена" -> "Стена: тап — начало, тап — конец; оранжевый кружок = привязка"
-        "Элект" -> "Элект: выбери символ в каталоге и тапай по плану"
+        "Элект" -> if (planView.placeType?.startsWith("arch_") == true) "Проём: тапни у стены — ляжет вдоль, магнит притянет к центру" else "Элект: выбери символ в каталоге и тапай по плану"
         "Трасса" -> "Трасса: тапай точки по порядку, финиш в первой точке"
         "Правка" -> "Правка: тап по объекту или стене → ручки; долгий тап → удалить"
         else -> ""
@@ -470,6 +470,10 @@ class PlanEditorActivity : AppCompatActivity() {
         itemScroll.addView(itemRow)
         wrap.addView(itemScroll)
         contextPanel.addView(wrap)
+        groupScroll.post {
+            val idx = Catalog.groups.indexOf(currentCatalogGroup)
+            if (idx >= 0) { val v = groupRow.getChildAt(idx); if (v != null) groupScroll.scrollTo(Math.max(0, v.left - 60), 0) }
+        }
     }
 
     private fun hideContext() {
