@@ -207,8 +207,16 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         if (currentTrackPoints.isNotEmpty() && fingerOn) { val l = currentTrackPoints.last(); canvas.drawLine(l.x, l.y, fingerX, fingerY, tempTrackPaint) }
         if (currentTrackPoints.isNotEmpty() && fingerOn) { val lt = currentTrackPoints.last(); val total = (trackLength(currentTrackPoints) + sqrt((fingerX - lt.x).pow(2) + (fingerY - lt.y).pow(2))) * 1.1f / 100f; canvas.drawText(String.format("%.1f m (x1.1)", total), fingerX + 24f, fingerY - 24f, hintPaint) }
         for (obj in objects) {
-            symPaint.color = SymbolPalette.color(obj.type); GostSymbols.draw(canvas, obj.type, obj.x, obj.y, obj.rotation, symPaint)
+            symPaint.color = SymbolPalette.color(obj.type)
+            if (ru.gdesanek.core.ArchTypes.isArch(obj.type)) GostSymbols.draw(canvas, obj.type, obj.x, obj.y, obj.rotation, symPaint, (hitWall(obj.x, obj.y)?.thickness ?: 100f) / 10f)
+            else GostSymbols.draw(canvas, obj.type, obj.x, obj.y, obj.rotation, symPaint)
             if (obj.id == selectedObjectId) canvas.drawCircle(obj.x, obj.y, 35f, selectionPaint)
+        }
+        if (currentTool == Tool.PLACE && placeType != null && ru.gdesanek.core.ArchTypes.isArch(placeType!!) && fingerOn) {
+            val gs = snapPointForPlace(fingerX, fingerY)
+            symPaint.color = SymbolPalette.color(placeType!!); symPaint.alpha = 110
+            GostSymbols.draw(canvas, placeType!!, gs.x, gs.y, gs.rot, symPaint, (hitWall(gs.x, gs.y)?.thickness ?: 100f) / 10f)
+            symPaint.alpha = 255
         }
         for (p in calibPoints) { canvas.drawLine(p.x - 20f, p.y, p.x + 20f, p.y, calibPaint); canvas.drawLine(p.x, p.y - 20f, p.x, p.y + 20f, calibPaint) }
         canvas.restore()
@@ -448,6 +456,19 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         dlg.show()
     }
 
+    private fun distToWalls(x: Float, y: Float): Float {
+        var best = Float.MAX_VALUE
+        for (wall in walls) {
+            val dx = wall.x2 - wall.x1; val dy = wall.y2 - wall.y1
+            val lenSq = dx * dx + dy * dy
+            if (lenSq == 0f) continue
+            var t = ((x - wall.x1) * dx + (y - wall.y1) * dy) / lenSq; t = t.coerceIn(0f, 1f)
+            val px = wall.x1 + t * dx; val py = wall.y1 + t * dy
+            best = minOf(best, sqrt((x - px) * (x - px) + (y - py) * (y - py)))
+        }
+        return best
+    }
+
     private fun hitObject(wx: Float, wy: Float): PlanObject? =
         objects.lastOrNull { o ->
             if (ru.gdesanek.core.ArchTypes.isArch(o.type)) {
@@ -617,6 +638,7 @@ undoManager?.push(ru.gdesanek.core.Command.InsertObject(apply = { trackRepositor
                         Tool.DRAW_WALL -> { if (currentWall != null) { val pt = screenToCanvas(event.x, event.y); val sp = snapWallPoint(pt.x, pt.y); val op = applyOrtho(currentWall!!.x1, currentWall!!.y1, sp.x, sp.y); currentWall = currentWall!!.copy(x2 = op.x, y2 = op.y); val ni = if (sp.x != pt.x || sp.y != pt.y) android.graphics.PointF(sp.x, sp.y) else null; if (ni != null && snapIndicator == null) performHapticFeedback(0); snapIndicator = ni; invalidate() } }
                         Tool.PAN -> { matrix.postTranslate(event.x - lastTouchX, event.y - lastTouchY); lastTouchX = event.x; lastTouchY = event.y; invalidate() }
                         Tool.DRAW_TRACK -> { val pt = screenToCanvas(event.x, event.y); fingerX = pt.x; fingerY = pt.y; fingerOn = true; invalidate() }
+                        Tool.PLACE -> { val pt = screenToCanvas(event.x, event.y); fingerX = pt.x; fingerY = pt.y; fingerOn = true; invalidate() }
                         else -> {}
                     }
                 } else if (event.pointerCount >= 2) {
@@ -678,10 +700,12 @@ undoManager?.push(ru.gdesanek.core.Command.InsertObject(apply = { repository?.in
                         if (hit != null) showObjectDialog(hit)
                         else {
                             val s = snapPointForPlace(pt.x, pt.y)
+                            if (ru.gdesanek.core.ArchTypes.isArch(placeType!!) && distToWalls(pt.x, pt.y) > 40f)
+                                Toast.makeText(context, "Проём не на стене: подвинь к стене или поверни", Toast.LENGTH_SHORT).show()
                             val savedId = objectRepository?.insert(projectId, placeType!!, s.x, s.y, s.rot) ?: 0L
 undoManager?.push(ru.gdesanek.core.Command.InsertObject(apply = { objectRepository?.insert(projectId, placeType!!, s.x, s.y, s.rot) }, revert = { objectRepository?.delete(savedId) }))
                             haptic()
-                            objects.add(PlanObject(savedId, projectId, placeType!!, s.x, s.y, s.rot)); invalidate()
+                            objects.add(PlanObject(savedId, projectId, placeType!!, s.x, s.y, s.rot)); invalidate(); fingerOn = false
                         }
                     }
                 } else if (currentTool == Tool.DRAW_TRACK) { fingerOn = false; invalidate() }
@@ -693,6 +717,14 @@ undoManager?.push(ru.gdesanek.core.Command.InsertObject(apply = { objectReposito
 
     private data class PlaceSnap(val x: Float, val y: Float, val rot: Float)
     private fun snapPointForPlace(x: Float, y: Float): PlaceSnap {
+        for (wall in walls) {
+            val mx = (wall.x1 + wall.x2) / 2f; val my = (wall.y1 + wall.y2) / 2f
+            val d = sqrt((x - mx) * (x - mx) + (y - my) * (y - my))
+            if (d < 60f) {
+                val dx = wall.x2 - wall.x1; val dy = wall.y2 - wall.y1
+                return PlaceSnap(mx, my, Math.toDegrees(atan2(dy, dx).toDouble()).toFloat())
+            }
+        }
         var minDist = 40f; var bestX = x; var bestY = y; var bestRot = 0f
         for (wall in walls) {
             val dx = wall.x2 - wall.x1; val dy = wall.y2 - wall.y1; val lenSq = dx * dx + dy * dy
