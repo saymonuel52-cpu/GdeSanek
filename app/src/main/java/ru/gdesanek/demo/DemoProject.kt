@@ -33,6 +33,8 @@ object DemoProject {
         objects.insert(projectId, "socket_380", 6f, 330f, 90f, "Розетка плиты 380В", 0f, 30)
         objects.insert(projectId, "cons_hood", 150f, 100f, 0f, "Вытяжка", 0f, 220)
         objects.insert(projectId, "lamp_grig", 150f, 250f, 0f, "Точечный свет кухня", 0f, 270)
+        objects.insert(projectId, "arch_door900", 310f, 0f, 0f, "Дверь входная", 0f, -1)
+        objects.insert(projectId, "arch_win1400", 310f, 420f, 180f, "Окно комнаты", 0f, -1)
         objects.insert(projectId, "switch_1", 215f, 110f, 0f, "Выключатель кухня", 0f, 110)
         objects.insert(projectId, "sks_tv", 460f, 414f, 180f, "ТВ-розетка", 0f, 30)
         objects.insert(projectId, "socket_b2", 614f, 220f, 270f, "Розетка диван", 0f, 30)
