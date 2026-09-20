@@ -49,6 +49,12 @@ object GostSymbols {
             "cons_boiler" -> drawConsumer(canvas, x, y, rotation, paint, "Бойлер")
             "cons_stove" -> drawConsumer(canvas, x, y, rotation, paint, "Плита")
             "cons_pump" -> drawConsumer(canvas, x, y, rotation, paint, "Насос")
+            "arch_door800" -> drawDoor(canvas, x, y, rotation, paint, 80f)
+            "arch_door900" -> drawDoor(canvas, x, y, rotation, paint, 90f)
+            "arch_win1200" -> drawWindow(canvas, x, y, rotation, paint, 120f)
+            "arch_win1400" -> drawWindow(canvas, x, y, rotation, paint, 140f)
+            "arch_win1800" -> drawWindow(canvas, x, y, rotation, paint, 180f)
+            "arch_open900" -> drawOpening(canvas, x, y, rotation, paint, 90f)
         }
     }
 
@@ -299,6 +305,45 @@ object GostSymbols {
         canvas.save(); canvas.translate(x, y); canvas.rotate(rot)
         canvas.drawRect(RectF(-24f, -14f, 24f, 14f), stroke(paint, 3f))
         canvas.drawText(label, 0f, 4f, text(paint, 11f))
+        canvas.restore()
+    }
+    private fun drawDoor(canvas: Canvas, x: Float, y: Float, rot: Float, paint: Paint, size: Float) {
+        val isMirror = rot >= 1000f
+        val realRot = if (isMirror) rot - 1000f else rot
+        canvas.save()
+        canvas.translate(x, y)
+        canvas.rotate(realRot)
+        if (isMirror) canvas.scale(1f, -1f)
+        val doorColor = android.graphics.Color.parseColor("#FFB74D")
+        val p = stroke(paint, 4f).apply { color = doorColor }
+        canvas.drawLine(0f, 0f, size, 0f, p)
+        val arcPaint = stroke(paint, 3f).apply { color = doorColor; pathEffect = android.graphics.DashPathEffect(floatArrayOf(10f, 5f), 0f) }
+        canvas.drawArc(0f, -size, size * 2, size, 270f, 90f, false, arcPaint)
+        canvas.drawCircle(0f, 0f, 6f, fill(paint).apply { color = doorColor })
+        canvas.restore()
+    }
+
+    private fun drawWindow(canvas: Canvas, x: Float, y: Float, rot: Float, paint: Paint, size: Float) {
+        canvas.save()
+        canvas.translate(x, y)
+        canvas.rotate(rot)
+        val winColor = android.graphics.Color.parseColor("#4DD0E1")
+        val wallThick = 10f
+        val p = stroke(paint, 3f).apply { color = winColor }
+        canvas.drawRect(0f, -wallThick / 2, size, wallThick / 2, p)
+        canvas.drawLine(0f, -wallThick / 4, size, -wallThick / 4, p)
+        canvas.drawLine(0f, wallThick / 4, size, wallThick / 4, p)
+        canvas.restore()
+    }
+
+    private fun drawOpening(canvas: Canvas, x: Float, y: Float, rot: Float, paint: Paint, size: Float) {
+        canvas.save()
+        canvas.translate(x, y)
+        canvas.rotate(rot)
+        val openColor = android.graphics.Color.parseColor("#B0BEC5")
+        val wallThick = 10f
+        val p = stroke(paint, 3f).apply { color = openColor; pathEffect = android.graphics.DashPathEffect(floatArrayOf(8f, 4f), 0f) }
+        canvas.drawRect(0f, -wallThick / 2, size, wallThick / 2, p)
         canvas.restore()
     }
 }
