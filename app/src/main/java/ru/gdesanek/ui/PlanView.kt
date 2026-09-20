@@ -703,7 +703,11 @@ undoManager?.push(ru.gdesanek.core.Command.InsertObject(apply = { repository?.in
                             if (ru.gdesanek.core.ArchTypes.isArch(placeType!!) && distToWalls(pt.x, pt.y) > 40f)
                                 Toast.makeText(context, "Проём не на стене: подвинь к стене или поверни", Toast.LENGTH_SHORT).show()
                             val savedId = objectRepository?.insert(projectId, placeType!!, s.x, s.y, s.rot) ?: 0L
-undoManager?.push(ru.gdesanek.core.Command.InsertObject(apply = { objectRepository?.insert(projectId, placeType!!, s.x, s.y, s.rot) }, revert = { objectRepository?.delete(savedId) }))
+                            val typeForUndo = placeType!!
+                            val xForUndo = s.x
+                            val yForUndo = s.y
+                            val rotForUndo = s.rot
+undoManager?.push(ru.gdesanek.core.Command.InsertObject(apply = { objectRepository?.insert(projectId, typeForUndo, xForUndo, yForUndo, rotForUndo) }, revert = { objectRepository?.delete(savedId) }))
                             haptic()
                             objects.add(PlanObject(savedId, projectId, placeType!!, s.x, s.y, s.rot)); invalidate(); fingerOn = false
                         }
