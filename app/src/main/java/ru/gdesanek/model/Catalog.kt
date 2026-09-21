@@ -3,7 +3,7 @@ package ru.gdesanek.model
 data class CatalogItem(val type: String, val label: String, val group: String)
 
 object Catalog {
-    val groups = listOf("Розетки", "Выключатели", "Освещение", "Слаботочка", "Щиты", "Климат и нагрузка", "Проёмы")
+    val groups = listOf("Розетки", "Выключатели", "Освещение", "Слаботочка", "Щиты", "Климат и нагрузка", "Проёмы", "Мебель")
 
     val items = listOf(
         CatalogItem("socket_b1", "Розетка 1", "Розетки"),
@@ -34,6 +34,17 @@ object Catalog {
         CatalogItem("arch_win1400", "Окно 1400", "Проёмы"),
         CatalogItem("arch_win1800", "Окно 1800", "Проёмы"),
         CatalogItem("arch_open900", "Проём 900", "Проёмы"),
+        CatalogItem("furn_bed2", "Кровать 160", "Мебель"),
+        CatalogItem("furn_bed1", "Кровать 90", "Мебель"),
+        CatalogItem("furn_sofa", "Диван", "Мебель"),
+        CatalogItem("furn_table", "Стол", "Мебель"),
+        CatalogItem("furn_kitchen", "Кухня-линия", "Мебель"),
+        CatalogItem("furn_bath", "Ванна", "Мебель"),
+        CatalogItem("furn_wc", "Унитаз", "Мебель"),
+        CatalogItem("furn_sink", "Раковина", "Мебель"),
+        CatalogItem("furn_ward", "Шкаф", "Мебель"),
+        CatalogItem("furn_wash", "Стиралка", "Мебель"),
+        CatalogItem("furn_stove", "Плита", "Мебель"),
         CatalogItem("lamp_ao", "Аварийный свет", "Освещение"),
         CatalogItem("lamp_exit", "Табло ВЫХОД", "Освещение"),
         CatalogItem("rj45", "Интернет RJ45", "Слаботочка"),
