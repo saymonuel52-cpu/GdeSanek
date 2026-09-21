@@ -82,6 +82,17 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     private val snapPaint = Paint().apply { color = Color.parseColor("#FF9800"); style = Paint.Style.STROKE; strokeWidth = 3f }
     private val currentTrackPoints = mutableListOf<TrackPoint>()
     private var fingerX = 0f; private var fingerY = 0f; private var fingerOn = false
+    val hiddenSystems = mutableSetOf<String>()
+    fun systemOf(type: String): String = when {
+        type.startsWith("lamp_") -> "light"
+        type.startsWith("socket_") || type.startsWith("switch_") -> "sock"
+        type.startsWith("sks_") || type.startsWith("tv_") || type.startsWith("rj45") -> "weak"
+        type.startsWith("panel_") || type.startsWith("box_") -> "panel"
+        type.startsWith("cons_") || type.startsWith("cond_") -> "load"
+        ru.gdesanek.core.ArchTypes.isArch(type) -> "arch"
+        ru.gdesanek.core.ArchTypes.isFurn(type) -> "furn"
+        else -> "other"
+    }
     private val hLabelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL; textSize = 12f }
 
     private val wallPaint = Paint().apply { color = Color.WHITE; strokeWidth = 8f; style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND }
@@ -208,6 +219,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         if (currentTrackPoints.isNotEmpty() && fingerOn) { val l = currentTrackPoints.last(); canvas.drawLine(l.x, l.y, fingerX, fingerY, tempTrackPaint) }
         if (currentTrackPoints.isNotEmpty() && fingerOn) { val lt = currentTrackPoints.last(); val total = (trackLength(currentTrackPoints) + sqrt((fingerX - lt.x).pow(2) + (fingerY - lt.y).pow(2))) * 1.1f / 100f; canvas.drawText(String.format("%.1f m (x1.1)", total), fingerX + 24f, fingerY - 24f, hintPaint) }
         for (obj in objects) {
+            if (systemOf(obj.type) in hiddenSystems) continue
             symPaint.color = SymbolPalette.color(obj.type)
             symPaint.strokeWidth = 3.5f
             val k = if (ru.gdesanek.core.ArchTypes.isArch(obj.type) || ru.gdesanek.core.ArchTypes.isFurn(obj.type)) 1f else 0.7f
@@ -220,7 +232,11 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
                 if (hh != null) { hLabelPaint.color = symPaint.color; canvas.drawText("h=" + hh, obj.x + 18f, obj.y - 10f, hLabelPaint) }
                 SymbolPalette.ip(obj.type)?.let { ip -> hLabelPaint.color = symPaint.color; canvas.drawText(ip, obj.x + 18f, obj.y + 24f, hLabelPaint) }
             }
-            if (obj.id == selectedObjectId) canvas.drawCircle(obj.x, obj.y, 35f, selectionPaint)
+            if (obj.id == selectedObjectId) {
+                canvas.drawCircle(obj.x, obj.y, 35f, selectionPaint)
+                hLabelPaint.color = 0xFFB0BEC5.toInt()
+                canvas.drawText(obj.name, obj.x + 18f, obj.y + 40f, hLabelPaint)
+            }
         }
         if (currentTool == Tool.PLACE && placeType != null && fingerOn && (ru.gdesanek.core.ArchTypes.isArch(placeType!!) || ru.gdesanek.core.ArchTypes.isFurn(placeType!!))) {
             val isF = ru.gdesanek.core.ArchTypes.isFurn(placeType!!)

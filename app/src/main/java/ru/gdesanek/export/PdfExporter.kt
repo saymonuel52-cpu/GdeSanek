@@ -92,6 +92,7 @@ object PdfExporter {
             val ipm = SymbolPalette.ip(o.type)
             val mark = (if (hh != null) "h=$hh" else "") + (if (ipm != null) (if (hh != null) " " else "") + ipm else "")
             if (mark.isNotEmpty()) canvas.drawText(mark, tx(o.x) + 6f, ty(o.y) - 4f, labelPaint)
+            if (o.name.isNotBlank()) canvas.drawText(o.name.take(24), tx(o.x) + 6f, ty(o.y) + 20f, labelPaint)
             SymbolPalette.power(o.type)?.let { w -> canvas.drawText(w.toString() + " Вт", tx(o.x) + 6f, ty(o.y) + 8f, labelPaint) }
         }
 
