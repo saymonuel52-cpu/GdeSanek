@@ -11,7 +11,7 @@ android {
         applicationId "ru.gdesanek"
         minSdk 24
         targetSdk 34
-    versionCode (System.currentTimeMillis() / 60000).toInt()
+    versionCode runCode
         versionName "1.1.0"
     }
     signingConfigs {
