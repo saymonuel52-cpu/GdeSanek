@@ -212,10 +212,12 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
             else GostSymbols.draw(canvas, obj.type, obj.x, obj.y, obj.rotation, symPaint)
             if (obj.id == selectedObjectId) canvas.drawCircle(obj.x, obj.y, 35f, selectionPaint)
         }
-        if (currentTool == Tool.PLACE && placeType != null && ru.gdesanek.core.ArchTypes.isArch(placeType!!) && fingerOn) {
-            val gs = snapPointForPlace(fingerX, fingerY)
+        if (currentTool == Tool.PLACE && placeType != null && fingerOn && (ru.gdesanek.core.ArchTypes.isArch(placeType!!) || ru.gdesanek.core.ArchTypes.isFurn(placeType!!))) {
+            val isF = ru.gdesanek.core.ArchTypes.isFurn(placeType!!)
+            val gs = if (isF) PlaceSnap(snap(fingerX), snap(fingerY), 0f) else snapPointForPlace(fingerX, fingerY)
             symPaint.color = SymbolPalette.color(placeType!!); symPaint.alpha = 110
-            GostSymbols.draw(canvas, placeType!!, gs.x, gs.y, gs.rot, symPaint, (hitWall(gs.x, gs.y)?.thickness ?: 100f) / 10f)
+            if (isF) GostSymbols.draw(canvas, placeType!!, gs.x, gs.y, gs.rot, symPaint)
+            else GostSymbols.draw(canvas, placeType!!, gs.x, gs.y, gs.rot, symPaint, (hitWall(gs.x, gs.y)?.thickness ?: 100f) / 10f)
             symPaint.alpha = 255
         }
         for (p in calibPoints) { canvas.drawLine(p.x - 20f, p.y, p.x + 20f, p.y, calibPaint); canvas.drawLine(p.x, p.y - 20f, p.x, p.y + 20f, calibPaint) }
