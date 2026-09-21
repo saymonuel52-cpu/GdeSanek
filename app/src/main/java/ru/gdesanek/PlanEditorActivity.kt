@@ -49,6 +49,7 @@ class PlanEditorActivity : AppCompatActivity() {
     private var projectId = 0L
     private var projectName = "План"
     private var currentCatalogGroup = "Розетки"
+    private var currentArchGroup = "Проёмы"
     private val catalogButtons = mutableListOf<TextView>()
     private val toolButtons = mutableListOf<TextView>()
 
@@ -306,7 +307,7 @@ class PlanEditorActivity : AppCompatActivity() {
     }
     private fun hintFor(mode: String) = when (mode) {
         "Выбор" -> "Выбор: тап по объекту — свойства, перетаскивание — перемещение"
-        "Стена" -> "Стена: тап — начало, тап — конец; оранжевый кружок = привязка"
+        "Стена" -> if (planView.placeType?.startsWith("arch_") == true) "Проём: тапни у стены — ляжет вдоль, магнит к центру" else if (planView.placeType?.startsWith("furn_") == true) "Мебель: тапни куда ставить — без привязки к стене" else "Стена: тап — начало, тап — конец; оранжевый кружок = привязка"
         "Элект" -> if (planView.placeType?.startsWith("arch_") == true) "Проём: тапни у стены — ляжет вдоль, магнит притянет к центру" else "Элект: выбери символ в каталоге и тапай по плану"
         "Трасса" -> "Трасса: тапай точки по порядку, финиш в первой точке"
         "Правка" -> "Правка: тап по объекту или стене → ручки; долгий тап → удалить"
@@ -382,6 +383,34 @@ class PlanEditorActivity : AppCompatActivity() {
             setOnClickListener { planView.snapEnd = !planView.snapEnd; showWallContext() }
         })
         wrap.addView(oRow)
+        wrap.addView(TextView(this).apply { text = "ПРОЁМЫ И МЕБЕЛЬ"; textSize = 12f; setTextColor(theme.hintColor); setPadding(4, 14, 0, 6) })
+        val agScroll = HorizontalScrollView(this)
+        val agRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        for (g in listOf("Проёмы", "Мебель")) {
+            agRow.addView(TextView(this).apply {
+                text = g; textSize = 13f; gravity = Gravity.CENTER; setTextColor(theme.textPrimary)
+                setBackgroundColor(if (g == currentArchGroup) theme.btnActiveBg else theme.btnBg)
+                setPadding(20, 12, 20, 12)
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginEnd = 6 }
+                setOnClickListener { currentArchGroup = g; showWallContext() }
+            })
+        }
+        agScroll.addView(agRow)
+        wrap.addView(agScroll)
+        val aiScroll = HorizontalScrollView(this)
+        val aiRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, 6, 0, 0) }
+        for (item in Catalog.byGroup(currentArchGroup)) {
+            aiRow.addView(TextView(this).apply {
+                text = item.label; textSize = 14f; gravity = Gravity.CENTER; setTextColor(theme.textPrimary)
+                setBackgroundColor(if (item.type == planView.placeType) theme.btnActiveBg else theme.btnBg)
+                setPadding(22, 16, 22, 16)
+                val bmp = android.graphics.Bitmap.createBitmap(44, 44, android.graphics.Bitmap.Config.ARGB_8888); val bcv = android.graphics.Canvas(bmp); bcv.scale(0.7f, 0.7f, 22f, 22f); val pp = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = android.graphics.Color.parseColor("#CFD8DC"); style = android.graphics.Paint.Style.STROKE; strokeWidth = 4f }; ru.gdesanek.render.GostSymbols.draw(bcv, item.type, 22f, 24f, 0f, pp); compoundDrawablePadding = 6; setCompoundDrawablesWithIntrinsicBounds(null, android.graphics.drawable.BitmapDrawable(resources, bmp), null, null)
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginEnd = 6 }
+                setOnClickListener { planView.currentTool = PlanView.Tool.PLACE; planView.placeType = item.type; showWallContext() }
+            })
+        }
+        aiScroll.addView(aiRow)
+        wrap.addView(aiScroll)
         contextPanel.addView(wrap)
     }
 
@@ -441,7 +470,7 @@ class PlanEditorActivity : AppCompatActivity() {
 
         val groupScroll = HorizontalScrollView(this)
         val groupRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        for (g in Catalog.groups) {
+        for (g in Catalog.groups.filter { it != "Проёмы" && it != "Мебель" }) {
             val b = TextView(this).apply {
                 text = g; setTextColor(theme.textPrimary); textSize = 13f; gravity = Gravity.CENTER
                 setBackgroundColor(if (g == currentCatalogGroup) theme.btnActiveBg else theme.btnBg)

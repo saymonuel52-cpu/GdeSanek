@@ -55,6 +55,17 @@ object GostSymbols {
             "arch_win1400" -> drawWindow(canvas, x, y, rotation, paint, 140f, thick)
             "arch_win1800" -> drawWindow(canvas, x, y, rotation, paint, 180f, thick)
             "arch_open900" -> drawOpening(canvas, x, y, rotation, paint, 90f, thick)
+            "furn_bed2" -> drawFurnBed(canvas, x, y, rotation, paint, 160f, 200f, 2)
+            "furn_bed1" -> drawFurnBed(canvas, x, y, rotation, paint, 90f, 200f, 1)
+            "furn_sofa" -> drawFurnSofa(canvas, x, y, rotation, paint)
+            "furn_table" -> drawFurnRect(canvas, x, y, rotation, paint, 120f, 80f)
+            "furn_kitchen" -> drawFurnKitchen(canvas, x, y, rotation, paint)
+            "furn_bath" -> drawFurnBath(canvas, x, y, rotation, paint)
+            "furn_wc" -> drawFurnWc(canvas, x, y, rotation, paint)
+            "furn_sink" -> drawFurnRect(canvas, x, y, rotation, paint, 50f, 40f)
+            "furn_ward" -> drawFurnWard(canvas, x, y, rotation, paint)
+            "furn_wash" -> drawFurnWash(canvas, x, y, rotation, paint)
+            "furn_stove" -> drawFurnStove(canvas, x, y, rotation, paint)
         }
     }
 
@@ -343,6 +354,89 @@ object GostSymbols {
         val wallThick = thick
         val p = stroke(paint, 3f).apply { color = openColor; pathEffect = android.graphics.DashPathEffect(floatArrayOf(8f, 4f), 0f) }
         canvas.drawRect(0f, -wallThick / 2, size, wallThick / 2, p)
+        canvas.restore()
+    }
+
+    private fun furnPaint(paint: Paint) = Paint(paint).apply { color = android.graphics.Color.parseColor("#CFD8DC"); style = Paint.Style.STROKE; strokeWidth = 3f; isAntiAlias = true }
+
+    private fun drawFurnRect(canvas: Canvas, x: Float, y: Float, rot: Float, paint: Paint, w: Float, h: Float) {
+        canvas.save(); canvas.translate(x, y); canvas.rotate(rot)
+        canvas.drawRect(-w / 2, -h / 2, w / 2, h / 2, furnPaint(paint))
+        canvas.restore()
+    }
+
+    private fun drawFurnBed(canvas: Canvas, x: Float, y: Float, rot: Float, paint: Paint, w: Float, h: Float, pillows: Int) {
+        canvas.save(); canvas.translate(x, y); canvas.rotate(rot)
+        val p = furnPaint(paint)
+        canvas.drawRect(-w / 2, -h / 2, w / 2, h / 2, p)
+        canvas.drawLine(-w / 2, -h / 2 + 30f, w / 2, -h / 2 + 30f, p)
+        for (i in 0 until pillows) {
+            val px = if (pillows == 1) 0f else (if (i == 0) -w / 4 else w / 4)
+            canvas.drawRect(px - 18f, -h / 2 + 6f, px + 18f, -h / 2 + 24f, p)
+        }
+        canvas.restore()
+    }
+
+    private fun drawFurnSofa(canvas: Canvas, x: Float, y: Float, rot: Float, paint: Paint) {
+        canvas.save(); canvas.translate(x, y); canvas.rotate(rot)
+        val p = furnPaint(paint)
+        canvas.drawRect(-100f, -45f, 100f, 45f, p)
+        canvas.drawLine(-100f, -25f, 100f, -25f, p)
+        canvas.drawLine(-80f, -25f, -80f, 45f, p)
+        canvas.drawLine(80f, -25f, 80f, 45f, p)
+        canvas.restore()
+    }
+
+    private fun drawFurnKitchen(canvas: Canvas, x: Float, y: Float, rot: Float, paint: Paint) {
+        canvas.save(); canvas.translate(x, y); canvas.rotate(rot)
+        val p = furnPaint(paint)
+        canvas.drawRect(-120f, -30f, 120f, 30f, p)
+        canvas.drawCircle(-60f, 0f, 16f, p)
+        for (cx in listOf(30f, 70f)) { canvas.drawCircle(cx, -10f, 8f, p); canvas.drawCircle(cx, 10f, 8f, p) }
+        canvas.restore()
+    }
+
+    private fun drawFurnBath(canvas: Canvas, x: Float, y: Float, rot: Float, paint: Paint) {
+        canvas.save(); canvas.translate(x, y); canvas.rotate(rot)
+        val p = furnPaint(paint)
+        canvas.drawRoundRect(android.graphics.RectF(-85f, -37f, 85f, 37f), 20f, 20f, p)
+        canvas.drawLine(-55f, -37f, -55f, 37f, p)
+        canvas.drawCircle(-70f, 0f, 5f, p)
+        canvas.restore()
+    }
+
+    private fun drawFurnWc(canvas: Canvas, x: Float, y: Float, rot: Float, paint: Paint) {
+        canvas.save(); canvas.translate(x, y); canvas.rotate(rot)
+        val p = furnPaint(paint)
+        canvas.drawRect(-20f, -32f, 20f, -12f, p)
+        canvas.drawOval(android.graphics.RectF(-14f, -12f, 14f, 30f), p)
+        canvas.restore()
+    }
+
+    private fun drawFurnWard(canvas: Canvas, x: Float, y: Float, rot: Float, paint: Paint) {
+        canvas.save(); canvas.translate(x, y); canvas.rotate(rot)
+        val p = furnPaint(paint)
+        canvas.drawRect(-100f, -30f, 100f, 30f, p)
+        canvas.drawLine(0f, -30f, 0f, 30f, p)
+        canvas.drawLine(-100f, -30f, -50f, 0f, p); canvas.drawLine(-50f, 0f, 0f, -30f, p)
+        canvas.drawLine(0f, -30f, 50f, 0f, p); canvas.drawLine(50f, 0f, 100f, -30f, p)
+        canvas.restore()
+    }
+
+    private fun drawFurnWash(canvas: Canvas, x: Float, y: Float, rot: Float, paint: Paint) {
+        canvas.save(); canvas.translate(x, y); canvas.rotate(rot)
+        val p = furnPaint(paint)
+        canvas.drawRect(-30f, -30f, 30f, 30f, p)
+        canvas.drawCircle(0f, 4f, 16f, p)
+        canvas.drawLine(-30f, -14f, 30f, -14f, p)
+        canvas.restore()
+    }
+
+    private fun drawFurnStove(canvas: Canvas, x: Float, y: Float, rot: Float, paint: Paint) {
+        canvas.save(); canvas.translate(x, y); canvas.rotate(rot)
+        val p = furnPaint(paint)
+        canvas.drawRect(-30f, -30f, 30f, 30f, p)
+        for (cx in listOf(-14f, 14f)) for (cy in listOf(-14f, 14f)) canvas.drawCircle(cx, cy, 7f, p)
         canvas.restore()
     }
 }

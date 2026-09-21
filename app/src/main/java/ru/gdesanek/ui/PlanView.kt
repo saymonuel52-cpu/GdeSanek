@@ -342,7 +342,13 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     private fun showObjectDialog(obj: PlanObject) {
         val curH = if (obj.height >= 0) obj.height else (ru.gdesanek.theme.SymbolPalette.height(obj.type) ?: 0)
         val isArch = ru.gdesanek.core.ArchTypes.isArch(obj.type)
-        val menuItems = if (isArch) arrayOf(
+        val isFurn = ru.gdesanek.core.ArchTypes.isFurn(obj.type)
+        val menuItems = if (isFurn) arrayOf(
+            "Повернуть на 45°",
+            "Дублировать",
+            "Ряд (Array)",
+            "Удалить"
+        ) else if (isArch) arrayOf(
             "Отзеркалить (сторона открывания)",
             "Повернуть на 45°",
             "Дублировать",
@@ -356,7 +362,8 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
             "Удалить"
         )
         AlertDialog.Builder(context).setTitle("Объект: ${obj.type}").setItems(menuItems) { _, i ->
-            when (i) {
+            val ei = if (isFurn) listOf(1, 2, 4, 3)[i] else i
+            when (ei) {
                 0 -> {
                     if (isArch) {
                         val isMirror = obj.rotation >= 1000f
@@ -482,6 +489,14 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
                 t = t.coerceIn(0f, 1f)
                 val px = o.x + t * ldx; val py = o.y + t * ldy
                 (wx - px) * (wx - px) + (wy - py) * (wy - py) < 50f * 50f
+            } else if (ru.gdesanek.core.ArchTypes.isFurn(o.type)) {
+                val d = ru.gdesanek.core.ArchTypes.furnDims(o.type)
+                val rr = if (o.rotation >= 1000f) o.rotation - 1000f else o.rotation
+                val rad = Math.toRadians(-rr.toDouble())
+                val dx = wx - o.x; val dy = wy - o.y
+                val lx = (dx * kotlin.math.cos(rad) - dy * kotlin.math.sin(rad)).toFloat()
+                val ly = (dx * kotlin.math.sin(rad) + dy * kotlin.math.cos(rad)).toFloat()
+                kotlin.math.abs(lx) < d.first / 2 + 25f && kotlin.math.abs(ly) < d.second / 2 + 25f
             } else {
                 (o.x - wx) * (o.x - wx) + (o.y - wy) * (o.y - wy) < 45f * 45f
             }
@@ -699,7 +714,7 @@ undoManager?.push(ru.gdesanek.core.Command.InsertObject(apply = { repository?.in
                         val hit = hitObject(pt.x, pt.y)
                         if (hit != null) showObjectDialog(hit)
                         else {
-                            val s = snapPointForPlace(pt.x, pt.y)
+                            val s = if (placeType!!.startsWith("furn_")) PlaceSnap(snap(pt.x), snap(pt.y), 0f) else snapPointForPlace(pt.x, pt.y)
                             if (ru.gdesanek.core.ArchTypes.isArch(placeType!!) && distToWalls(pt.x, pt.y) > 40f)
                                 Toast.makeText(context, "Проём не на стене: подвинь к стене или поверни", Toast.LENGTH_SHORT).show()
                             val savedId = objectRepository?.insert(projectId, placeType!!, s.x, s.y, s.rot) ?: 0L
