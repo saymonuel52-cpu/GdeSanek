@@ -31,6 +31,11 @@ object SymbolPalette {
         else -> Color.WHITE
     }
 
+    fun ip(type: String): String? = when {
+        type == "socket_b3" -> "IP44"
+        type == "lamp_street" -> "IP65"
+        else -> null
+    }
     fun height(type: String): Int? = when {
         type.startsWith("socket_b") -> 30
         type.startsWith("socket_k") -> 110

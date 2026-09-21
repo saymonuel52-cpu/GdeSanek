@@ -519,7 +519,7 @@ class PlanEditorActivity : AppCompatActivity() {
                     when (j) { 0 -> planView.startCalibration(); 1 -> showUnderlayDialog(); 2 -> pickUnderlay(); 3 -> removeUnderlay() }
                 }.show()
                 1 -> startActivity(Intent(this, EstimateActivity::class.java).putExtra("PROJECT_ID", projectId))
-                2 -> exportPdf()
+                2 -> choosePdfStyle()
                 3 -> startActivity(Intent(this, ClientActivity::class.java).putExtra("PROJECT_ID", projectId))
                 4 -> startActivity(Intent(this, IssuesActivity::class.java).putExtra("PROJECT_ID", projectId).putExtra("PROJECT_NAME", projectName))
                 5 -> startActivity(Intent(this, BackupActivity::class.java))
@@ -599,13 +599,16 @@ class PlanEditorActivity : AppCompatActivity() {
         }
 
     }
-    private fun exportPdf() {
+    private fun choosePdfStyle() {
+        android.app.AlertDialog.Builder(this).setTitle("Стиль PDF").setItems(arrayOf("Цветной (как на экране)", "ГОСТ ч/б (тонкие чёрные линии)")) { _, i -> exportPdf(i == 1) }.show()
+    }
+    private fun exportPdf(mono: Boolean = false) {
         Toast.makeText(this, "Формируем PDF...", Toast.LENGTH_SHORT).show()
         Thread {
             val walls = WallRepository(this).getAll(projectId)
             val objects = ObjectRepository(this).getAll(projectId)
             val tracks = TrackRepository(this).getAll(projectId)
-            val file = PdfExporter.export(this, projectName, projectId, walls, objects, tracks)
+            val file = PdfExporter.export(this, projectName, projectId, walls, objects, tracks, mono)
             runOnUiThread {
                 val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
                 showShareDialog(uri, file)

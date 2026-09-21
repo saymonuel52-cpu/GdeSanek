@@ -19,7 +19,7 @@ import kotlin.math.min
 import kotlin.math.sqrt
 
 object PdfExporter {
-    fun export(context: Context, projectName: String, projectId: Long, walls: List<Wall>, objects: List<PlanObject>, tracks: List<CableTrack>): File {
+    fun export(context: Context, projectName: String, projectId: Long, walls: List<Wall>, objects: List<PlanObject>, tracks: List<CableTrack>, mono: Boolean = false): File {
         val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
         val masterName = prefs.getString("masterName", "ГдеСанёк").orEmpty()
         val masterPhone = prefs.getString("masterPhone", "").orEmpty()
@@ -65,15 +65,16 @@ object PdfExporter {
 
         val trPaint = Paint().apply { strokeWidth = 1.5f }
         for (t in tracks) {
-            trPaint.color = t.color; trPaint.pathEffect = when (t.wiring) { "shtroba" -> DashPathEffect(floatArrayOf(6f, 4f), 0f); "gofra" -> DashPathEffect(floatArrayOf(6f, 3f, 2f, 3f), 0f); "truba" -> DashPathEffect(floatArrayOf(2f, 3f), 0f); "lotok" -> DashPathEffect(floatArrayOf(8f, 3f), 0f); else -> null }
+            trPaint.color = if (mono) 0xFF000000.toInt() else t.color; trPaint.pathEffect = when (t.wiring) { "shtroba" -> DashPathEffect(floatArrayOf(6f, 4f), 0f); "gofra" -> DashPathEffect(floatArrayOf(6f, 3f, 2f, 3f), 0f); "truba" -> DashPathEffect(floatArrayOf(2f, 3f), 0f); "lotok" -> DashPathEffect(floatArrayOf(8f, 3f), 0f); else -> null }
             for (i in 0 until t.points.size - 1) canvas.drawLine(tx(t.points[i].x), ty(t.points[i].y), tx(t.points[i+1].x), ty(t.points[i+1].y), trPaint)
-            if (t.points.isNotEmpty()) { val p0 = t.points[0]; labelPaint.color = t.color; canvas.drawText("Гр." + (tracks.indexOf(t) + 1) + " ВВГнг-LS " + t.cable, tx(p0.x) + 4f, ty(p0.y) - 3f, labelPaint) }
+            if (t.points.isNotEmpty()) { val p0 = t.points[0]; labelPaint.color = if (mono) 0xFF000000.toInt() else t.color; canvas.drawText("Гр." + (tracks.indexOf(t) + 1) + " ВВГнг-LS " + t.cable, tx(p0.x) + 4f, ty(p0.y) - 3f, labelPaint) }
         }
 
         labelPaint.color = Color.BLACK
         val symPaint = Paint().apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeWidth = 8f }
+        if (mono) symPaint.strokeWidth = 2f
         for (o in objects) {
-            symPaint.color = SymbolPalette.color(o.type)
+            symPaint.color = if (mono) (if (ru.gdesanek.core.ArchTypes.isFurn(o.type) || ru.gdesanek.core.ArchTypes.isArch(o.type)) 0xFF9E9E9E.toInt() else 0xFF000000.toInt()) else SymbolPalette.color(o.type)
             canvas.save()
             canvas.translate(tx(o.x), ty(o.y))
             canvas.scale(scale, scale)
@@ -83,7 +84,10 @@ object PdfExporter {
                 GostSymbols.draw(canvas, o.type, o.x, o.y, o.rotation, ap)
             } else GostSymbols.draw(canvas, o.type, o.x, o.y, o.rotation, symPaint)
             canvas.restore()
-            SymbolPalette.height(o.type)?.let { h -> canvas.drawText("H=$h", tx(o.x) + 6f, ty(o.y) - 4f, labelPaint) }
+            val hh = if (o.height >= 0) o.height else SymbolPalette.height(o.type)
+            val ipm = SymbolPalette.ip(o.type)
+            val mark = (if (hh != null) "h=$hh" else "") + (if (ipm != null) (if (hh != null) " " else "") + ipm else "")
+            if (mark.isNotEmpty()) canvas.drawText(mark, tx(o.x) + 6f, ty(o.y) - 4f, labelPaint)
             SymbolPalette.power(o.type)?.let { w -> canvas.drawText(w.toString() + " Вт", tx(o.x) + 6f, ty(o.y) + 8f, labelPaint) }
         }
 
