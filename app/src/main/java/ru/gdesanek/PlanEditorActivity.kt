@@ -512,7 +512,7 @@ class PlanEditorActivity : AppCompatActivity() {
     }
 
     private fun showMainMenu() {
-        val items = arrayOf("Подложка", "Смета", "Экспорт PDF", "Заказчик", "Замечания", "Резервная копия", "Настройки…")
+        val items = arrayOf("Подложка", "Смета", "Экспорт PDF", "Заказчик", "Замечания", "Резервная копия", "Слои…", "Настройки…")
         AlertDialog.Builder(this).setTitle(projectName).setItems(items) { _, i ->
             when (i) {
                 0 -> if (planView.underlay == null) pickUnderlay() else AlertDialog.Builder(this).setTitle("Подложка").setItems(arrayOf("Калибровать", "Прозрачность", "Заменить", "Убрать")) { _, j ->
@@ -523,7 +523,8 @@ class PlanEditorActivity : AppCompatActivity() {
                 3 -> startActivity(Intent(this, ClientActivity::class.java).putExtra("PROJECT_ID", projectId))
                 4 -> startActivity(Intent(this, IssuesActivity::class.java).putExtra("PROJECT_ID", projectId).putExtra("PROJECT_NAME", projectName))
                 5 -> startActivity(Intent(this, BackupActivity::class.java))
-                6 -> startActivity(Intent(this, SettingsActivity::class.java))
+                6 -> showLayersDialog()
+                7 -> startActivity(Intent(this, SettingsActivity::class.java))
             }
         }.show()
     }
@@ -539,6 +540,22 @@ class PlanEditorActivity : AppCompatActivity() {
     private fun pickUnderlay() {
         val i = Intent(Intent.ACTION_OPEN_DOCUMENT).apply { type = "image/*"; addCategory(Intent.CATEGORY_OPENABLE) }
         startActivityForResult(Intent.createChooser(i, "Подложка"), 42)
+    }
+
+    private fun showLayersDialog() {
+        val names = arrayOf("Свет", "Розетки и выкл.", "Слаботочка", "Щиты", "Нагрузка", "Стены/проёмы", "Мебель")
+        val keys  = arrayOf("light", "sock", "weak", "panel", "load", "arch", "furn")
+        val checked = BooleanArray(keys.size) { keys[it] !in planView.hiddenSystems }
+        AlertDialog.Builder(this)
+            .setTitle("Слои систем")
+            .setMultiChoiceItems(names, checked) { _, which, isChecked ->
+                val k = keys[which]
+                if (isChecked) planView.hiddenSystems.remove(k) else planView.hiddenSystems.add(k)
+                planView.invalidate()
+            }
+            .setPositiveButton("Готово", null)
+            .setNeutralButton("Показать все") { _, _ -> planView.hiddenSystems.clear(); planView.invalidate() }
+            .show()
     }
 
     private fun removeUnderlay() {
