@@ -82,7 +82,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     private val snapPaint = Paint().apply { color = Color.parseColor("#FF9800"); style = Paint.Style.STROKE; strokeWidth = 3f }
     private val currentTrackPoints = mutableListOf<TrackPoint>()
     private var fingerX = 0f; private var fingerY = 0f; private var fingerOn = false
-    private val hLabelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL; textSize = 20f }
+    private val hLabelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL; textSize = 12f }
 
     private val wallPaint = Paint().apply { color = Color.WHITE; strokeWidth = 8f; style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND }
     private val tempWallPaint = Paint().apply { color = Color.YELLOW; strokeWidth = 8f; style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; alpha = 150 }
@@ -209,12 +209,16 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         if (currentTrackPoints.isNotEmpty() && fingerOn) { val lt = currentTrackPoints.last(); val total = (trackLength(currentTrackPoints) + sqrt((fingerX - lt.x).pow(2) + (fingerY - lt.y).pow(2))) * 1.1f / 100f; canvas.drawText(String.format("%.1f m (x1.1)", total), fingerX + 24f, fingerY - 24f, hintPaint) }
         for (obj in objects) {
             symPaint.color = SymbolPalette.color(obj.type)
+            symPaint.strokeWidth = 3.5f
+            val k = if (ru.gdesanek.core.ArchTypes.isArch(obj.type) || ru.gdesanek.core.ArchTypes.isFurn(obj.type)) 1f else 0.7f
+            canvas.save(); canvas.translate(obj.x, obj.y); canvas.scale(k, k); canvas.translate(-obj.x, -obj.y)
             if (ru.gdesanek.core.ArchTypes.isArch(obj.type)) GostSymbols.draw(canvas, obj.type, obj.x, obj.y, obj.rotation, symPaint, (hitWall(obj.x, obj.y)?.thickness ?: 100f) / 10f)
             else GostSymbols.draw(canvas, obj.type, obj.x, obj.y, obj.rotation, symPaint)
+            canvas.restore()
             if (!ru.gdesanek.core.ArchTypes.isArch(obj.type) && !ru.gdesanek.core.ArchTypes.isFurn(obj.type)) {
                 val hh = if (obj.height >= 0) obj.height else SymbolPalette.height(obj.type)
-                if (hh != null) { hLabelPaint.color = symPaint.color; canvas.drawText("h=" + hh, obj.x + 24f, obj.y - 16f, hLabelPaint) }
-                SymbolPalette.ip(obj.type)?.let { ip -> hLabelPaint.color = symPaint.color; canvas.drawText(ip, obj.x + 24f, obj.y + 34f, hLabelPaint) }
+                if (hh != null) { hLabelPaint.color = symPaint.color; canvas.drawText("h=" + hh, obj.x + 18f, obj.y - 10f, hLabelPaint) }
+                SymbolPalette.ip(obj.type)?.let { ip -> hLabelPaint.color = symPaint.color; canvas.drawText(ip, obj.x + 18f, obj.y + 24f, hLabelPaint) }
             }
             if (obj.id == selectedObjectId) canvas.drawCircle(obj.x, obj.y, 35f, selectionPaint)
         }

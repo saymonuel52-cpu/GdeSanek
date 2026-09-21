@@ -28,7 +28,7 @@ object PdfExporter {
         val page = doc.startPage(PdfDocument.PageInfo.Builder(842, 595, 1).create())
         val canvas = page.canvas
         canvas.drawColor(Color.WHITE)
-        val labelPaint = Paint().apply { color = Color.BLACK; textSize = 5f }
+        val labelPaint = Paint().apply { color = Color.BLACK; textSize = 3.0f }
 
         val framePaint = Paint().apply { color = Color.BLACK; strokeWidth = 2f; style = Paint.Style.STROKE }
         val thinPaint = Paint().apply { color = Color.BLACK; strokeWidth = 1f }
@@ -71,7 +71,7 @@ object PdfExporter {
         }
 
         labelPaint.color = Color.BLACK
-        val symPaint = Paint().apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeWidth = 8f }
+        val symPaint = Paint().apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeWidth = 3.5f }
         if (mono) symPaint.strokeWidth = 2f
         for (o in objects) {
             symPaint.color = if (mono) (if (ru.gdesanek.core.ArchTypes.isFurn(o.type) || ru.gdesanek.core.ArchTypes.isArch(o.type)) 0xFF9E9E9E.toInt() else 0xFF000000.toInt()) else SymbolPalette.color(o.type)
@@ -82,7 +82,11 @@ object PdfExporter {
             if (ru.gdesanek.core.ArchTypes.isArch(o.type)) {
                 val ap = android.graphics.Paint(symPaint).apply { color = android.graphics.Color.parseColor("#9E9E9E"); strokeWidth = 2f }
                 GostSymbols.draw(canvas, o.type, o.x, o.y, o.rotation, ap)
-            } else GostSymbols.draw(canvas, o.type, o.x, o.y, o.rotation, symPaint)
+            } else {
+                canvas.save(); canvas.translate(o.x, o.y); canvas.scale(0.7f, 0.7f); canvas.translate(-o.x, -o.y)
+                GostSymbols.draw(canvas, o.type, o.x, o.y, o.rotation, symPaint)
+                canvas.restore()
+            }
             canvas.restore()
             val hh = if (o.height >= 0) o.height else SymbolPalette.height(o.type)
             val ipm = SymbolPalette.ip(o.type)
