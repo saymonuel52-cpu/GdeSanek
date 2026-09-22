@@ -22,6 +22,7 @@ import ru.gdesanek.R
 import ru.gdesanek.db.WallRepository
 import ru.gdesanek.db.ObjectRepository
 import ru.gdesanek.db.TrackRepository
+import ru.gdesanek.db.ProjectRepository
 import ru.gdesanek.export.PdfExporter
 import ru.gdesanek.model.Catalog
 import ru.gdesanek.model.WallMaterials
@@ -512,7 +513,7 @@ class PlanEditorActivity : AppCompatActivity() {
     }
 
     private fun showMainMenu() {
-        val items = arrayOf("Подложка", "Смета", "Экспорт PDF", "Заказчик", "Замечания", "Резервная копия", "Слои…", "Настройки…")
+        val items = arrayOf("Подложка", "Смета", "Экспорт PDF", "Заказчик", "Замечания", "Резервная копия", "Слои…", "Настройки…", "Паспорт…")
         AlertDialog.Builder(this).setTitle(projectName).setItems(items) { _, i ->
             when (i) {
                 0 -> if (planView.underlay == null) pickUnderlay() else AlertDialog.Builder(this).setTitle("Подложка").setItems(arrayOf("Калибровать", "Прозрачность", "Заменить", "Убрать")) { _, j ->
@@ -525,6 +526,7 @@ class PlanEditorActivity : AppCompatActivity() {
                 5 -> startActivity(Intent(this, BackupActivity::class.java))
                 6 -> showLayersDialog()
                 7 -> startActivity(Intent(this, SettingsActivity::class.java))
+                8 -> showPassportDialog()
             }
         }.show()
     }
@@ -540,6 +542,20 @@ class PlanEditorActivity : AppCompatActivity() {
     private fun pickUnderlay() {
         val i = Intent(Intent.ACTION_OPEN_DOCUMENT).apply { type = "image/*"; addCategory(Intent.CATEGORY_OPENABLE) }
         startActivityForResult(Intent.createChooser(i, "Подложка"), 42)
+    }
+
+    private fun showPassportDialog() {
+        val repo = ProjectRepository(this)
+        val pp = repo.getPassport(projectId)
+        val etDoc = EditText(this).apply { hint = "Шифр (напр. ЭОМ-2026-01)"; setText(pp[0]) }
+        val etOrg = EditText(this).apply { hint = "Организация проектировщика"; setText(pp[1]) }
+        val etAut = EditText(this).apply { hint = "Разработал (ФИО)"; setText(pp[2]) }
+        val etAdr = EditText(this).apply { hint = "Адрес объекта"; setText(pp[3]) }
+        val ll = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(40, 20, 40, 10); addView(etDoc); addView(etOrg); addView(etAut); addView(etAdr) }
+        AlertDialog.Builder(this).setTitle("Паспорт проекта").setView(ll).setPositiveButton("Сохранить") { _, _ ->
+            repo.updatePassport(projectId, etDoc.text.toString(), etOrg.text.toString(), etAut.text.toString(), etAdr.text.toString())
+            Toast.makeText(this, "Паспорт сохранён — попадёт в штамп и общие данные", Toast.LENGTH_SHORT).show()
+        }.setNegativeButton("Отмена", null).show()
     }
 
     private fun showLayersDialog() {
@@ -625,7 +641,7 @@ class PlanEditorActivity : AppCompatActivity() {
             val walls = WallRepository(this).getAll(projectId)
             val objects = ObjectRepository(this).getAll(projectId)
             val tracks = TrackRepository(this).getAll(projectId)
-            val file = PdfExporter.export(this, projectName, projectId, walls, objects, tracks, mono)
+            val file = PdfExporter.export(this, projectName, projectId, walls, objects, tracks, mono, ProjectRepository(this).getPassport(projectId))
             runOnUiThread {
                 val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
                 showShareDialog(uri, file)

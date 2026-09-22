@@ -126,4 +126,32 @@ class ProjectRepository(context: Context) {
         }
         return Triple(w, o, t)
     }
+
+    fun ensurePassportColumns() {
+        try {
+            val c = dbHelper.readableDatabase.rawQuery("PRAGMA table_info(projects)", null)
+            val cols = mutableSetOf<String>()
+            if (c.moveToFirst()) { do { cols.add(c.getString(1)) } while (c.moveToNext()) }
+            c.close()
+            val db = dbHelper.writableDatabase
+            if (!cols.contains("doc_num")) db.execSQL("ALTER TABLE projects ADD COLUMN doc_num TEXT DEFAULT ''")
+            if (!cols.contains("org")) db.execSQL("ALTER TABLE projects ADD COLUMN org TEXT DEFAULT ''")
+            if (!cols.contains("author")) db.execSQL("ALTER TABLE projects ADD COLUMN author TEXT DEFAULT ''")
+        } catch (e: Exception) { /* ignore */ }
+    }
+
+    fun getPassport(id: Long): List<String> {
+        ensurePassportColumns()
+        return try {
+            dbHelper.readableDatabase.rawQuery("SELECT doc_num, org, author, address FROM projects WHERE id = ?", arrayOf(id.toString())).use {
+                if (it.moveToFirst()) listOf(it.getString(0) ?: "", it.getString(1) ?: "", it.getString(2) ?: "", it.getString(3) ?: "") else listOf("", "", "", "")
+            }
+        } catch (e: Exception) { listOf("", "", "", "") }
+    }
+
+    fun updatePassport(id: Long, doc: String, org: String, author: String, address: String) {
+        ensurePassportColumns()
+        val v = ContentValues().apply { put("doc_num", doc); put("org", org); put("author", author); put("address", address) }
+        dbHelper.writableDatabase.update("projects", v, "id = ?", arrayOf(id.toString()))
+    }
 }

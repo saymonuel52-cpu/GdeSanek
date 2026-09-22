@@ -19,7 +19,7 @@ import kotlin.math.min
 import kotlin.math.sqrt
 
 object PdfExporter {
-    fun export(context: Context, projectName: String, projectId: Long, walls: List<Wall>, objects: List<PlanObject>, tracks: List<CableTrack>, mono: Boolean = false): File {
+    fun export(context: Context, projectName: String, projectId: Long, walls: List<Wall>, objects: List<PlanObject>, tracks: List<CableTrack>, mono: Boolean = false, passport: List<String> = listOf("", "", "", "")): File {
         val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
         val masterName = prefs.getString("masterName", "ГдеСанёк").orEmpty()
         val masterPhone = prefs.getString("masterPhone", "").orEmpty()
