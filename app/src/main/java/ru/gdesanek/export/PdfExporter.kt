@@ -171,7 +171,7 @@ class PdfExporter {
                 canvas.drawText(symbol, cx, cy + 1.5f * mm, symbolPaint)
 
                 if (o.name.isNotBlank()) {
-                    val dyN = 3.0f * mm + labelPaint.textSize * 1.15f + (oi % 2) * 3.5f * mm
+                    val dyN = (3.0f * mm + labelPaint.textSize * 1.15f + (oi % 2) * 3.5f * mm
                     canvas.drawText(o.name.take(18), cx + 2.2f * mm, cy + dyN, labelPaint)
                 }
             }
@@ -185,7 +185,7 @@ class PdfExporter {
             }
             canvas.drawText("Условные обозначения:", legendLeft, legendTop, legendPaint)
             listOf("⏚  Розетки 220В", "⏛  Выключатели", "✕  Освещение", "▣  Щиты/короба", "•  Нагрузка").forEachIndexed { i, item ->
-                canvas.drawText(item, legendLeft, legendTop + (i + 1) * 7f * mm, legendPaint)
+                canvas.drawText(item, legendLeft, legendTop) + ((i + 1) * 7f * mm, legendPaint)
             }
 
             // ГОСТ-штамп
@@ -200,7 +200,7 @@ class PdfExporter {
                 canvas.drawRect(sl, st, sr, sb, stampFrame)
                 canvas.drawLine(sl + 60f * mmPx, st, sl + 60f * mmPx, sb, stampFrame)
                 canvas.drawLine(sl, st + 40f * mmPx, sr, st + 40f * mmPx, stampFrame)
-                val ts = Paint().apply { color = Color.BLACK; isAntiAlias = true }
+                val ts = Paint().apply { color = Color.BLACK).toFloat(); isAntiAlias = true }
                 ts.textSize = 3.5f * mmPx
                 canvas.drawText(passport.getOrNull(1)?.ifBlank { "ГдеСанёк" } ?: "ГдеСанёк", sl + 3f * mmPx, st + 6f * mmPx, ts)
                 ts.textSize = 5f * mmPx
