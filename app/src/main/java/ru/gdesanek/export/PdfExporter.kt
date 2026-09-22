@@ -25,6 +25,49 @@ object PdfExporter {
         val masterPhone = prefs.getString("masterPhone", "").orEmpty()
         val masterInn = prefs.getString("masterInn", "").orEmpty()
         val doc = PdfDocument()
+        run {
+            val a4l = android.graphics.pdf.PdfDocument.PageInfo.Builder(842, 595, 1).create()
+            val pg1 = doc.startPage(a4l); val c1 = pg1.canvas; val m1 = c1.width / 297f
+            val tp = Paint(textPaint)
+            c1.drawText("ОБЩИЕ ДАННЫЕ", 20f * m1, 25f * m1, Paint(titlePaint))
+            tp.textSize = 6f * m1
+            c1.drawText("Комплект рабочих чертежей: " + projectName, 20f * m1, 40f * m1, tp)
+            if (passport.getOrNull(3)?.isNotBlank() == true) c1.drawText("Адрес объекта: " + passport[3], 20f * m1, 50f * m1, tp)
+            if (passport.getOrNull(1)?.isNotBlank() == true) c1.drawText("Проектная организация: " + passport[1], 20f * m1, 60f * m1, tp)
+            tp.textSize = 5f * m1
+            c1.drawText("Ведомость рабочих чертежей:", 20f * m1, 75f * m1, tp)
+            listOf("1.1   Общие данные", "1.2   Пояснительная записка", "1.3   Ведомость ссылочных документов", "2.1   План расположения ЭО и освещения").forEachIndexed { i, t -> c1.drawText(t, 26f * m1, (85 + i * 8) * m1, tp) }
+            doc.finishPage(pg1)
+            val pg2 = doc.startPage(a4l); val c2 = pg2.canvas
+            val tp2 = Paint(textPaint); tp2.textSize = 4.2f * m1
+            c2.drawText("ПОЯСНИТЕЛЬНАЯ ЗАПИСКА", 20f * m1, 25f * m1, Paint(titlePaint))
+            listOf(
+                "1. Проект разработан на основании технического задания заказчика.",
+                "2. Согласно СП 31-110-2003 объект относится к III категории по степени обеспечения надежности электроснабжения.",
+                "3. Располагаемые потери напряжения не более 2%.",
+                "4. В соответствии с гл. 7.1 ПУЭ седьмого издания групповые сети предусмотрены трехпроводными и пятипроводными с отдельным защитным проводником PE.",
+                "5. Прокладка кабелей выполняется медным кабелем ВВГнг-LS: скрыто в штробе, открыто по плите перекрытия в гофрированной ПВХ трубе.",
+                "6. Щит должен иметь отдельную шину для подключения защитного проводника.",
+                "7. Все элементы электросетей выполнены с учетом ГОСТ Р 50462-92: цветовая идентификация жил кабелей и проводников.",
+                "8. Вся электрическая сеть рассчитана на длительно допустимую нагрузку и проверена по потере напряжения.",
+                "9. Соединение жил в ответвительных коробках методом скрутки не допускается; рекомендуется клеммниками быстрого соединения типа WAGO.",
+                "10. Весь монтаж должен быть выполнен в соответствии с ПУЭ и СП 76.13330.2011."
+            ).forEachIndexed { i, t -> c2.drawText(t, 20f * m1, (40 + i * 9) * m1, tp2) }
+            doc.finishPage(pg2)
+            val pg3 = doc.startPage(a4l); val c3 = pg3.canvas
+            val tp3 = Paint(textPaint); tp3.textSize = 4.2f * m1
+            c3.drawText("ВЕДОМОСТЬ ССЫЛОЧНЫХ ДОКУМЕНТОВ", 20f * m1, 25f * m1, Paint(titlePaint))
+            listOf(
+                "ПУЭ" to "Правила устройства электроустановок. - 7-е изд. - М., 2002.",
+                "СП 31-110-2003" to "Электрооборудование жилых и общественных зданий. Нормы проектирования",
+                "СП 76.13330.2011" to "Электротехнические устройства",
+                "СП 52.13330.2010" to "Естественное и искусственное освещение. Нормы проектирования",
+                "ГОСТ Р 50571.1-2009" to "Электроустановки зданий",
+                "ГОСТ Р 50571.5.52-2011" to "Выбор и монтаж электрооборудования",
+                "ГОСТ Р 50462-2009" to "Идентификация проводников посредством цветов и буквенно-цифровых обозначений"
+            ).forEachIndexed { i, (n, t) -> c3.drawText(n + "   " + t, 20f * m1, (40 + i * 9) * m1, tp3) }
+            doc.finishPage(pg3)
+        }
         val page = doc.startPage(PdfDocument.PageInfo.Builder(842, 595, 1).create())
         val canvas = page.canvas
         canvas.drawColor(Color.WHITE)
@@ -75,7 +118,7 @@ object PdfExporter {
         labelPaint.color = Color.BLACK
         val symPaint = Paint().apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeWidth = 0.6f * mm / scale }
         if (mono) symPaint.strokeWidth = 0.5f * mm / scale
-        for (o in objects) {
+        for ((oi, o) in objects.withIndex()) {
             symPaint.color = if (mono) (if (ru.gdesanek.core.ArchTypes.isFurn(o.type) || ru.gdesanek.core.ArchTypes.isArch(o.type)) 0xFF9E9E9E.toInt() else 0xFF000000.toInt()) else SymbolPalette.color(o.type)
             canvas.save()
             canvas.translate(tx(o.x), ty(o.y))
@@ -94,7 +137,7 @@ object PdfExporter {
             val ipm = SymbolPalette.ip(o.type)
             val mark = (if (hh != null) "h=$hh" else "") + (if (ipm != null) (if (hh != null) " " else "") + ipm else "")
             if (mark.isNotEmpty()) { labelPaint.color = if (mono) Color.BLACK else 0xFFD32F2F.toInt(); canvas.drawText(mark, tx(o.x) + 2.2f * mm, ty(o.y) - 2.2f * mm, labelPaint); labelPaint.color = Color.BLACK }
-            if (o.name.isNotBlank()) canvas.drawText(o.name.take(24), tx(o.x) + 2.2f * mm, ty(o.y) + 3.0f * mm + labelPaint.textSize * 1.15f, labelPaint)
+            if (o.name.isNotBlank()) { val dyN = 3.0f * mm + labelPaint.textSize * 1.15f + (oi % 2) * 3.5f * mm; canvas.drawText(o.name.take(18), tx(o.x) + 2.2f * mm, ty(o.y) + dyN, labelPaint) }
             SymbolPalette.power(o.type)?.let { w -> canvas.drawText(w.toString() + " Вт", tx(o.x) + 2.2f * mm, ty(o.y) + 3.0f * mm, labelPaint) }
         }
 
@@ -126,12 +169,27 @@ object PdfExporter {
         canvas.drawLine(sL, sT + 36f, R, sT + 36f, thinPaint)
         canvas.drawLine(sL + 95f, sT + 18f, sL + 95f, B, thinPaint)
         textPaint.textSize = 11f
-        canvas.drawText(masterName, sL + 6f, sT + 12f, textPaint)
         textPaint.textSize = 9f
-        canvas.drawText("Лист Э1    Масштаб 1:100", sL + 6f, sT + 30f, textPaint)
-        canvas.drawText(projectName, sL + 6f, sT + 48f, textPaint)
-        canvas.drawText("Дата: " + SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date()), sL + 100f, sT + 30f, textPaint)
-        canvas.drawText(if (masterPhone.isNotEmpty()) "Тел: $masterPhone" else "", sL + 100f, sT + 48f, textPaint)
+        run {
+            val mmPx = canvas.width / 297f
+            val sl = canvas.width - 195f * mmPx; val st = canvas.height - 65f * mmPx; val sr = canvas.width - 5f * mmPx; val sb = canvas.height - 5f * mmPx
+            val fp = Paint(framePaint); fp.strokeWidth = 0.6f * mmPx
+            canvas.drawRect(sl, st, sr, sb, fp)
+            canvas.drawLine(sl + 60f * mmPx, st, sl + 60f * mmPx, sb, fp)
+            canvas.drawLine(sl, st + 40f * mmPx, sr, st + 40f * mmPx, fp)
+            val ts = Paint(textPaint); ts.color = Color.BLACK
+            ts.textSize = 3.5f * mmPx
+            canvas.drawText(passport.getOrNull(1)?.ifBlank { "ГдеСанёк" } ?: "ГдеСанёк", sl + 3f * mmPx, st + 6f * mmPx, ts)
+            ts.textSize = 5f * mmPx
+            canvas.drawText(passport.getOrNull(0)?.ifBlank { "ЭОМ" } ?: "ЭОМ", sl + 63f * mmPx, st + 8f * mmPx, ts)
+            canvas.drawText("План расположения ЭО и освещения", sl + 63f * mmPx, st + 20f * mmPx, ts)
+            ts.textSize = 4f * mmPx
+            canvas.drawText("Стадия Р", sl + 63f * mmPx, st + 30f * mmPx, ts)
+            canvas.drawText("Лист 2.1", sl + 90f * mmPx, st + 30f * mmPx, ts)
+            canvas.drawText("Листов 4", sl + 115f * mmPx, st + 30f * mmPx, ts)
+            canvas.drawText("Разраб. " + (passport.getOrNull(2) ?: ""), sl + 3f * mmPx, st + 46f * mmPx, ts)
+            canvas.drawText("Дата: " + SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date()), sl + 63f * mmPx, st + 46f * mmPx, ts)
+        }
         if (masterInn.isNotEmpty()) canvas.drawText("ИНН: $masterInn", sL + 100f, sT + 62f, textPaint)
 
         doc.finishPage(page)
