@@ -1,46 +1,47 @@
 package ru.gdesanek.export
 
-import android.content.Context
-import android.content.SharedPreferences
 import android.graphics.Color
 import android.graphics.Paint
-import android.graphics.DashPathEffect
 import android.graphics.pdf.PdfDocument
-import ru.gdesanek.model.CableTrack
-import ru.gdesanek.model.PlanObject
-import ru.gdesanek.model.Wall
-import ru.gdesanek.render.GostSymbols
-import ru.gdesanek.theme.SymbolPalette
+import ru.gdesanek.model.ElectricObject
+import ru.gdesanek.model.ObjectType
 import java.io.File
+import java.io.FileOutputStream
 import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import kotlin.math.min
-import kotlin.math.sqrt
+import java.util.*
 
-object PdfExporter {
-    fun export(context: Context, projectName: String, projectId: Long, walls: List<Wall>, objects: List<PlanObject>, tracks: List<CableTrack>, mono: Boolean = false, passport: List<String> = listOf("", "", "", "")): File {
-        val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
-        val masterName = prefs.getString("masterName", "ГдеСанёк").orEmpty()
-        val masterPhone = prefs.getString("masterPhone", "").orEmpty()
-        val masterInn = prefs.getString("masterInn", "").orEmpty()
-        val doc = PdfDocument()
+class PdfExporter {
+
+    fun exportToPdf(
+        objects: List<ElectricObject>,
+        outputDir: File,
+        projectName: String,
+        masterName: String = "ГдеСанёк",
+        mono: Boolean = false,
+        passport: List<String> = listOf("", "", "", "")
+    ): File {
+        val document = PdfDocument()
+
+        // === Страницы 1.1-1.3 (общие данные) ===
         run {
-            val a4l = android.graphics.pdf.PdfDocument.PageInfo.Builder(842, 595, 1).create()
-            val pg1 = doc.startPage(a4l); val c1 = pg1.canvas; val m1 = c1.width / 297f
-            val tp = Paint(textPaint)
-            c1.drawText("ОБЩИЕ ДАННЫЕ", 20f * m1, 25f * m1, Paint(titlePaint))
-            tp.textSize = 6f * m1
-            c1.drawText("Комплект рабочих чертежей: " + projectName, 20f * m1, 40f * m1, tp)
-            if (passport.getOrNull(3)?.isNotBlank() == true) c1.drawText("Адрес объекта: " + passport[3], 20f * m1, 50f * m1, tp)
-            if (passport.getOrNull(1)?.isNotBlank() == true) c1.drawText("Проектная организация: " + passport[1], 20f * m1, 60f * m1, tp)
-            tp.textSize = 5f * m1
-            c1.drawText("Ведомость рабочих чертежей:", 20f * m1, 75f * m1, tp)
-            listOf("1.1   Общие данные", "1.2   Пояснительная записка", "1.3   Ведомость ссылочных документов", "2.1   План расположения ЭО и освещения").forEachIndexed { i, t -> c1.drawText(t, 26f * m1, (85 + i * 8) * m1, tp) }
-            doc.finishPage(pg1)
-            val pg2 = doc.startPage(a4l); val c2 = pg2.canvas
-            val tp2 = Paint(textPaint); tp2.textSize = 4.2f * m1
-            c2.drawText("ПОЯСНИТЕЛЬНАЯ ЗАПИСКА", 20f * m1, 25f * m1, Paint(titlePaint))
+            val a4l = PdfDocument.PageInfo.Builder(842, 595, 1).create()
+            val m = 842f / 297f
+            val titleP = Paint().apply { color = Color.BLACK; textSize = 7f * m; isAntiAlias = true }
+            val subtitleP = Paint().apply { color = Color.BLACK; textSize = 6f * m; isAntiAlias = true }
+            val textP = Paint().apply { color = Color.BLACK; textSize = 5f * m; isAntiAlias = true }
+            val smallP = Paint().apply { color = Color.BLACK; textSize = 4.2f * m; isAntiAlias = true }
+
+            val pg1 = document.startPage(a4l); val c1 = pg1.canvas
+            c1.drawText("ОБЩИЕ ДАННЫЕ", 20f * m, 25f * m, titleP)
+            c1.drawText("Комплект рабочих чертежей: " + projectName, 20f * m, 40f * m, subtitleP)
+            if (passport.getOrNull(3)?.isNotBlank() == true) c1.drawText("Адрес объекта: " + passport[3], 20f * m, 50f * m, textP)
+            if (passport.getOrNull(1)?.isNotBlank() == true) c1.drawText("Проектная организация: " + passport[1], 20f * m, 60f * m, textP)
+            c1.drawText("Ведомость рабочих чертежей:", 20f * m, 75f * m, textP)
+            listOf("1.1   Общие данные", "1.2   Пояснительная записка", "1.3   Ведомость ссылочных документов", "2.1   План расположения ЭО и освещения").forEachIndexed { i, t -> c1.drawText(t, 26f * m, (85 + i * 8) * m, textP) }
+            document.finishPage(pg1)
+
+            val pg2 = document.startPage(a4l); val c2 = pg2.canvas
+            c2.drawText("ПОЯСНИТЕЛЬНАЯ ЗАПИСКА", 20f * m, 25f * m, titleP)
             listOf(
                 "1. Проект разработан на основании технического задания заказчика.",
                 "2. Согласно СП 31-110-2003 объект относится к III категории по степени обеспечения надежности электроснабжения.",
@@ -52,11 +53,11 @@ object PdfExporter {
                 "8. Вся электрическая сеть рассчитана на длительно допустимую нагрузку и проверена по потере напряжения.",
                 "9. Соединение жил в ответвительных коробках методом скрутки не допускается; рекомендуется клеммниками быстрого соединения типа WAGO.",
                 "10. Весь монтаж должен быть выполнен в соответствии с ПУЭ и СП 76.13330.2011."
-            ).forEachIndexed { i, t -> c2.drawText(t, 20f * m1, (40 + i * 9) * m1, tp2) }
-            doc.finishPage(pg2)
-            val pg3 = doc.startPage(a4l); val c3 = pg3.canvas
-            val tp3 = Paint(textPaint); tp3.textSize = 4.2f * m1
-            c3.drawText("ВЕДОМОСТЬ ССЫЛОЧНЫХ ДОКУМЕНТОВ", 20f * m1, 25f * m1, Paint(titlePaint))
+            ).forEachIndexed { i, t -> c2.drawText(t, 20f * m, (40 + i * 9) * m, smallP) }
+            document.finishPage(pg2)
+
+            val pg3 = document.startPage(a4l); val c3 = pg3.canvas
+            c3.drawText("ВЕДОМОСТЬ ССЫЛОЧНЫХ ДОКУМЕНТОВ", 20f * m, 25f * m, titleP)
             listOf(
                 "ПУЭ" to "Правила устройства электроустановок. - 7-е изд. - М., 2002.",
                 "СП 31-110-2003" to "Электрооборудование жилых и общественных зданий. Нормы проектирования",
@@ -65,137 +66,160 @@ object PdfExporter {
                 "ГОСТ Р 50571.1-2009" to "Электроустановки зданий",
                 "ГОСТ Р 50571.5.52-2011" to "Выбор и монтаж электрооборудования",
                 "ГОСТ Р 50462-2009" to "Идентификация проводников посредством цветов и буквенно-цифровых обозначений"
-            ).forEachIndexed { i, (n, t) -> c3.drawText(n + "   " + t, 20f * m1, (40 + i * 9) * m1, tp3) }
-            doc.finishPage(pg3)
-        }
-        val page = doc.startPage(PdfDocument.PageInfo.Builder(842, 595, 1).create())
-        val canvas = page.canvas
-        canvas.drawColor(Color.WHITE)
-        val labelPaint = Paint().apply { color = Color.BLACK; textSize = 3.0f }
-
-        val framePaint = Paint().apply { color = Color.BLACK; strokeWidth = 2f; style = Paint.Style.STROKE }
-        val thinPaint = Paint().apply { color = Color.BLACK; strokeWidth = 1f }
-        val textPaint = Paint().apply { color = Color.BLACK; textSize = 10f }
-        val titlePaint = Paint().apply { color = Color.BLACK; textSize = 13f }
-
-        val L = 57f; val T = 14f; val R = 828f; val B = 581f
-        canvas.drawRect(L, T, R, B, framePaint)
-
-        var minX = Float.MAX_VALUE; var minY = Float.MAX_VALUE; var maxX = -Float.MAX_VALUE; var maxY = -Float.MAX_VALUE
-        fun add(x: Float, y: Float) { if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y }
-        walls.forEach { add(it.x1, it.y1); add(it.x2, it.y2) }
-        objects.forEach { add(it.x, it.y) }
-        tracks.forEach { t -> t.points.forEach { add(it.x, it.y) } }
-        if (minX > maxX) { minX = 0f; minY = 0f; maxX = 1000f; maxY = 1000f }
-        minX -= 100f; minY -= 100f; maxX += 100f; maxY += 100f
-
-        val aL = L + 10f; val aT = T + 25f; val aR = R - 10f; val aB = B - 80f
-        val scale = min((aR - aL) / (maxX - minX), (aB - aT) / (maxY - minY))
-        val mm = 2.8346f
-        labelPaint.textSize = 2.5f * mm
-        fun tx(x: Float) = aL + (x - minX) * scale
-        fun ty(y: Float) = aT + (y - minY) * scale
-
-        canvas.drawText("ПЛАН РАСПОЛОЖЕНИЯ ЭО И ОСВЕЩЕНИЯ — $projectName", L + 10f, T + 16f, titlePaint)
-
-        val wallPaint = Paint().apply { color = Color.BLACK; strokeWidth = 0.8f * mm / scale }
-        for (w in walls) {
-            val dx = w.x2 - w.x1; val dy = w.y2 - w.y1
-            val len = sqrt(dx * dx + dy * dy); if (len < 1f) continue
-            val ux = dx / len; val uy = dy / len; val px = -uy; val py = ux
-            val half = w.thickness / 10f / 2f * scale
-            canvas.drawLine(tx(w.x1) + px * half, ty(w.y1) + py * half, tx(w.x2) + px * half, ty(w.y2) + py * half, wallPaint)
-            canvas.drawLine(tx(w.x1) - px * half, ty(w.y1) - py * half, tx(w.x2) - px * half, ty(w.y2) - py * half, wallPaint)
+            ).forEachIndexed { i, (n, t) -> c3.drawText(n + "   " + t, 20f * m, (40 + i * 9) * m, smallP) }
+            document.finishPage(pg3)
         }
 
-        val trPaint = Paint().apply { strokeWidth = 0.6f * mm / scale }
-        for (t in tracks) {
-            trPaint.color = if (mono) 0xFF000000.toInt() else t.color; trPaint.pathEffect = when (t.wiring) { "shtroba" -> DashPathEffect(floatArrayOf(6f, 4f), 0f); "gofra" -> DashPathEffect(floatArrayOf(6f, 3f, 2f, 3f), 0f); "truba" -> DashPathEffect(floatArrayOf(2f, 3f), 0f); "lotok" -> DashPathEffect(floatArrayOf(8f, 3f), 0f); else -> null }
-            for (i in 0 until t.points.size - 1) canvas.drawLine(tx(t.points[i].x), ty(t.points[i].y), tx(t.points[i+1].x), ty(t.points[i+1].y), trPaint)
-            if (t.points.isNotEmpty()) { val p0 = t.points[0]; labelPaint.color = if (mono) 0xFF000000.toInt() else t.color; canvas.drawText("Гр." + (tracks.indexOf(t) + 1) + " ВВГнг-LS " + t.cable, tx(p0.x) + 2.0f * mm, ty(p0.y) - 2.0f * mm, labelPaint) }
-        }
-
-        labelPaint.color = Color.BLACK
-        val symPaint = Paint().apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeWidth = 0.6f * mm / scale }
-        if (mono) symPaint.strokeWidth = 0.5f * mm / scale
-        for ((oi, o) in objects.withIndex()) {
-            symPaint.color = if (mono) (if (ru.gdesanek.core.ArchTypes.isFurn(o.type) || ru.gdesanek.core.ArchTypes.isArch(o.type)) 0xFF9E9E9E.toInt() else 0xFF000000.toInt()) else SymbolPalette.color(o.type)
-            canvas.save()
-            canvas.translate(tx(o.x), ty(o.y))
-            canvas.scale(scale, scale)
-            canvas.translate(-o.x, -o.y)
-            if (ru.gdesanek.core.ArchTypes.isArch(o.type)) {
-                val ap = android.graphics.Paint(symPaint).apply { color = android.graphics.Color.parseColor("#9E9E9E"); strokeWidth = 0.5f * mm / scale }
-                GostSymbols.draw(canvas, o.type, o.x, o.y, o.rotation, ap)
-            } else {
-                canvas.save(); canvas.translate(o.x, o.y); canvas.scale(0.7f, 0.7f); canvas.translate(-o.x, -o.y)
-                GostSymbols.draw(canvas, o.type, o.x, o.y, o.rotation, symPaint)
-                canvas.restore()
-            }
-            canvas.restore()
-            val hh = if (o.height >= 0) o.height else SymbolPalette.height(o.type)
-            val ipm = SymbolPalette.ip(o.type)
-            val mark = (if (hh != null) "h=$hh" else "") + (if (ipm != null) (if (hh != null) " " else "") + ipm else "")
-            if (mark.isNotEmpty()) { labelPaint.color = if (mono) Color.BLACK else 0xFFD32F2F.toInt(); canvas.drawText(mark, tx(o.x) + 2.2f * mm, ty(o.y) - 2.2f * mm, labelPaint); labelPaint.color = Color.BLACK }
-            if (o.name.isNotBlank()) { val dyN = 3.0f * mm + labelPaint.textSize * 1.15f + (oi % 2) * 3.5f * mm; canvas.drawText(o.name.take(18), tx(o.x) + 2.2f * mm, ty(o.y) + dyN, labelPaint) }
-            SymbolPalette.power(o.type)?.let { w -> canvas.drawText(w.toString() + " Вт", tx(o.x) + 2.2f * mm, ty(o.y) + 3.0f * mm, labelPaint) }
-        }
-
-        val legend = listOf(
-            "Розетки 220В" to Color.parseColor("#FF5252"),
-            "Выключатели" to Color.parseColor("#FF7043"),
-            "Освещение" to Color.parseColor("#FFCA28"),
-            "Слаботочка" to Color.parseColor("#40C4FF"),
-            "Щиты/короба" to Color.parseColor("#26A69A"),
-            "Нагрузка" to Color.parseColor("#AB47BC")
-        )
-        var ly = B - 38f
-        textPaint.textSize = 8f
-        for (i in legend.indices) {
-            val (name, c) = legend[i]
-            val col = if (i < 3) 0 else 1
-            val row = if (i < 3) i else i - 3
-            val x0 = L + 10f + col * 200f
-            val yy = B - 38f + row * 11f
-            trPaint.color = c; trPaint.strokeWidth = 2f
-            canvas.drawLine(x0, yy - 3f, x0 + 20f, yy - 3f, trPaint)
-            textPaint.color = Color.BLACK
-            canvas.drawText(name, x0 + 25f, yy, textPaint)
-        }
-
-        val sL = R - 185f; val sT = B - 55f
-        canvas.drawRect(sL, sT, R, B, framePaint)
-        canvas.drawLine(sL, sT + 18f, R, sT + 18f, thinPaint)
-        canvas.drawLine(sL, sT + 36f, R, sT + 36f, thinPaint)
-        canvas.drawLine(sL + 95f, sT + 18f, sL + 95f, B, thinPaint)
-        textPaint.textSize = 11f
-        textPaint.textSize = 9f
+        // === Страница 2.1 — План ===
         run {
-            val mmPx = canvas.width / 297f
-            val sl = canvas.width - 195f * mmPx; val st = canvas.height - 65f * mmPx; val sr = canvas.width - 5f * mmPx; val sb = canvas.height - 5f * mmPx
-            val fp = Paint(framePaint); fp.strokeWidth = 0.6f * mmPx
-            canvas.drawRect(sl, st, sr, sb, fp)
-            canvas.drawLine(sl + 60f * mmPx, st, sl + 60f * mmPx, sb, fp)
-            canvas.drawLine(sl, st + 40f * mmPx, sr, st + 40f * mmPx, fp)
-            val ts = Paint(textPaint); ts.color = Color.BLACK
-            ts.textSize = 3.5f * mmPx
-            canvas.drawText(passport.getOrNull(1)?.ifBlank { "ГдеСанёк" } ?: "ГдеСанёк", sl + 3f * mmPx, st + 6f * mmPx, ts)
-            ts.textSize = 5f * mmPx
-            canvas.drawText(passport.getOrNull(0)?.ifBlank { "ЭОМ" } ?: "ЭОМ", sl + 63f * mmPx, st + 8f * mmPx, ts)
-            canvas.drawText("План расположения ЭО и освещения", sl + 63f * mmPx, st + 20f * mmPx, ts)
-            ts.textSize = 4f * mmPx
-            canvas.drawText("Стадия Р", sl + 63f * mmPx, st + 30f * mmPx, ts)
-            canvas.drawText("Лист 2.1", sl + 90f * mmPx, st + 30f * mmPx, ts)
-            canvas.drawText("Листов 4", sl + 115f * mmPx, st + 30f * mmPx, ts)
-            canvas.drawText("Разраб. " + (passport.getOrNull(2) ?: ""), sl + 3f * mmPx, st + 46f * mmPx, ts)
-            canvas.drawText("Дата: " + SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date()), sl + 63f * mmPx, st + 46f * mmPx, ts)
-        }
-        if (masterInn.isNotEmpty()) canvas.drawText("ИНН: $masterInn", sL + 100f, sT + 62f, textPaint)
+            val pageInfo = PdfDocument.PageInfo.Builder(842, 595, 4).create()
+            val page = document.startPage(pageInfo)
+            val canvas = page.canvas
 
-        doc.finishPage(page)
-        val file = File(context.cacheDir, "GdeSanek_$projectId.pdf")
-        file.outputStream().use { doc.writeTo(it) }
-        doc.close()
-        return file
+            val mm = canvas.width / 297f
+            val mLeft = 20f * mm
+            val mTop = 20f * mm
+            val mRight = canvas.width - 20f * mm
+            val mBottom = canvas.height - 20f * mm
+
+            val framePaint = Paint().apply {
+                color = if (mono) Color.BLACK else Color.DKGRAY
+                style = Paint.Style.STROKE
+                strokeWidth = 0.5f * mm
+                isAntiAlias = true
+            }
+            canvas.drawRect(mLeft, mTop, mRight, mBottom, framePaint)
+
+            val titlePaint = Paint().apply {
+                color = Color.BLACK
+                textSize = 6f * mm
+                isAntiAlias = true
+                isFakeBoldText = true
+            }
+            canvas.drawText("ПЛАН РАСПОЛОЖЕНИЯ ЭО И ОСВЕЩЕНИЯ", canvas.width / 2f - 80f * mm, mTop + 12f * mm, titlePaint)
+
+            val subtitlePaint = Paint().apply {
+                color = Color.BLACK
+                textSize = 4f * mm
+                isAntiAlias = true
+            }
+            canvas.drawText(projectName, canvas.width / 2f - 50f * mm, mTop + 20f * mm, subtitlePaint)
+
+            val planLeft = mLeft + 5f * mm
+            val planTop = mTop + 30f * mm
+            val planRight = mRight - 100f * mm
+            val planBottom = mBottom - 10f * mm
+
+            var minX = Float.MAX_VALUE
+            var maxX = Float.MIN_VALUE
+            var minY = Float.MAX_VALUE
+            var maxY = Float.MIN_VALUE
+            for (o in objects) {
+                if (o.x < minX) minX = o.x
+                if (o.x > maxX) maxX = o.x
+                if (o.y < minY) minY = o.y
+                if (o.y > maxY) maxY = o.y
+            }
+
+            val planW = planRight - planLeft
+            val planH = planBottom - planTop
+            val scaleX = if (maxX > minX) planW / (maxX - minX) else 1f
+            val scaleY = if (maxY > minY) planH / (maxY - minY) else 1f
+            val scale = minOf(scaleX, scaleY) * 0.9f
+
+            fun tx(x: Float): Float = planLeft + (x - minX) * scale
+            fun ty(y: Float): Float = planTop + (y - minY) * scale
+
+            val linePaint = Paint().apply {
+                color = Color.BLACK
+                strokeWidth = 0.3f * mm
+                isAntiAlias = true
+            }
+            for (o in objects) {
+                if (o.cableGroupId.isNotBlank()) {
+                    for (o2 in objects) {
+                        if (o !== o2 && o.cableGroupId == o2.cableGroupId) {
+                            canvas.drawLine(tx(o.x), ty(o.y), tx(o2.x), ty(o2.y), linePaint)
+                        }
+                    }
+                }
+            }
+
+            val symbolPaint = Paint().apply {
+                color = Color.BLACK
+                textSize = 5f * mm
+                textAlign = Paint.Align.CENTER
+                isAntiAlias = true
+            }
+            val labelPaint = Paint().apply {
+                color = Color.BLACK
+                textSize = 3f * mm
+                isAntiAlias = true
+            }
+
+            for ((oi, o) in objects.withIndex()) {
+                val cx = tx(o.x)
+                val cy = ty(o.y)
+                val symbol = when (o.type) {
+                    ObjectType.SOCKET -> "⏚"
+                    ObjectType.SWITCH -> "⏛"
+                    ObjectType.LIGHT -> "✕"
+                    ObjectType.SHIELD -> "▣"
+                    ObjectType.JUNCTION_BOX -> "◯"
+                    else -> "•"
+                }
+                canvas.drawText(symbol, cx, cy + 1.5f * mm, symbolPaint)
+
+                if (o.name.isNotBlank()) {
+                    val dyN = 3.0f * mm + labelPaint.textSize * 1.15f + (oi % 2) * 3.5f * mm
+                    canvas.drawText(o.name.take(18), cx + 2.2f * mm, cy + dyN, labelPaint)
+                }
+            }
+
+            val legendLeft = mRight - 90f * mm
+            val legendTop = mTop + 30f * mm
+            val legendPaint = Paint().apply {
+                color = Color.BLACK
+                textSize = 3.5f * mm
+                isAntiAlias = true
+            }
+            canvas.drawText("Условные обозначения:", legendLeft, legendTop, legendPaint)
+            listOf("⏚  Розетки 220В", "⏛  Выключатели", "✕  Освещение", "▣  Щиты/короба", "•  Нагрузка").forEachIndexed { i, item ->
+                canvas.drawText(item, legendLeft, legendTop + (i + 1) * 7f * mm, legendPaint)
+            }
+
+            // ГОСТ-штамп
+            run {
+                val mmPx = canvas.width / 297f
+                val sl = canvas.width - 195f * mmPx
+                val st = canvas.height - 65f * mmPx
+                val sr = canvas.width - 5f * mmPx
+                val sb = canvas.height - 5f * mmPx
+                val stampFrame = Paint(framePaint)
+                stampFrame.strokeWidth = 0.6f * mmPx
+                canvas.drawRect(sl, st, sr, sb, stampFrame)
+                canvas.drawLine(sl + 60f * mmPx, st, sl + 60f * mmPx, sb, stampFrame)
+                canvas.drawLine(sl, st + 40f * mmPx, sr, st + 40f * mmPx, stampFrame)
+                val ts = Paint().apply { color = Color.BLACK; isAntiAlias = true }
+                ts.textSize = 3.5f * mmPx
+                canvas.drawText(passport.getOrNull(1)?.ifBlank { "ГдеСанёк" } ?: "ГдеСанёк", sl + 3f * mmPx, st + 6f * mmPx, ts)
+                ts.textSize = 5f * mmPx
+                canvas.drawText(passport.getOrNull(0)?.ifBlank { "ЭОМ" } ?: "ЭОМ", sl + 63f * mmPx, st + 8f * mmPx, ts)
+                canvas.drawText("План расположения ЭО и освещения", sl + 63f * mmPx, st + 20f * mmPx, ts)
+                ts.textSize = 4f * mmPx
+                canvas.drawText("Стадия Р", sl + 63f * mmPx, st + 30f * mmPx, ts)
+                canvas.drawText("Лист 2.1", sl + 90f * mmPx, st + 30f * mmPx, ts)
+                canvas.drawText("Листов 4", sl + 115f * mmPx, st + 30f * mmPx, ts)
+                canvas.drawText("Разраб. " + (passport.getOrNull(2) ?: ""), sl + 3f * mmPx, st + 46f * mmPx, ts)
+                canvas.drawText("Дата: " + SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date()), sl + 63f * mmPx, st + 46f * mmPx, ts)
+            }
+
+            document.finishPage(page)
+        }
+
+        val outputFile = File(outputDir, projectName + ".pdf")
+        FileOutputStream(outputFile).use { document.writeTo(it) }
+        document.close()
+        return outputFile
     }
 }
