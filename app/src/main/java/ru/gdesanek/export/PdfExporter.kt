@@ -48,12 +48,14 @@ object PdfExporter {
 
         val aL = L + 10f; val aT = T + 25f; val aR = R - 10f; val aB = B - 80f
         val scale = min((aR - aL) / (maxX - minX), (aB - aT) / (maxY - minY))
+        val mm = 2.8346f
+        labelPaint.textSize = 2.5f * mm
         fun tx(x: Float) = aL + (x - minX) * scale
         fun ty(y: Float) = aT + (y - minY) * scale
 
         canvas.drawText("ПЛАН РАСПОЛОЖЕНИЯ ЭО И ОСВЕЩЕНИЯ — $projectName", L + 10f, T + 16f, titlePaint)
 
-        val wallPaint = Paint().apply { color = Color.BLACK; strokeWidth = 1.5f }
+        val wallPaint = Paint().apply { color = Color.BLACK; strokeWidth = 0.8f * mm / scale }
         for (w in walls) {
             val dx = w.x2 - w.x1; val dy = w.y2 - w.y1
             val len = sqrt(dx * dx + dy * dy); if (len < 1f) continue
@@ -63,16 +65,16 @@ object PdfExporter {
             canvas.drawLine(tx(w.x1) - px * half, ty(w.y1) - py * half, tx(w.x2) - px * half, ty(w.y2) - py * half, wallPaint)
         }
 
-        val trPaint = Paint().apply { strokeWidth = 1.5f }
+        val trPaint = Paint().apply { strokeWidth = 0.6f * mm / scale }
         for (t in tracks) {
             trPaint.color = if (mono) 0xFF000000.toInt() else t.color; trPaint.pathEffect = when (t.wiring) { "shtroba" -> DashPathEffect(floatArrayOf(6f, 4f), 0f); "gofra" -> DashPathEffect(floatArrayOf(6f, 3f, 2f, 3f), 0f); "truba" -> DashPathEffect(floatArrayOf(2f, 3f), 0f); "lotok" -> DashPathEffect(floatArrayOf(8f, 3f), 0f); else -> null }
             for (i in 0 until t.points.size - 1) canvas.drawLine(tx(t.points[i].x), ty(t.points[i].y), tx(t.points[i+1].x), ty(t.points[i+1].y), trPaint)
-            if (t.points.isNotEmpty()) { val p0 = t.points[0]; labelPaint.color = if (mono) 0xFF000000.toInt() else t.color; canvas.drawText("Гр." + (tracks.indexOf(t) + 1) + " ВВГнг-LS " + t.cable, tx(p0.x) + 4f, ty(p0.y) - 3f, labelPaint) }
+            if (t.points.isNotEmpty()) { val p0 = t.points[0]; labelPaint.color = if (mono) 0xFF000000.toInt() else t.color; canvas.drawText("Гр." + (tracks.indexOf(t) + 1) + " ВВГнг-LS " + t.cable, tx(p0.x) + 2.0f * mm, ty(p0.y) - 2.0f * mm, labelPaint) }
         }
 
         labelPaint.color = Color.BLACK
-        val symPaint = Paint().apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeWidth = 3.5f }
-        if (mono) symPaint.strokeWidth = 2f
+        val symPaint = Paint().apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeWidth = 0.6f * mm / scale }
+        if (mono) symPaint.strokeWidth = 0.5f * mm / scale
         for (o in objects) {
             symPaint.color = if (mono) (if (ru.gdesanek.core.ArchTypes.isFurn(o.type) || ru.gdesanek.core.ArchTypes.isArch(o.type)) 0xFF9E9E9E.toInt() else 0xFF000000.toInt()) else SymbolPalette.color(o.type)
             canvas.save()
@@ -80,7 +82,7 @@ object PdfExporter {
             canvas.scale(scale, scale)
             canvas.translate(-o.x, -o.y)
             if (ru.gdesanek.core.ArchTypes.isArch(o.type)) {
-                val ap = android.graphics.Paint(symPaint).apply { color = android.graphics.Color.parseColor("#9E9E9E"); strokeWidth = 2f }
+                val ap = android.graphics.Paint(symPaint).apply { color = android.graphics.Color.parseColor("#9E9E9E"); strokeWidth = 0.5f * mm / scale }
                 GostSymbols.draw(canvas, o.type, o.x, o.y, o.rotation, ap)
             } else {
                 canvas.save(); canvas.translate(o.x, o.y); canvas.scale(0.7f, 0.7f); canvas.translate(-o.x, -o.y)
@@ -91,9 +93,9 @@ object PdfExporter {
             val hh = if (o.height >= 0) o.height else SymbolPalette.height(o.type)
             val ipm = SymbolPalette.ip(o.type)
             val mark = (if (hh != null) "h=$hh" else "") + (if (ipm != null) (if (hh != null) " " else "") + ipm else "")
-            if (mark.isNotEmpty()) canvas.drawText(mark, tx(o.x) + 6f, ty(o.y) - 4f, labelPaint)
-            if (o.name.isNotBlank()) canvas.drawText(o.name.take(24), tx(o.x) + 6f, ty(o.y) + 20f, labelPaint)
-            SymbolPalette.power(o.type)?.let { w -> canvas.drawText(w.toString() + " Вт", tx(o.x) + 6f, ty(o.y) + 8f, labelPaint) }
+            if (mark.isNotEmpty()) { labelPaint.color = if (mono) Color.BLACK else 0xFFD32F2F.toInt(); canvas.drawText(mark, tx(o.x) + 2.2f * mm, ty(o.y) - 2.2f * mm, labelPaint); labelPaint.color = Color.BLACK }
+            if (o.name.isNotBlank()) canvas.drawText(o.name.take(24), tx(o.x) + 2.2f * mm, ty(o.y) + 3.0f * mm + labelPaint.textSize * 1.15f, labelPaint)
+            SymbolPalette.power(o.type)?.let { w -> canvas.drawText(w.toString() + " Вт", tx(o.x) + 2.2f * mm, ty(o.y) + 3.0f * mm, labelPaint) }
         }
 
         val legend = listOf(

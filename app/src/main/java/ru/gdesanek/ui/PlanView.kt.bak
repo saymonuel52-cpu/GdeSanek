@@ -93,7 +93,7 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         ru.gdesanek.core.ArchTypes.isFurn(type) -> "furn"
         else -> "other"
     }
-    private val hLabelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL; textSize = 9f }
+    private val hLabelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL; textSize = 12f }
 
     private val wallPaint = Paint().apply { color = Color.WHITE; strokeWidth = 8f; style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND }
     private val tempWallPaint = Paint().apply { color = Color.YELLOW; strokeWidth = 8f; style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; alpha = 150 }
@@ -229,13 +229,13 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
             canvas.restore()
             if (!ru.gdesanek.core.ArchTypes.isArch(obj.type) && !ru.gdesanek.core.ArchTypes.isFurn(obj.type)) {
                 val hh = if (obj.height >= 0) obj.height else SymbolPalette.height(obj.type)
-                if (hh != null) { hLabelPaint.color = symPaint.color; canvas.drawText("h=" + hh, obj.x + 14f, obj.y - 8f, hLabelPaint) }
-                SymbolPalette.ip(obj.type)?.let { ip -> hLabelPaint.color = symPaint.color; canvas.drawText(ip, obj.x + 14f, obj.y + 20f, hLabelPaint) }
+                if (hh != null) { hLabelPaint.color = symPaint.color; canvas.drawText("h=" + hh, obj.x + 18f, obj.y - 10f, hLabelPaint) }
+                SymbolPalette.ip(obj.type)?.let { ip -> hLabelPaint.color = symPaint.color; canvas.drawText(ip, obj.x + 18f, obj.y + 24f, hLabelPaint) }
             }
             if (obj.id == selectedObjectId) {
                 canvas.drawCircle(obj.x, obj.y, 35f, selectionPaint)
                 hLabelPaint.color = 0xFFB0BEC5.toInt()
-                canvas.drawText(obj.name, obj.x + 14f, obj.y + 28f, hLabelPaint)
+                canvas.drawText(obj.name, obj.x + 18f, obj.y + 40f, hLabelPaint)
             }
         }
         if (currentTool == Tool.PLACE && placeType != null && fingerOn && (ru.gdesanek.core.ArchTypes.isArch(placeType!!) || ru.gdesanek.core.ArchTypes.isFurn(placeType!!))) {
@@ -372,20 +372,17 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         val isArch = ru.gdesanek.core.ArchTypes.isArch(obj.type)
         val isFurn = ru.gdesanek.core.ArchTypes.isFurn(obj.type)
         val menuItems = if (isFurn) arrayOf(
-            "Имя / примечание…",
             "Повернуть на 45°",
             "Дублировать",
             "Ряд (Array)",
             "Удалить"
         ) else if (isArch) arrayOf(
-            "Имя / примечание…",
             "Отзеркалить (сторона открывания)",
             "Повернуть на 45°",
             "Дублировать",
             "Ряд (Array)",
             "Удалить"
         ) else arrayOf(
-            "Имя / примечание…",
             "Высота (сейчас H=$curH см)",
             "Повернуть на 45°",
             "Дублировать",
@@ -393,30 +390,8 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
             "Удалить"
         )
         AlertDialog.Builder(context).setTitle("Объект: ${obj.type}").setItems(menuItems) { _, i ->
-            val ei = if (isFurn) listOf(5, 1, 2, 4, 3)[i] else listOf(5, 0, 1, 2, 4, 3)[i]
+            val ei = if (isFurn) listOf(1, 2, 4, 3)[i] else i
             when (ei) {
-                5 -> {
-                    val et = EditText(context).apply {
-                        inputType = InputType.TYPE_CLASS_TEXT
-                        setText(obj.name ?: "")
-                        hint = "например: розетка для ТВ, бра над кроватью..."
-                        setSelection(text.length)
-                    }
-                    AlertDialog.Builder(context)
-                        .setTitle("Имя / примечание")
-                        .setView(et)
-                        .setPositiveButton("Сохранить") { _, _ ->
-                            val newName = et.text.toString().trim()
-                            val upd = obj.copy(name = newName)
-                            objectRepository?.update(upd)
-                            val idx = objects.indexOfFirst { it.id == obj.id }
-                            if (idx >= 0) objects[idx] = upd
-                            invalidate()
-                        }
-                        .setNegativeButton("Отмена", null)
-                        .show()
-                    return@setItems
-                }
                 0 -> {
                     if (isArch) {
                         val isMirror = obj.rotation >= 1000f
