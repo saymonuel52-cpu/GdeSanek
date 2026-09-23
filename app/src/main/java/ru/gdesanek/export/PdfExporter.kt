@@ -189,6 +189,7 @@ object PdfExporter {
             GostSymbols.draw(c1, o.type, tx(o.x), ty(o.y), o.rotation, symPaint1)
             if (o.name.isNotBlank()) c1.drawText(o.name.take(20), tx(o.x) + 8f, ty(o.y) + 30f, namePaint1)
         }
+        drawChains(c1, walls, tx, ty, minX, maxX, minY, maxY)
         val legendPaint1 = Paint().apply { textSize = 13f }
         val legendItems1 = listOf("Освещение" to CategoryPalette.color("lamp_lust"), "Выключатели" to CategoryPalette.color("switch_1"))
         var lx1 = M; val ly1 = H - M - 10f
@@ -268,6 +269,8 @@ object PdfExporter {
             if (o.name.isNotBlank()) c1b.drawText(o.name.take(28), tx(o.x) + 8f, ty(o.y) + 30f + (oi % 2) * 14f, namePaint1b)
         }
 
+        drawChains(c1b, walls, tx, ty, minX, maxX, minY, maxY)
+        drawPrivyazki(c1b, objects, walls, tx, ty)
         val legendPaint1b = Paint().apply { textSize = 13f }
         val legendItems1b = listOf("Розетки 220В" to CategoryPalette.color("socket_b1"), "Силовое оборудование" to CategoryPalette.color("panel_shr"))
         var lx1b = M; val ly1b = H - M - 10f
@@ -434,7 +437,7 @@ object PdfExporter {
         for (o in objects) {
             if (!o.type.contains("door")) continue
             val ci = ((o.x - minX) / cell).toInt(); val ri = ((o.y - minY) / cell).toInt()
-            for (dr in -1..1) for (dc in -1..1) {
+            for (dr in -2..2) for (dc in -2..2) {
                 val r2 = ri + dr; val c2 = ci + dc
                 if (r2 in 0 until gy && c2 in 0 until gx) blocked[r2][c2] = true
             }
@@ -619,6 +622,58 @@ object PdfExporter {
             bed > 0 -> "Спальня"
             hall > 0 -> "Прихожая"
             else -> "Помещение"
+        }
+    }
+
+
+    private fun drawChains(
+        c: android.graphics.Canvas,
+        walls: List<Wall>,
+        tx: (Float) -> Float,
+        ty: (Float) -> Float,
+        minX: Float, maxX: Float, minY: Float, maxY: Float
+    ) {
+        val dimPaint = Paint().apply { color = Color.BLACK; strokeWidth = 1f; textSize = 10f }
+        val xsRaw = mutableListOf<Float>(); val ysRaw = mutableListOf<Float>()
+        for (w in walls) { xsRaw.add(w.x1); xsRaw.add(w.x2); ysRaw.add(w.y1); ysRaw.add(w.y2) }
+        xsRaw.sort(); ysRaw.sort()
+        val xl = mutableListOf<Float>(); val yl = mutableListOf<Float>()
+        for (v in xsRaw) if (xl.isEmpty() || v - xl.last() > 15f) xl.add(v)
+        for (v in ysRaw) if (yl.isEmpty() || v - yl.last() > 15f) yl.add(v)
+        val yChain = ty(maxY) + 40f
+        for (i in 0 until xl.size - 1) {
+            val a = tx(xl[i]); val b = tx(xl[i + 1])
+            if (b - a < 8f) continue
+            c.drawLine(a, yChain, b, yChain, dimPaint)
+            c.drawLine(a - 4f, yChain + 4f, a + 4f, yChain - 4f, dimPaint)
+            c.drawLine(b - 4f, yChain + 4f, b + 4f, yChain - 4f, dimPaint)
+            c.drawText(((xl[i + 1] - xl[i]) * 10).toInt().toString(), (a + b) / 2f - 12f, yChain - 4f, dimPaint)
+        }
+        val xChain = tx(minX) - 40f
+        for (i in 0 until yl.size - 1) {
+            val a = ty(yl[i]); val b = ty(yl[i + 1])
+            if (b - a < 8f) continue
+            c.drawLine(xChain, a, xChain, b, dimPaint)
+            c.drawLine(xChain - 4f, a - 4f, xChain + 4f, a + 4f, dimPaint)
+            c.drawLine(xChain - 4f, b - 4f, xChain + 4f, b + 4f, dimPaint)
+            c.drawText(((yl[i + 1] - yl[i]) * 10).toInt().toString(), xChain - 32f, (a + b) / 2f, dimPaint)
+        }
+    }
+
+    private fun drawPrivyazki(c: android.graphics.Canvas, objects: List<PlanObject>, walls: List<Wall>, tx: (Float) -> Float, ty: (Float) -> Float) {
+        val p = Paint().apply { color = Color.DKGRAY; strokeWidth = 1f; textSize = 9f }
+        for (o in objects) {
+            if (!o.type.contains("socket")) continue
+            var bestW: Wall? = null; var bestD = 1e9f
+            for (w in walls) { val d = distToSeg(o.x, o.y, w); if (d < bestD) { bestD = d; bestW = w } }
+            val w = bestW ?: continue
+            val dx = w.x2 - w.x1; val dy = w.y2 - w.y1
+            val len2 = dx * dx + dy * dy
+            val t = if (len2 > 0f) ((o.x - w.x1) * dx + (o.y - w.y1) * dy) / len2 else 0f
+            val tc = t.coerceIn(0f, 1f)
+            val fx = w.x1 + tc * dx; val fy = w.y1 + tc * dy
+            c.drawLine(tx(fx), ty(fy), tx(o.x), ty(o.y), p)
+            c.drawText(((bestD * 10).toInt()).toString(), (tx(fx) + tx(o.x)) / 2f + 4f, (ty(fy) + ty(o.y)) / 2f, p)
         }
     }
 
