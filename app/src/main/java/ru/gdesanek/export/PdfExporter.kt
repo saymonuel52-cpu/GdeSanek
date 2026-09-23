@@ -74,10 +74,15 @@ object PdfExporter {
         val titlePaint = Paint().apply { color = Color.BLACK; textSize = 22f; isFakeBoldText = true }
         c.drawText("ПЛАН РАСПОЛОЖЕНИЯ ЭО И ОСВЕЩЕНИЯ — $projectName", M, M + 5f, titlePaint)
 
-        val wallPaint = Paint().apply { color = Color.BLACK; style = Paint.Style.STROKE }
+        val wallPaint = Paint().apply { color = Color.BLACK; style = Paint.Style.STROKE; strokeWidth = 1.2f }
         for (wl in walls) {
-            wallPaint.strokeWidth = (wl.thickness * scale / 2f).coerceAtLeast(1.5f)
-            c.drawLine(tx(wl.x1), ty(wl.y1), tx(wl.x2), ty(wl.y2), wallPaint)
+            wallPaint.strokeWidth = 1.2f
+            val ddx = wl.x2 - wl.x1; val ddy = wl.y2 - wl.y1
+            val ll = kotlin.math.sqrt(ddx * ddx + ddy * ddy).coerceAtLeast(0.001f)
+            val gap = kotlin.math.min((wl.thickness / 10f) * scale, 6f) / 2f
+            val nx = -ddy / ll * gap; val ny = ddx / ll * gap
+            c.drawLine(tx(wl.x1) + nx, ty(wl.y1) + ny, tx(wl.x2) + nx, ty(wl.y2) + ny, wallPaint)
+            c.drawLine(tx(wl.x1) - nx, ty(wl.y1) - ny, tx(wl.x2) - nx, ty(wl.y2) - ny, wallPaint)
         }
 
         val trackPaint = Paint().apply { style = Paint.Style.STROKE; strokeWidth = 3f; pathEffect = DashPathEffect(floatArrayOf(14f, 10f), 0f) }

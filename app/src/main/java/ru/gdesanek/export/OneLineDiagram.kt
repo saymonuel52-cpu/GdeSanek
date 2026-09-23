@@ -48,7 +48,7 @@ object OneLineDiagram {
                 if (d < 250f) {
                     val w = (ru.gdesanek.theme.SymbolPalette.power(o.type)?.toFloat() ?: 0f)
                     powerW += w
-                    name = o.name.ifBlank { name }
+                    if (!ru.gdesanek.core.ArchTypes.isArch(o.type) && !ru.gdesanek.core.ArchTypes.isFurn(o.type)) name = o.name.ifBlank { name }
                     val t = o.type
                     if (t.contains("socket", true) || t.contains("roz") || t.contains("плит")
                         || t.contains("стир") || t.contains("стир") || t.contains("washer")) hasSocket = true
