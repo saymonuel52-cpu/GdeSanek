@@ -76,7 +76,8 @@ object PdfExporter {
         canvas3.drawText("2.1  Однолинейная схема щита ЩР-1", M, y, textPaint3); y += 24f
         canvas3.drawText("3.1  План освещения", M, y, textPaint3); y += 24f
         canvas3.drawText("3.2  План розеток и силового оборудования", M, y, textPaint3); y += 24f
-        canvas3.drawText("3.3  План слаботочных сетей", M, y, textPaint3); y += 48f
+        canvas3.drawText("3.3  План слаботочных сетей", M, y, textPaint3); y += 24f
+        canvas3.drawText("3.4  Ведомости выключателей и помещений", M, y, textPaint3); y += 48f
         
         canvas3.drawText("ПОЯСНИТЕЛЬНАЯ ЗАПИСКА:", M, y, textPaint3); y += 24f
         val notes = listOf(
@@ -370,6 +371,100 @@ object PdfExporter {
         document.finishPage(page1c)
 
 
+        // === ЛИСТ 3.4: Ведомости ===
+        val page4 = document.startPage(PdfDocument.PageInfo.Builder(pw, ph, 4).create())
+        val c4 = page4.canvas
+        val fp4 = Paint().apply { color = Color.BLACK; style = Paint.Style.STROKE; strokeWidth = 2f }
+        c4.drawRect(M - 15f, M - 15f, W - M + 15f, H - M + 15f, fp4)
+        val tp4 = Paint().apply { color = Color.BLACK; textSize = 20f; isFakeBoldText = true }
+        c4.drawText("ВЕДОМОСТЬ ВЫКЛЮЧАТЕЛЕЙ; ЭКСПЛИКАЦИЯ ПОМЕЩЕНИЙ — $projectName", M, M + 8f, tp4)
+        val t4 = Paint().apply { color = Color.BLACK; textSize = 13f }
+        val tb4 = Paint().apply { color = Color.BLACK; textSize = 13f; isFakeBoldText = true }
+        val cellP4 = Paint().apply { color = Color.BLACK; style = Paint.Style.STROKE; strokeWidth = 1f }
+        val switches = objects.filter { it.type.contains("switch") }.sortedWith(compareBy({ it.y }, { it.x }))
+        val lightTracks = tracks.indices.filter { tracks[it].points.isNotEmpty() && trackSystem(tracks[it], objects) == "light" }
+        var yy4 = M + 40f
+        c4.drawText("Ведомость выключателей", M, yy4, tb4); yy4 += 24f
+        val swCols = floatArrayOf(M, M + 60f, M + 300f, M + 420f, M + 560f)
+        c4.drawRect(swCols[0], yy4, swCols[4], yy4 + 24f, cellP4)
+        listOf("Марка", "Наименование", "Клавиш", "Группа").forEachIndexed { i, h -> c4.drawText(h, swCols[i] + 4f, yy4 + 17f, tb4); c4.drawLine(swCols[i], yy4, swCols[i], yy4 + 24f, cellP4) }
+        yy4 += 24f
+        switches.forEachIndexed { si, swObj ->
+            var bestTr = -1; var bestD = 1e9f
+            for (ti in lightTracks) { val d = distToTrackPts(swObj.x, swObj.y, tracks[ti]); if (d < bestD) { bestD = d; bestTr = ti } }
+            val keys = when { swObj.type.contains("3") -> "3-кл"; swObj.type.contains("2") -> "2-кл"; else -> "1-кл" }
+            c4.drawRect(swCols[0], yy4, swCols[4], yy4 + 24f, cellP4)
+            val vals = listOf("В${si + 1}", swObj.name.take(30), keys, if (bestTr >= 0) "Гр.${bestTr + 1}" else "—")
+            vals.forEachIndexed { i, v -> c4.drawText(v, swCols[i] + 4f, yy4 + 17f, t4); c4.drawLine(swCols[i], yy4, swCols[i], yy4 + 24f, cellP4) }
+            yy4 += 24f
+        }
+        yy4 += 30f
+        c4.drawText("Экспликация помещений", M, yy4, tb4); yy4 += 24f
+        val cell = 20f
+        val gx = ((maxX - minX) / cell).toInt() + 1
+        val gy = ((maxY - minY) / cell).toInt() + 1
+        val blocked = Array(gy) { BooleanArray(gx) }
+        for (wl in walls) {
+            val wlen = kotlin.math.sqrt((wl.x2 - wl.x1) * (wl.x2 - wl.x1) + (wl.y2 - wl.y1) * (wl.y2 - wl.y1))
+            val steps = (wlen / (cell / 2f)).toInt() + 1
+            for (si in 0..steps) {
+                val x = wl.x1 + (wl.x2 - wl.x1) * si / steps
+                val y = wl.y1 + (wl.y2 - wl.y1) * si / steps
+                val ci = ((x - minX) / cell).toInt(); val ri = ((y - minY) / cell).toInt()
+                if (ri in 0 until gy && ci in 0 until gx) blocked[ri][ci] = true
+            }
+        }
+        val roomIds = Array(gy) { IntArray(gx) { -1 } }
+        val roomCnt = mutableListOf<Int>(); val roomSx = mutableListOf<Float>(); val roomSy = mutableListOf<Float>()
+        var rc = 0
+        for (r in 0 until gy) for (cc in 0 until gx) {
+            if (blocked[r][cc] || roomIds[r][cc] >= 0) continue
+            val id = rc++
+            var cnt = 0; var sx = 0f; var sy = 0f
+            val q = java.util.ArrayDeque<IntArray>()
+            q.add(intArrayOf(r, cc)); roomIds[r][cc] = id
+            while (q.isNotEmpty()) {
+                val cur = q.poll()
+                cnt++; sx += cur[1]; sy += cur[0]
+                for (d in 0..3) {
+                    val dr = if (d == 0) 1 else if (d == 1) -1 else 0
+                    val dc = if (d == 2) 1 else if (d == 3) -1 else 0
+                    val r2 = cur[0] + dr; val c2 = cur[1] + dc
+                    if (r2 in 0 until gy && c2 in 0 until gx && !blocked[r2][c2] && roomIds[r2][c2] < 0) { roomIds[r2][c2] = id; q.add(intArrayOf(r2, c2)) }
+                }
+            }
+            roomCnt.add(cnt); roomSx.add(sx / cnt); roomSy.add(sy / cnt)
+        }
+        val roomRows = mutableListOf<Triple<String, Float, Float>>()
+        for (id in 0 until rc) {
+            if (roomCnt[id] < 40) continue
+            val cxp = minX + roomSx[id] * cell
+            val cyp = minY + roomSy[id] * cell
+            roomRows.add(Triple(roomName(cxp, cyp, objects, roomIds, id, minX, minY, cell), roomCnt[id] * 0.04f, cxp))
+        }
+        roomRows.sortByDescending { it.second }
+        val rmCols = floatArrayOf(M, M + 60f, M + 360f, M + 520f)
+        c4.drawRect(rmCols[0], yy4, rmCols[3], yy4 + 24f, cellP4)
+        listOf("№", "Наименование", "Площадь, м²").forEachIndexed { i, h -> c4.drawText(h, rmCols[i] + 4f, yy4 + 17f, tb4); c4.drawLine(rmCols[i], yy4, rmCols[i], yy4 + 24f, cellP4) }
+        yy4 += 24f
+        roomRows.forEachIndexed { i, rw ->
+            c4.drawRect(rmCols[0], yy4, rmCols[3], yy4 + 24f, cellP4)
+            val vals = listOf("${i + 1}", rw.first, String.format("%.1f", rw.second))
+            vals.forEachIndexed { vi, v -> c4.drawText(v, rmCols[vi] + 4f, yy4 + 17f, t4); c4.drawLine(rmCols[vi], yy4, rmCols[vi], yy4 + 24f, cellP4) }
+            yy4 += 24f
+        }
+        c4.drawText("Итого площадь: " + String.format("%.1f", roomRows.sumOf { it.second.toDouble() }.toFloat()) + " м²", M, yy4 + 20f, tb4)
+        val sw4 = 320f; val sh4 = 90f
+        val sx4 = W - M - sw4; val sy4 = H - M - sh4
+        c4.drawRect(sx4, sy4, sx4 + sw4, sy4 + sh4, cellP4)
+        c4.drawLine(sx4, sy4 + 30f, sx4 + sw4, sy4 + 30f, cellP4)
+        c4.drawLine(sx4, sy4 + 60f, sx4 + sw4, sy4 + 60f, cellP4)
+        c4.drawText(org1, sx4 + 6f, sy4 + 20f, t4)
+        c4.drawText("$doc1   Лист 3.4   Ведомости", sx4 + 6f, sy4 + 50f, t4)
+        c4.drawText(projectName, sx4 + 6f, sy4 + 80f, t4)
+        c4.drawText("Дата: " + SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date()), sx4 + sw4 - 115f, sy4 + 80f, t4)
+        document.finishPage(page4)
+
         val file = File(context.cacheDir, "GdeSanek_$projectId.pdf")
         FileOutputStream(file).use { document.writeTo(it) }
         document.close()
@@ -416,18 +511,42 @@ object PdfExporter {
     }
 
     private fun trackSystem(tr: CableTrack, objects: List<PlanObject>): String {
-        var light = 0; var sock = 0; var weak = 0
+        var bestD = 1e9f
+        var bestType = ""
         for (o in objects) {
-            if (distToTrackPts(o.x, o.y, tr) > 300f) continue
-            val t = o.type.lowercase()
-            if (t.contains("sks") || t.contains("tv") || t.contains("rj45")) weak++
-            else if (t.contains("lamp") || t.contains("switch")) light++
-            else if (t.contains("socket") || t.contains("cons")) sock++
+            if (ru.gdesanek.core.ArchTypes.isArch(o.type) || ru.gdesanek.core.ArchTypes.isFurn(o.type)) continue
+            val d = distToTrackPts(o.x, o.y, tr)
+            if (d < bestD) { bestD = d; bestType = o.type.lowercase() }
         }
         return when {
-            weak > 0 && weak >= light && weak >= sock -> "weak"
-            light > 0 && light >= sock -> "light"
+            bestType.contains("sks") || bestType.contains("tv") || bestType.contains("rj45") -> "weak"
+            bestType.contains("lamp") || bestType.contains("switch") -> "light"
             else -> "socket"
+        }
+    }
+
+    private fun roomName(cx: Float, cy: Float, objects: List<PlanObject>, roomIds: Array<IntArray>, id: Int, minX: Float, minY: Float, cell: Float): String {
+        var kitchen = 0; var living = 0; var bath = 0; var bed = 0; var hall = 0
+        for (o in objects) {
+            val ci = ((o.x - minX) / cell).toInt(); val ri = ((o.y - minY) / cell).toInt()
+            if (ri !in roomIds.indices || ci !in roomIds[0].indices) continue
+            if (roomIds[ri][ci] != id) continue
+            val t = o.type.lowercase(); val n = o.name.lowercase()
+            when {
+                t.contains("плит") || t.contains("вытяж") || n.contains("кухн") -> kitchen++
+                t.contains("диван") || t.contains("тв") || n.contains("гостин") || n.contains("диван") -> living++
+                t.contains("унитаз") || t.contains("ванн") || t.contains("стир") || n.contains("санузел") || n.contains("стирал") -> bath++
+                t.contains("кроват") || n.contains("кроват") || n.contains("спальн") -> bed++
+                t.contains("шкаф") || n.contains("коридор") || n.contains("прихож") -> hall++
+            }
+        }
+        return when {
+            kitchen > 0 && kitchen >= living && kitchen >= bath && kitchen >= bed -> "Кухня"
+            living > 0 && living >= bath && living >= bed -> "Гостиная"
+            bath > 0 && bath >= bed -> "Санузел"
+            bed > 0 -> "Спальня"
+            hall > 0 -> "Прихожая"
+            else -> "Помещение"
         }
     }
 
