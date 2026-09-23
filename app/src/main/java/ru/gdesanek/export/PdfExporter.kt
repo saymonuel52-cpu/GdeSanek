@@ -78,7 +78,8 @@ object PdfExporter {
         canvas3.drawText("3.1  План освещения", M, y, textPaint3); y += 24f
         canvas3.drawText("3.2  План розеток и силового оборудования", M, y, textPaint3); y += 24f
         canvas3.drawText("3.3  План слаботочных сетей", M, y, textPaint3); y += 24f
-        canvas3.drawText("3.4  Ведомости выключателей и помещений", M, y, textPaint3); y += 48f
+        canvas3.drawText("3.4  Ведомости выключателей и помещений", M, y, textPaint3); y += 24f
+        canvas3.drawText("4.1  Спецификация оборудования и материалов", M, y, textPaint3); y += 48f
         
         canvas3.drawText("ПОЯСНИТЕЛЬНАЯ ЗАПИСКА:", M, y, textPaint3); y += 24f
         val notes = listOf(
@@ -415,6 +416,21 @@ object PdfExporter {
                 if (ri in 0 until gy && ci in 0 until gx) blocked[ri][ci] = true
             }
         }
+        for (i in walls.indices) for (j in i + 1 until walls.size) {
+            val a = walls[i]; val b = walls[j]
+            for (p in listOf(a.x1 to a.y1, a.x2 to a.y2)) for (q in listOf(b.x1 to b.y1, b.x2 to b.y2)) {
+                val d = kotlin.math.sqrt((p.first - q.first) * (p.first - q.first) + (p.second - q.second) * (p.second - q.second))
+                if (d > 1f && d < 150f) {
+                    val steps = (d / (cell / 2f)).toInt() + 1
+                    for (si in 0..steps) {
+                        val x = p.first + (q.first - p.first) * si / steps
+                        val y = p.second + (q.second - p.second) * si / steps
+                        val ci = ((x - minX) / cell).toInt(); val ri = ((y - minY) / cell).toInt()
+                        if (ri in 0 until gy && ci in 0 until gx) blocked[ri][ci] = true
+                    }
+                }
+            }
+        }
         for (o in objects) {
             if (!o.type.contains("door")) continue
             val ci = ((o.x - minX) / cell).toInt(); val ri = ((o.y - minY) / cell).toInt()
@@ -473,6 +489,67 @@ object PdfExporter {
         c4.drawText(projectName, sx4 + 6f, sy4 + 80f, t4)
         c4.drawText("Дата: " + SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date()), sx4 + sw4 - 115f, sy4 + 80f, t4)
         document.finishPage(page4)
+
+        // === ЛИСТ 4.1: Спецификация ===
+        val page5 = document.startPage(PdfDocument.PageInfo.Builder(pw, ph, 6).create())
+        val c5 = page5.canvas
+        val fp5 = Paint().apply { color = Color.BLACK; style = Paint.Style.STROKE; strokeWidth = 2f }
+        c5.drawRect(M - 15f, M - 15f, W - M + 15f, H - M + 15f, fp5)
+        val tp5 = Paint().apply { color = Color.BLACK; textSize = 20f; isFakeBoldText = true }
+        c5.drawText("СПЕЦИФИКАЦИЯ ОБОРУДОВАНИЯ И МАТЕРИАЛОВ — $projectName", M, M + 8f, tp5)
+        val t5 = Paint().apply { color = Color.BLACK; textSize = 12f }
+        val tb5 = Paint().apply { color = Color.BLACK; textSize = 12f; isFakeBoldText = true }
+        val cp5 = Paint().apply { color = Color.BLACK; style = Paint.Style.STROKE; strokeWidth = 1f }
+        val groups5 = OneLineDiagram.buildGroups(tracks, objects)
+        val cableMap = mutableMapOf<String, Int>()
+        for (g in groups5) cableMap[g.cable] = (cableMap[g.cable] ?: 0) + (g.length * 1.15f).toInt() + 1
+        val nSock = objects.count { !ArchTypes.isArch(it.type) && !ArchTypes.isFurn(it.type) && it.type.contains("socket") }
+        val nSw = objects.count { it.type.contains("switch") }
+        val nLamp = objects.count { it.type.contains("lamp") }
+        val nWeak = objects.count { it.type.contains("sks") || it.type.contains("tv") || it.type.contains("rj45") }
+        val rows = mutableListOf<List<String>>()
+        var pos = 1
+        rows.add(listOf("", "Раздел А. Кабели и проводники", "", "", ""))
+        for ((cab, len) in cableMap) { rows.add(listOf("$pos", "Кабель ВВГнг-LS $cab", "м", "$len", "с запасом 15%")); pos++ }
+        rows.add(listOf("", "Раздел Б. Коробки и комплектующие", "", "", ""))
+        rows.add(listOf("$pos", "Коробка установочная (подрозетник)", "шт", "$nSock", "по числу розеток")); pos++
+        rows.add(listOf("$pos", "Коробка распаячная 80x80", "шт", "${groups5.size + nSw}", "")); pos++
+        rows.add(listOf("$pos", "Клемма WAGO 221-413", "шт", "${(groups5.size + nSw) * 3}", "3 шт на коробку")); pos++
+        rows.add(listOf("$pos", "Труба гофр. ПВХ д20", "м", "${cableMap.values.sum() / 2}", "открытая прокладка")); pos++
+        rows.add(listOf("", "Раздел В. Щит ЩР-1", "", "", ""))
+        rows.add(listOf("$pos", "Щит навесной ЩРН-П-12", "шт", "1", "")); pos++
+        rows.add(listOf("$pos", "Автомат вводной C25/1", "шт", "1", "")); pos++
+        rows.add(listOf("$pos", "УЗО 40/2 300мА", "шт", "1", "противопожарное")); pos++
+        val brMap = mutableMapOf<String, Int>()
+        for (g in groups5) brMap[g.breaker] = (brMap[g.breaker] ?: 0) + 1
+        for ((br, cnt) in brMap) { rows.add(listOf("$pos", "Автомат $br", "шт", "$cnt", "групповые")); pos++ }
+        rows.add(listOf("$pos", "УЗО 25/2 30мА", "шт", "${groups5.count { it.rcd != "—" }}", "розетки и влажные")); pos++
+        rows.add(listOf("", "Раздел Г. Изделия", "", "", ""))
+        rows.add(listOf("$pos", "Розетки 220В накладные/врезные", "шт", "$nSock", "")); pos++
+        rows.add(listOf("$pos", "Выключатели", "шт", "$nSw", "")); pos++
+        rows.add(listOf("$pos", "Светильники", "шт", "$nLamp", "")); pos++
+        rows.add(listOf("$pos", "Розетки слаботочные", "шт", "$nWeak", "")); pos++
+        val cols5 = floatArrayOf(M, M + 50f, M + 340f, M + 620f, M + 700f, W - M - 10f)
+        var y5 = M + 36f
+        c5.drawRect(cols5[0], y5, cols5[5], y5 + 24f, cp5)
+        listOf("№", "Обозначение, наименование и тип", "Ед.", "Кол.", "Примечание").forEachIndexed { i, h -> c5.drawText(h, cols5[i] + 4f, y5 + 17f, tb5); c5.drawLine(cols5[i], y5, cols5[i], y5 + 24f, cp5) }
+        y5 += 24f
+        for (r in rows) {
+            val isSec = r[0].isEmpty()
+            c5.drawRect(cols5[0], y5, cols5[5], y5 + 24f, cp5)
+            r.forEachIndexed { i, v -> c5.drawText(v, cols5[i] + 4f, y5 + 17f, if (isSec) tb5 else t5); c5.drawLine(cols5[i], y5, cols5[i], y5 + 24f, cp5) }
+            y5 += 24f
+        }
+        val sw5 = 320f; val sh5 = 90f
+        val sx5 = W - M - sw5; val sy5 = H - M - sh5
+        c5.drawRect(sx5, sy5, sx5 + sw5, sy5 + sh5, cp5)
+        c5.drawLine(sx5, sy5 + 30f, sx5 + sw5, sy5 + 30f, cp5)
+        c5.drawLine(sx5, sy5 + 60f, sx5 + sw5, sy5 + 60f, cp5)
+        c5.drawText(org1, sx5 + 6f, sy5 + 20f, t5)
+        c5.drawText("$doc1   Лист 4.1   Спецификация", sx5 + 6f, sy5 + 50f, t5)
+        c5.drawText(projectName, sx5 + 6f, sy5 + 80f, t5)
+        c5.drawText("Дата: " + SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date()), sx5 + sw5 - 115f, sy5 + 80f, t5)
+        document.finishPage(page5)
 
         val file = File(context.cacheDir, "GdeSanek_$projectId.pdf")
         FileOutputStream(file).use { document.writeTo(it) }
