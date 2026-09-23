@@ -145,6 +145,19 @@ object PdfExporter {
             c1.drawLine(tx(wl.x1) - nx, ty(wl.y1) - ny, tx(wl.x2) - nx, ty(wl.y2) - ny, wallPaint1)
         }
 
+        val trackPaint1 = Paint().apply { style = Paint.Style.STROKE; strokeWidth = 3f; pathEffect = DashPathEffect(floatArrayOf(14f, 10f), 0f) }
+        val trackLabel1 = Paint().apply { textSize = 13f; isFakeBoldText = true }
+        for (t in tracks) {
+            if (t.points.isEmpty() || trackSystem(t, objects) != "light") continue
+            trackPaint1.color = if (mono) Color.DKGRAY else t.color
+            trackLabel1.color = trackPaint1.color
+            val path = Path()
+            path.moveTo(tx(t.points[0].x), ty(t.points[0].y))
+            for (i in 1 until t.points.size) path.lineTo(tx(t.points[i].x), ty(t.points[i].y))
+            c1.drawPath(path, trackPaint1)
+            val p0 = t.points[0]
+            c1.drawText("Гр." + (tracks.indexOf(t) + 1) + " ВВГнг-LS " + t.cable, tx(p0.x) + 6f, ty(p0.y) - 6f, trackLabel1)
+        }
         val symPaint1 = Paint().apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeWidth = 3f }
         val labelPaint1 = Paint().apply { textSize = 12f }
         val namePaint1 = Paint().apply { textSize = 10f; color = Color.DKGRAY }
@@ -167,6 +180,12 @@ object PdfExporter {
             if (o.name.isNotBlank()) c1.drawText(o.name.take(28), tx(o.x) + 8f, ty(o.y) + 30f + (oi % 2) * 14f, namePaint1)
         }
 
+        for (o in objects) {
+            if (!o.type.contains("panel")) continue
+            symPaint1.color = if (mono) Color.BLACK else CategoryPalette.color(o.type)
+            GostSymbols.draw(c1, o.type, tx(o.x), ty(o.y), o.rotation, symPaint1)
+            if (o.name.isNotBlank()) c1.drawText(o.name.take(20), tx(o.x) + 8f, ty(o.y) + 30f, namePaint1)
+        }
         val legendPaint1 = Paint().apply { textSize = 13f }
         val legendItems1 = listOf("Освещение" to CategoryPalette.color("lamp_lust"), "Выключатели" to CategoryPalette.color("switch_1"))
         var lx1 = M; val ly1 = H - M - 10f
@@ -190,7 +209,7 @@ object PdfExporter {
         c1.drawText(org1, sx1 + 6f, sy1 + 20f, stPaint1)
         c1.drawText("$doc1   Лист 3.1   План освещения", sx1 + 6f, sy1 + 50f, stPaint1)
         c1.drawText(projectName + (if (aut1.isNotBlank()) "   Разраб. $aut1" else ""), sx1 + 6f, sy1 + 80f, stPaint1)
-        c1.drawText("Дата: " + SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date()), sx1 + sw1 - 115f, sy1 + 50f, stPaint1)
+        c1.drawText("Дата: " + SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date()), sx1 + sw1 - 115f, sy1 + 80f, stPaint1)
         document.finishPage(page1)
 
         // === СТРАНИЦА 2: План РОЗЕТОК (лист 3.2) ===
@@ -211,6 +230,19 @@ object PdfExporter {
             c1b.drawLine(tx(wl.x1) - nx, ty(wl.y1) - ny, tx(wl.x2) - nx, ty(wl.y2) - ny, wallPaint1b)
         }
 
+        val trackPaint1b = Paint().apply { style = Paint.Style.STROKE; strokeWidth = 3f; pathEffect = DashPathEffect(floatArrayOf(14f, 10f), 0f) }
+        val trackLabel1b = Paint().apply { textSize = 13f; isFakeBoldText = true }
+        for (t in tracks) {
+            if (t.points.isEmpty() || trackSystem(t, objects) != "socket") continue
+            trackPaint1b.color = if (mono) Color.DKGRAY else t.color
+            trackLabel1b.color = trackPaint1b.color
+            val path = Path()
+            path.moveTo(tx(t.points[0].x), ty(t.points[0].y))
+            for (i in 1 until t.points.size) path.lineTo(tx(t.points[i].x), ty(t.points[i].y))
+            c1b.drawPath(path, trackPaint1b)
+            val p0 = t.points[0]
+            c1b.drawText("Гр." + (tracks.indexOf(t) + 1) + " ВВГнг-LS " + t.cable, tx(p0.x) + 6f, ty(p0.y) - 6f, trackLabel1b)
+        }
         val symPaint1b = Paint().apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeWidth = 3f }
         val labelPaint1b = Paint().apply { textSize = 12f }
         val namePaint1b = Paint().apply { textSize = 10f; color = Color.DKGRAY }
@@ -274,6 +306,19 @@ object PdfExporter {
             c1c.drawLine(tx(wl.x1) - nx, ty(wl.y1) - ny, tx(wl.x2) - nx, ty(wl.y2) - ny, wallPaint1c)
         }
 
+        val trackPaint1c = Paint().apply { style = Paint.Style.STROKE; strokeWidth = 3f; pathEffect = DashPathEffect(floatArrayOf(14f, 10f), 0f) }
+        val trackLabel1c = Paint().apply { textSize = 13f; isFakeBoldText = true }
+        for (t in tracks) {
+            if (t.points.isEmpty() || trackSystem(t, objects) != "weak") continue
+            trackPaint1c.color = if (mono) Color.DKGRAY else t.color
+            trackLabel1c.color = trackPaint1c.color
+            val path = Path()
+            path.moveTo(tx(t.points[0].x), ty(t.points[0].y))
+            for (i in 1 until t.points.size) path.lineTo(tx(t.points[i].x), ty(t.points[i].y))
+            c1c.drawPath(path, trackPaint1c)
+            val p0 = t.points[0]
+            c1c.drawText("Гр." + (tracks.indexOf(t) + 1) + " ВВГнг-LS " + t.cable, tx(p0.x) + 6f, ty(p0.y) - 6f, trackLabel1c)
+        }
         val symPaint1c = Paint().apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeWidth = 3f }
         val labelPaint1c = Paint().apply { textSize = 12f }
         val namePaint1c = Paint().apply { textSize = 10f; color = Color.DKGRAY }
@@ -295,6 +340,12 @@ object PdfExporter {
             if (o.name.isNotBlank()) c1c.drawText(o.name.take(28), tx(o.x) + 8f, ty(o.y) + 30f + (oi % 2) * 14f, namePaint1c)
         }
 
+        for (o in objects) {
+            if (!o.type.contains("panel")) continue
+            symPaint1c.color = if (mono) Color.BLACK else CategoryPalette.color(o.type)
+            GostSymbols.draw(c1c, o.type, tx(o.x), ty(o.y), o.rotation, symPaint1c)
+            if (o.name.isNotBlank()) c1c.drawText(o.name.take(20), tx(o.x) + 8f, ty(o.y) + 30f, namePaint1c)
+        }
         val legendPaint1c = Paint().apply { textSize = 13f }
         val legendItems1c = listOf("Слаботочка (ТВ/Интернет)" to CategoryPalette.color("sks_tv"))
         var lx1c = M; val ly1c = H - M - 10f
@@ -344,6 +395,39 @@ object PdfExporter {
                           type.contains("интернет") || type.contains("тв") || type.contains("домофон")
                 else -> true
             }
+        }
+    }
+
+
+    private fun distToTrackPts(px: Float, py: Float, tr: CableTrack): Float {
+        if (tr.points.size < 2) return 1e9f
+        var min = 1e9f
+        for (i in 1 until tr.points.size) {
+            val a = tr.points[i - 1]; val b = tr.points[i]
+            val dx = b.x - a.x; val dy = b.y - a.y
+            val len2 = dx * dx + dy * dy
+            val t = if (len2 > 0f) ((px - a.x) * dx + (py - a.y) * dy) / len2 else 0f
+            val tc = t.coerceIn(0f, 1f)
+            val cx = a.x + tc * dx; val cy = a.y + tc * dy
+            val d = kotlin.math.sqrt((px - cx) * (px - cx) + (py - cy) * (py - cy))
+            if (d < min) min = d
+        }
+        return min
+    }
+
+    private fun trackSystem(tr: CableTrack, objects: List<PlanObject>): String {
+        var light = 0; var sock = 0; var weak = 0
+        for (o in objects) {
+            if (distToTrackPts(o.x, o.y, tr) > 300f) continue
+            val t = o.type.lowercase()
+            if (t.contains("sks") || t.contains("tv") || t.contains("rj45")) weak++
+            else if (t.contains("lamp") || t.contains("switch")) light++
+            else if (t.contains("socket") || t.contains("cons")) sock++
+        }
+        return when {
+            weak > 0 && weak >= light && weak >= sock -> "weak"
+            light > 0 && light >= sock -> "light"
+            else -> "socket"
         }
     }
 
