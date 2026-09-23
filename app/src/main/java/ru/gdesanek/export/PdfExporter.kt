@@ -58,6 +58,7 @@ object PdfExporter {
         val ox = M; val oy = M + 50f
         val tx = { x: Float -> ox + (x - minX) * scale }
         val ty = { y: Float -> oy + (y - minY) * scale }
+        val trackSys = OneLineDiagram.trackSystems(tracks, objects)
 
         // === СТРАНИЦА 3: Общие данные (лист 1.1) ===
         val page3 = document.startPage(PdfDocument.PageInfo.Builder(pw, ph, 1).create())
@@ -149,14 +150,14 @@ object PdfExporter {
         val trackPaint1 = Paint().apply { style = Paint.Style.STROKE; strokeWidth = 3f; pathEffect = DashPathEffect(floatArrayOf(14f, 10f), 0f) }
         val trackLabel1 = Paint().apply { textSize = 13f; isFakeBoldText = true }
         for (t in tracks) {
-            if (t.points.isEmpty() || trackSystem(t, objects) != "light") continue
+            if (t.points.isEmpty() || trackSys[tracks.indexOf(t)] != "light") continue
             trackPaint1.color = if (mono) Color.DKGRAY else t.color
             trackLabel1.color = trackPaint1.color
             val path = Path()
             path.moveTo(tx(t.points[0].x), ty(t.points[0].y))
             for (i in 1 until t.points.size) path.lineTo(tx(t.points[i].x), ty(t.points[i].y))
             c1.drawPath(path, trackPaint1)
-            val p0 = t.points[0]
+            val p0 = t.points[t.points.size / 2]
             c1.drawText("Гр." + (tracks.indexOf(t) + 1) + " ВВГнг-LS " + t.cable, tx(p0.x) + 6f, ty(p0.y) - 6f, trackLabel1)
         }
         val symPaint1 = Paint().apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeWidth = 3f }
@@ -234,14 +235,14 @@ object PdfExporter {
         val trackPaint1b = Paint().apply { style = Paint.Style.STROKE; strokeWidth = 3f; pathEffect = DashPathEffect(floatArrayOf(14f, 10f), 0f) }
         val trackLabel1b = Paint().apply { textSize = 13f; isFakeBoldText = true }
         for (t in tracks) {
-            if (t.points.isEmpty() || trackSystem(t, objects) != "socket") continue
+            if (t.points.isEmpty() || trackSys[tracks.indexOf(t)] != "socket") continue
             trackPaint1b.color = if (mono) Color.DKGRAY else t.color
             trackLabel1b.color = trackPaint1b.color
             val path = Path()
             path.moveTo(tx(t.points[0].x), ty(t.points[0].y))
             for (i in 1 until t.points.size) path.lineTo(tx(t.points[i].x), ty(t.points[i].y))
             c1b.drawPath(path, trackPaint1b)
-            val p0 = t.points[0]
+            val p0 = t.points[t.points.size / 2]
             c1b.drawText("Гр." + (tracks.indexOf(t) + 1) + " ВВГнг-LS " + t.cable, tx(p0.x) + 6f, ty(p0.y) - 6f, trackLabel1b)
         }
         val symPaint1b = Paint().apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeWidth = 3f }
@@ -310,14 +311,14 @@ object PdfExporter {
         val trackPaint1c = Paint().apply { style = Paint.Style.STROKE; strokeWidth = 3f; pathEffect = DashPathEffect(floatArrayOf(14f, 10f), 0f) }
         val trackLabel1c = Paint().apply { textSize = 13f; isFakeBoldText = true }
         for (t in tracks) {
-            if (t.points.isEmpty() || trackSystem(t, objects) != "weak") continue
+            if (t.points.isEmpty() || trackSys[tracks.indexOf(t)] != "weak") continue
             trackPaint1c.color = if (mono) Color.DKGRAY else t.color
             trackLabel1c.color = trackPaint1c.color
             val path = Path()
             path.moveTo(tx(t.points[0].x), ty(t.points[0].y))
             for (i in 1 until t.points.size) path.lineTo(tx(t.points[i].x), ty(t.points[i].y))
             c1c.drawPath(path, trackPaint1c)
-            val p0 = t.points[0]
+            val p0 = t.points[t.points.size / 2]
             c1c.drawText("Гр." + (tracks.indexOf(t) + 1) + " ВВГнг-LS " + t.cable, tx(p0.x) + 6f, ty(p0.y) - 6f, trackLabel1c)
         }
         val symPaint1c = Paint().apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeWidth = 3f }
@@ -382,7 +383,7 @@ object PdfExporter {
         val tb4 = Paint().apply { color = Color.BLACK; textSize = 13f; isFakeBoldText = true }
         val cellP4 = Paint().apply { color = Color.BLACK; style = Paint.Style.STROKE; strokeWidth = 1f }
         val switches = objects.filter { it.type.contains("switch") }.sortedWith(compareBy({ it.y }, { it.x }))
-        val lightTracks = tracks.indices.filter { tracks[it].points.isNotEmpty() && trackSystem(tracks[it], objects) == "light" }
+        val lightTracks = tracks.indices.filter { tracks[it].points.isNotEmpty() && trackSys[it] == "light" }
         var yy4 = M + 40f
         c4.drawText("Ведомость выключателей", M, yy4, tb4); yy4 += 24f
         val swCols = floatArrayOf(M, M + 60f, M + 300f, M + 420f, M + 560f)
@@ -412,6 +413,14 @@ object PdfExporter {
                 val y = wl.y1 + (wl.y2 - wl.y1) * si / steps
                 val ci = ((x - minX) / cell).toInt(); val ri = ((y - minY) / cell).toInt()
                 if (ri in 0 until gy && ci in 0 until gx) blocked[ri][ci] = true
+            }
+        }
+        for (o in objects) {
+            if (!o.type.contains("door")) continue
+            val ci = ((o.x - minX) / cell).toInt(); val ri = ((o.y - minY) / cell).toInt()
+            for (dr in -1..1) for (dc in -1..1) {
+                val r2 = ri + dr; val c2 = ci + dc
+                if (r2 in 0 until gy && c2 in 0 until gx) blocked[r2][c2] = true
             }
         }
         val roomIds = Array(gy) { IntArray(gx) { -1 } }
@@ -510,20 +519,6 @@ object PdfExporter {
         return min
     }
 
-    private fun trackSystem(tr: CableTrack, objects: List<PlanObject>): String {
-        var bestD = 1e9f
-        var bestType = ""
-        for (o in objects) {
-            if (ru.gdesanek.core.ArchTypes.isArch(o.type) || ru.gdesanek.core.ArchTypes.isFurn(o.type)) continue
-            val d = distToTrackPts(o.x, o.y, tr)
-            if (d < bestD) { bestD = d; bestType = o.type.lowercase() }
-        }
-        return when {
-            bestType.contains("sks") || bestType.contains("tv") || bestType.contains("rj45") -> "weak"
-            bestType.contains("lamp") || bestType.contains("switch") -> "light"
-            else -> "socket"
-        }
-    }
 
     private fun roomName(cx: Float, cy: Float, objects: List<PlanObject>, roomIds: Array<IntArray>, id: Int, minX: Float, minY: Float, cell: Float): String {
         var kitchen = 0; var living = 0; var bath = 0; var bed = 0; var hall = 0

@@ -88,6 +88,34 @@ object OneLineDiagram {
         return result
     }
 
+    fun trackSystems(tracks: List<ru.gdesanek.model.CableTrack>, objects: List<ru.gdesanek.model.PlanObject>): List<String> {
+        val assign = mutableMapOf<Long, Int>()
+        for (o in objects) {
+            if (ru.gdesanek.core.ArchTypes.isArch(o.type) || ru.gdesanek.core.ArchTypes.isFurn(o.type)) continue
+            var best = -1; var bd = 300f
+            for (ti in tracks.indices) {
+                val d = distToTrack(o.x, o.y, tracks[ti])
+                if (d < bd) { bd = d; best = ti }
+            }
+            if (best >= 0) assign[o.id] = best
+        }
+        return tracks.indices.map { idx ->
+            var light = 0; var sock = 0; var weak = 0
+            for (o in objects) {
+                if (assign[o.id] != idx) continue
+                val t = o.type.lowercase()
+                if (t.contains("sks") || t.contains("tv") || t.contains("rj45")) weak++
+                else if (t.contains("lamp") || t.contains("switch")) light++
+                else sock++
+            }
+            when {
+                weak > 0 && weak >= light && weak >= sock -> "weak"
+                light > 0 && light >= sock -> "light"
+                else -> "socket"
+            }
+        }
+    }
+
     private fun distToTrack(px: Float, py: Float, tr: CableTrack): Float {
         if (tr.points.size < 2) return 1e9f
         var min = 1e9f
