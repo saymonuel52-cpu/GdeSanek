@@ -271,7 +271,7 @@ object PdfExporter {
             val tc = t.coerceIn(0f, 1f)
             val fx = w.x1 + tc * dx; val fy = w.y1 + tc * dy
             c.drawLine(tx(fx), ty(fy), tx(o.x), ty(o.y), p)
-            c.drawText((bestD * 10).toInt().toString(), (tx(fx) + tx(o.x)) / 2f + 4f, (ty(fy) + ty(o.y)) / 2f, p)
+            c.drawText((bestD * 10).toInt().toString(), tx(fx) + 6f, ty(fy) - 4f, p)
         }
     }
 
@@ -514,6 +514,10 @@ object PdfExporter {
             if (ri !in roomIds.indices || ci !in roomIds[0].indices) continue
             if (roomIds[ri][ci] != id) continue
             val t = o.type.lowercase(); val n = o.name.lowercase()
+            if (t.contains("sofa") || n.contains("диван")) living += 2
+            if (t.contains("bed") || n.contains("кровать")) bed += 2
+            if (t.contains("toilet") || t.contains("bath") || n.contains("унитаз") || n.contains("ванна")) bath += 2
+            if (t.contains("wardrobe") || n.contains("шкаф")) hall += 1
             when {
                 t.contains("плит") || t.contains("вытяж") || n.contains("кухн") -> kitchen++
                 t.contains("диван") || t.contains("тв") || n.contains("гостин") || n.contains("диван") -> living++
