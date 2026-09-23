@@ -72,7 +72,7 @@ object PdfExporter {
         c2.drawRect(M - 15f, M - 15f, W - M + 15f, H - M + 15f, framePaint)
         val h2 = Paint().apply { color = Color.BLACK; textSize = 22f; isFakeBoldText = true }
         val t2 = Paint().apply { color = Color.BLACK; textSize = 14f }
-        c2.drawText("ОБЩИЕ ДАННЫЕ", M, M + 5f, h2)
+        canvas.drawText("ОБЩИЕ ДАННЫЕ", M, M + 5f, h2)
         val lines = listOf(
             "ВЕДОМОСТЬ РАБОЧИХ ЧЕРТЕЖЕЙ:",
             "1.1  Общие данные",
@@ -100,8 +100,8 @@ object PdfExporter {
             "ГОСТ Р 50462-2009  Идентификация проводников посредством цветов и буквенно-цифровых обозначений"
         )
         var yy = M + 40f
-        for (ln in lines) { c2.drawText(ln, M, yy, t2); yy += 24f }
-        c2.drawText((passport.getOrNull(0)?.takeIf { it.isNotBlank() } ?: "ЭОМ") + "   Лист 1.1   Общие данные", pw - 320f, ph - 25f, Paint().apply { color = Color.BLACK; textSize = 12f })
+        for (ln in lines) { canvas.drawText(ln, M, yy, t2); yy += 24f }
+        canvas.drawText((passport.getOrNull(0)?.takeIf { it.isNotBlank() } ?: "ЭОМ") + "   Лист 1.1   Общие данные", pw - 320f, ph - 25f, Paint().apply { color = Color.BLACK; textSize = 12f })
             document.finishPage(page2)// === Страница 2: однолинейная схема щита ЩР (лист 2.1) ===
         val pageSch = document.startPage(PdfDocument.PageInfo.Builder(pw, ph, 2).create())
         val groups = OneLineDiagram.buildGroups(tracks, objects)
