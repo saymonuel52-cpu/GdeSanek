@@ -46,7 +46,7 @@ object OneLineDiagram {
             for (o in objects) {
                 val d = distToTrack(o.x, o.y, tr)
                 if (d < 250f) {
-                    val w = (ru.gdesanek.theme.SymbolPalette.power(o.type) ?: 0f)
+                    val w = (ru.gdesanek.theme.SymbolPalette.power(o.type)?.toFloat() ?: 0f)
                     powerW += w
                     name = o.name.ifBlank { name }
                     val t = o.type
@@ -137,7 +137,7 @@ object OneLineDiagram {
         canvas.drawText("СХЕМА ЭЛЕКТРИЧЕСКАЯ ОДНОЛИНЕЙНАЯ ЩИТА ЩР-1", M, M + 8f, h2)
 
         // === Суммарные мощности ===
-        val totalKw = groups.sumOf { it.pKw.toDouble() }.toFloat()
+        val totalKw = groups.map { it.pKw.toDouble() }.sum().toFloat()
         val kc = 0.8f
         val pRas = totalKw * kc
         val ipRas = pRas * 1000f / 220f
