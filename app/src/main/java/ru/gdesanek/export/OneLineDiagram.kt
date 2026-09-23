@@ -130,7 +130,14 @@ object OneLineDiagram {
         return min
     }
 
-    fun render(canvas: android.graphics.Canvas, projectName: String, groups: List<Group>, pw: Int, ph: Int) {
+    fun render(
+        canvas: android.graphics.Canvas,
+        projectName: String,
+        groups: List<Group>,
+        pw: Int, ph: Int,
+        totalSheets: Int = 8,
+        author: String = ""
+    ) {
         val M = 40f; val W = pw.toFloat(); val H = ph.toFloat()
         val framePaint = Paint().apply { color = Color.BLACK; style = Paint.Style.STROKE; strokeWidth = 2f }
         canvas.drawRect(M - 15f, M - 15f, W - M + 15f, H - M + 15f, framePaint)
@@ -204,6 +211,7 @@ object OneLineDiagram {
         val st = Paint().apply { color = Color.BLACK; textSize = 13f }
         canvas.drawText("ГдеСанёк", sx + 6f, sy + 18f, st)
         canvas.drawText("ЭОМ   Лист 2.1   Схема однолинейная", sx + 6f, sy + 42f, st)
-        canvas.drawText(projectName, sx + 6f, sy + 70f, st)
+        canvas.drawText(projectName + (if (author.isNotBlank()) "   Разраб. $author" else ""), sx + 6f, sy + 70f, st)
+        canvas.drawText("Листов $totalSheets", sx + sw - 70f, sy + 18f, st)
     }
 }
