@@ -74,7 +74,9 @@ object PdfExporter {
         canvas3.drawText("ВЕДОМОСТЬ РАБОЧИХ ЧЕРТЕЖЕЙ:", M, y, textPaint3); y += 24f
         canvas3.drawText("1.1  Общие данные", M, y, textPaint3); y += 24f
         canvas3.drawText("2.1  Однолинейная схема щита ЩР-1", M, y, textPaint3); y += 24f
-        canvas3.drawText("3.1  План расположения ЭО и освещения", M, y, textPaint3); y += 48f
+        canvas3.drawText("3.1  План освещения", M, y, textPaint3); y += 24f
+        canvas3.drawText("3.2  План розеток и силового оборудования", M, y, textPaint3); y += 24f
+        canvas3.drawText("3.3  План слаботочных сетей", M, y, textPaint3); y += 48f
         
         canvas3.drawText("ПОЯСНИТЕЛЬНАЯ ЗАПИСКА:", M, y, textPaint3); y += 24f
         val notes = listOf(
@@ -125,13 +127,13 @@ object PdfExporter {
         OneLineDiagram.render(page2.canvas, projectName, groups, pw, ph)
         document.finishPage(page2)
 
-        // === СТРАНИЦА 1: План (лист 3.1) ===
+        // === СТРАНИЦА 1: План ОСВЕЩЕНИЯ (лист 3.1) ===
         val page1 = document.startPage(PdfDocument.PageInfo.Builder(pw, ph, 3).create())
         val c1 = page1.canvas
         val framePaint1 = Paint().apply { color = Color.BLACK; style = Paint.Style.STROKE; strokeWidth = 2f }
         c1.drawRect(M - 15f, M - 15f, W - M + 15f, H - M + 15f, framePaint1)
         val titlePaint1 = Paint().apply { color = Color.BLACK; textSize = 22f; isFakeBoldText = true }
-        c1.drawText("ПЛАН РАСПОЛОЖЕНИЯ ЭО И ОСВЕЩЕНИЯ — $projectName", M, M + 5f, titlePaint1)
+        c1.drawText("ПЛАН ОСВЕЩЕНИЯ — $projectName", M, M + 5f, titlePaint1)
 
         val wallPaint1 = Paint().apply { color = Color.BLACK; style = Paint.Style.STROKE; strokeWidth = 1.2f }
         for (wl in walls) {
@@ -143,24 +145,13 @@ object PdfExporter {
             c1.drawLine(tx(wl.x1) - nx, ty(wl.y1) - ny, tx(wl.x2) - nx, ty(wl.y2) - ny, wallPaint1)
         }
 
-        val trackPaint1 = Paint().apply { style = Paint.Style.STROKE; strokeWidth = 3f; pathEffect = DashPathEffect(floatArrayOf(14f, 10f), 0f) }
-        val trackLabel1 = Paint().apply { textSize = 13f; isFakeBoldText = true }
-        for (t in tracks) {
-            if (t.points.isEmpty()) continue
-            trackPaint1.color = if (mono) Color.DKGRAY else t.color
-            trackLabel1.color = trackPaint1.color
-            val path = Path()
-            path.moveTo(tx(t.points[0].x), ty(t.points[0].y))
-            for (i in 1 until t.points.size) path.lineTo(tx(t.points[i].x), ty(t.points[i].y))
-            c1.drawPath(path, trackPaint1)
-            val p0 = t.points[0]
-            c1.drawText("Гр." + (tracks.indexOf(t) + 1) + " ВВГнг-LS " + t.cable, tx(p0.x) + 6f, ty(p0.y) - 6f, trackLabel1)
-        }
-
         val symPaint1 = Paint().apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeWidth = 3f }
         val labelPaint1 = Paint().apply { textSize = 12f }
         val namePaint1 = Paint().apply { textSize = 10f; color = Color.DKGRAY }
-        for ((oi, o) in objects.withIndex()) {
+        
+        // Только светильники и выключатели
+        val lightObjects = filterBySystem(objects, "light")
+        for ((oi, o) in lightObjects.withIndex()) {
             val col = if (mono) Color.BLACK else CategoryPalette.color(o.type)
             symPaint1.color = col; labelPaint1.color = col
             if (ArchTypes.isArch(o.type)) {
@@ -177,14 +168,7 @@ object PdfExporter {
         }
 
         val legendPaint1 = Paint().apply { textSize = 13f }
-        val legendItems1 = listOf(
-            "Розетки 220В" to CategoryPalette.color("socket_b1"),
-            "Выключатели" to CategoryPalette.color("switch_1"),
-            "Освещение" to CategoryPalette.color("lamp_lust"),
-            "Слаботочка" to CategoryPalette.color("sks_tv"),
-            "Щиты/короба" to CategoryPalette.color("panel_shr"),
-            "Нагрузка" to CategoryPalette.color("cons_hood")
-        )
+        val legendItems1 = listOf("Освещение" to CategoryPalette.color("lamp_lust"), "Выключатели" to CategoryPalette.color("switch_1"))
         var lx1 = M; val ly1 = H - M - 10f
         for (it in legendItems1) {
             legendPaint1.color = if (mono) Color.BLACK else it.second
@@ -204,15 +188,163 @@ object PdfExporter {
         val doc1 = passport.getOrNull(0)?.takeIf { it.isNotBlank() } ?: "ЭОМ"
         val aut1 = passport.getOrNull(2) ?: ""
         c1.drawText(org1, sx1 + 6f, sy1 + 20f, stPaint1)
-        c1.drawText("$doc1   Лист 3.1   Масштаб 1:100", sx1 + 6f, sy1 + 50f, stPaint1)
+        c1.drawText("$doc1   Лист 3.1   План освещения", sx1 + 6f, sy1 + 50f, stPaint1)
         c1.drawText(projectName + (if (aut1.isNotBlank()) "   Разраб. $aut1" else ""), sx1 + 6f, sy1 + 80f, stPaint1)
         c1.drawText("Дата: " + SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date()), sx1 + sw1 - 115f, sy1 + 50f, stPaint1)
         document.finishPage(page1)
+
+        // === СТРАНИЦА 2: План РОЗЕТОК (лист 3.2) ===
+        val page1b = document.startPage(PdfDocument.PageInfo.Builder(pw, ph, 3).create())
+        val c1b = page1b.canvas
+        val framePaint1b = Paint().apply { color = Color.BLACK; style = Paint.Style.STROKE; strokeWidth = 2f }
+        c1b.drawRect(M - 15f, M - 15f, W - M + 15f, H - M + 15f, framePaint1b)
+        val titlePaint1b = Paint().apply { color = Color.BLACK; textSize = 22f; isFakeBoldText = true }
+        c1b.drawText("ПЛАН РОЗЕТОК И СИЛОВОГО ОБОРУДОВАНИЯ — $projectName", M, M + 5f, titlePaint1b)
+
+        val wallPaint1b = Paint().apply { color = Color.BLACK; style = Paint.Style.STROKE; strokeWidth = 1.2f }
+        for (wl in walls) {
+            val ddx = wl.x2 - wl.x1; val ddy = wl.y2 - wl.y1
+            val ll = kotlin.math.sqrt(ddx * ddx + ddy * ddy).coerceAtLeast(0.001f)
+            val gap = kotlin.math.min((wl.thickness / 10f) * scale, 6f) / 2f
+            val nx = -ddy / ll * gap; val ny = ddx / ll * gap
+            c1b.drawLine(tx(wl.x1) + nx, ty(wl.y1) + ny, tx(wl.x2) + nx, ty(wl.y2) + ny, wallPaint1b)
+            c1b.drawLine(tx(wl.x1) - nx, ty(wl.y1) - ny, tx(wl.x2) - nx, ty(wl.y2) - ny, wallPaint1b)
+        }
+
+        val symPaint1b = Paint().apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeWidth = 3f }
+        val labelPaint1b = Paint().apply { textSize = 12f }
+        val namePaint1b = Paint().apply { textSize = 10f; color = Color.DKGRAY }
+        
+        // Только розетки и силовое
+        val socketObjects = filterBySystem(objects, "socket")
+        for ((oi, o) in socketObjects.withIndex()) {
+            val col = if (mono) Color.BLACK else CategoryPalette.color(o.type)
+            symPaint1b.color = col; labelPaint1b.color = col
+            if (ArchTypes.isArch(o.type)) {
+                var th = 100f
+                for (wl in walls) { if (distToSeg(o.x, o.y, wl) < 30f) th = wl.thickness }
+                GostSymbols.draw(c1b, o.type, tx(o.x), ty(o.y), o.rotation, symPaint1b, th / 10f)
+            } else {
+                GostSymbols.draw(c1b, o.type, tx(o.x), ty(o.y), o.rotation, symPaint1b)
+            }
+            val hh = if (o.height >= 0) o.height else (SymbolPalette.height(o.type) ?: -1)
+            if (hh >= 0) c1b.drawText("h=" + hh, tx(o.x) + 8f, ty(o.y) - 8f, labelPaint1b)
+            SymbolPalette.power(o.type)?.let { w -> c1b.drawText(w.toString() + " Вт", tx(o.x) + 8f, ty(o.y) + 16f, labelPaint1b) }
+            if (o.name.isNotBlank()) c1b.drawText(o.name.take(28), tx(o.x) + 8f, ty(o.y) + 30f + (oi % 2) * 14f, namePaint1b)
+        }
+
+        val legendPaint1b = Paint().apply { textSize = 13f }
+        val legendItems1b = listOf("Розетки 220В" to CategoryPalette.color("socket_b1"), "Силовое оборудование" to CategoryPalette.color("panel_shr"))
+        var lx1b = M; val ly1b = H - M - 10f
+        for (it in legendItems1b) {
+            legendPaint1b.color = if (mono) Color.BLACK else it.second
+            c1b.drawLine(lx1b, ly1b - 4f, lx1b + 22f, ly1b - 4f, legendPaint1b)
+            c1b.drawText(it.first, lx1b + 28f, ly1b, legendPaint1b)
+            lx1b += 28f + legendPaint1b.measureText(it.first) + 30f
+        }
+
+        val sw1b = 320f; val sh1b = 90f
+        val sx1b = W - M - sw1b; val sy1b = H - M - sh1b
+        val stampPaint1b = Paint().apply { color = Color.BLACK; style = Paint.Style.STROKE; strokeWidth = 1.5f }
+        c1b.drawRect(sx1b, sy1b, sx1b + sw1b, sy1b + sh1b, stampPaint1b)
+        c1b.drawLine(sx1b, sy1b + 30f, sx1b + sw1b, sy1b + 30f, stampPaint1b)
+        c1b.drawLine(sx1b, sy1b + 60f, sx1b + sw1b, sy1b + 60f, stampPaint1b)
+        val stPaint1b = Paint().apply { color = Color.BLACK; textSize = 13f }
+        c1b.drawText(org1, sx1b + 6f, sy1b + 20f, stPaint1b)
+        c1b.drawText("$doc1   Лист 3.2   План розеток", sx1b + 6f, sy1b + 50f, stPaint1b)
+        c1b.drawText(projectName, sx1b + 6f, sy1b + 80f, stPaint1b)
+        c1b.drawText("Дата: " + SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date()), sx1b + sw1b - 115f, sy1b + 50f, stPaint1b)
+        document.finishPage(page1b)
+
+        // === СТРАНИЦА 3: План СЛАБОТОЧКИ (лист 3.3) ===
+        val page1c = document.startPage(PdfDocument.PageInfo.Builder(pw, ph, 3).create())
+        val c1c = page1c.canvas
+        val framePaint1c = Paint().apply { color = Color.BLACK; style = Paint.Style.STROKE; strokeWidth = 2f }
+        c1c.drawRect(M - 15f, M - 15f, W - M + 15f, H - M + 15f, framePaint1c)
+        val titlePaint1c = Paint().apply { color = Color.BLACK; textSize = 22f; isFakeBoldText = true }
+        c1c.drawText("ПЛАН СЛАБОТОЧНЫХ СЕТЕЙ — $projectName", M, M + 5f, titlePaint1c)
+
+        val wallPaint1c = Paint().apply { color = Color.BLACK; style = Paint.Style.STROKE; strokeWidth = 1.2f }
+        for (wl in walls) {
+            val ddx = wl.x2 - wl.x1; val ddy = wl.y2 - wl.y1
+            val ll = kotlin.math.sqrt(ddx * ddx + ddy * ddy).coerceAtLeast(0.001f)
+            val gap = kotlin.math.min((wl.thickness / 10f) * scale, 6f) / 2f
+            val nx = -ddy / ll * gap; val ny = ddx / ll * gap
+            c1c.drawLine(tx(wl.x1) + nx, ty(wl.y1) + ny, tx(wl.x2) + nx, ty(wl.y2) + ny, wallPaint1c)
+            c1c.drawLine(tx(wl.x1) - nx, ty(wl.y1) - ny, tx(wl.x2) - nx, ty(wl.y2) - ny, wallPaint1c)
+        }
+
+        val symPaint1c = Paint().apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeWidth = 3f }
+        val labelPaint1c = Paint().apply { textSize = 12f }
+        val namePaint1c = Paint().apply { textSize = 10f; color = Color.DKGRAY }
+        
+        // Только слаботочка
+        val weakObjects = filterBySystem(objects, "weak")
+        for ((oi, o) in weakObjects.withIndex()) {
+            val col = if (mono) Color.BLACK else CategoryPalette.color(o.type)
+            symPaint1c.color = col; labelPaint1c.color = col
+            if (ArchTypes.isArch(o.type)) {
+                var th = 100f
+                for (wl in walls) { if (distToSeg(o.x, o.y, wl) < 30f) th = wl.thickness }
+                GostSymbols.draw(c1c, o.type, tx(o.x), ty(o.y), o.rotation, symPaint1c, th / 10f)
+            } else {
+                GostSymbols.draw(c1c, o.type, tx(o.x), ty(o.y), o.rotation, symPaint1c)
+            }
+            val hh = if (o.height >= 0) o.height else (SymbolPalette.height(o.type) ?: -1)
+            if (hh >= 0) c1c.drawText("h=" + hh, tx(o.x) + 8f, ty(o.y) - 8f, labelPaint1c)
+            if (o.name.isNotBlank()) c1c.drawText(o.name.take(28), tx(o.x) + 8f, ty(o.y) + 30f + (oi % 2) * 14f, namePaint1c)
+        }
+
+        val legendPaint1c = Paint().apply { textSize = 13f }
+        val legendItems1c = listOf("Слаботочка (ТВ/Интернет)" to CategoryPalette.color("sks_tv"))
+        var lx1c = M; val ly1c = H - M - 10f
+        for (it in legendItems1c) {
+            legendPaint1c.color = if (mono) Color.BLACK else it.second
+            c1c.drawLine(lx1c, ly1c - 4f, lx1c + 22f, ly1c - 4f, legendPaint1c)
+            c1c.drawText(it.first, lx1c + 28f, ly1c, legendPaint1c)
+            lx1c += 28f + legendPaint1c.measureText(it.first) + 30f
+        }
+
+        val sw1c = 320f; val sh1c = 90f
+        val sx1c = W - M - sw1c; val sy1c = H - M - sh1c
+        val stampPaint1c = Paint().apply { color = Color.BLACK; style = Paint.Style.STROKE; strokeWidth = 1.5f }
+        c1c.drawRect(sx1c, sy1c, sx1c + sw1c, sy1c + sh1c, stampPaint1c)
+        c1c.drawLine(sx1c, sy1c + 30f, sx1c + sw1c, sy1c + 30f, stampPaint1c)
+        c1c.drawLine(sx1c, sy1c + 60f, sx1c + sw1c, sy1c + 60f, stampPaint1c)
+        val stPaint1c = Paint().apply { color = Color.BLACK; textSize = 13f }
+        c1c.drawText(org1, sx1c + 6f, sy1c + 20f, stPaint1c)
+        c1c.drawText("$doc1   Лист 3.3   Слаботочка", sx1c + 6f, sy1c + 50f, stPaint1c)
+        c1c.drawText(projectName, sx1c + 6f, sy1c + 80f, stPaint1c)
+        c1c.drawText("Дата: " + SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date()), sx1c + sw1c - 115f, sy1c + 50f, stPaint1c)
+        document.finishPage(page1c)
+
 
         val file = File(context.cacheDir, "GdeSanek_$projectId.pdf")
         FileOutputStream(file).use { document.writeTo(it) }
         document.close()
         return file
+    }
+
+
+    /**
+     * Фильтр объектов по системе:
+     * - light: светильники, выключатели
+     * - socket: розетки, силовое оборудование (плита, стиралка)
+     * - weak: слаботочка (ТВ, интернет, домофон)
+     */
+    private fun filterBySystem(objects: List<PlanObject>, system: String): List<PlanObject> {
+        return objects.filter { o ->
+            val type = o.type.lowercase()
+            when (system) {
+                "light" -> type.contains("lamp") || type.contains("light") || type.contains("switch") || 
+                           type.contains("выкл") || type.contains("люстр") || type.contains("бра")
+                "socket" -> type.contains("socket") || type.contains("panel") || type.contains("розетк") ||
+                            type.contains("плит") || type.contains("стир") || type.contains("вытяж")
+                "weak" -> type.contains("sks") || type.contains("tv") || type.contains("rj45") || 
+                          type.contains("интернет") || type.contains("тв") || type.contains("домофон")
+                else -> true
+            }
+        }
     }
 
     private fun distToSeg(px: Float, py: Float, wl: Wall): Float {
