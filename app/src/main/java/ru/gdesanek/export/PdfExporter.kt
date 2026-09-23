@@ -18,6 +18,7 @@ import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import ru.gdesanek.export.OneLineDiagram
 
 object PdfExporter {
 
@@ -147,8 +148,15 @@ object PdfExporter {
         c.drawText("Дата: " + SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date()), sx + sw - 115f, sy + 50f, stPaint)
         document.finishPage(page)
 
-        // === Страница 2: общие данные ===
-        val page2 = document.startPage(PdfDocument.PageInfo.Builder(pw, ph, 2).create())
+        
+        // === Страница 2: однолинейная схема щита ЩР (лист 2.1) ===
+        val pageSch = document.startPage(PdfDocument.PageInfo.Builder(pw, ph, 2).create())
+        val groups = OneLineDiagram.buildGroups(tracks, objects)
+        OneLineDiagram.render(pageSch.canvas, projectName, groups, pw, ph)
+        document.finishPage(pageSch)
+
+// === Страница 2: общие данные ===
+        val page2 = document.startPage(PdfDocument.PageInfo.Builder(pw, ph, 3).create())
         val c2 = page2.canvas
         c2.drawRect(M - 15f, M - 15f, W - M + 15f, H - M + 15f, framePaint)
         val h2 = Paint().apply { color = Color.BLACK; textSize = 22f; isFakeBoldText = true }
