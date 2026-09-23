@@ -66,8 +66,50 @@ object PdfExporter {
         val tx = { x: Float -> ox + (x - minX) * scale }
         val ty = { y: Float -> oy + (y - minY) * scale }
 
-        // === Страница 1: план ===
-        val page = document.startPage(PdfDocument.PageInfo.Builder(pw, ph, 1).create())
+        // === Страница 2: общие данные ===
+        val page2 = document.startPage(PdfDocument.PageInfo.Builder(pw, ph, 1).create())
+        val c2 = page2.canvas
+        c2.drawRect(M - 15f, M - 15f, W - M + 15f, H - M + 15f, framePaint)
+        val h2 = Paint().apply { color = Color.BLACK; textSize = 22f; isFakeBoldText = true }
+        val t2 = Paint().apply { color = Color.BLACK; textSize = 14f }
+        c2.drawText("ОБЩИЕ ДАННЫЕ", M, M + 5f, h2)
+        val lines = listOf(
+            "ВЕДОМОСТЬ РАБОЧИХ ЧЕРТЕЖЕЙ:",
+            "1.1  Общие данные",
+            "2.1  План расположения ЭО и освещения",
+            "",
+            "ПОЯСНИТЕЛЬНАЯ ЗАПИСКА:",
+            "1. Проект разработан на основании технического задания заказчика.",
+            "2. Согласно СП 31-110-2003 объект относится к III категории по степени обеспечения надежности электроснабжения.",
+            "3. Располагаемые потери напряжения не более 2%.",
+            "4. Групповые сети предусмотрены трехпроводными и пятипроводными с отдельным защитным проводником PE (гл. 7.1 ПУЭ).",
+            "5. Прокладка кабелей выполняется медным кабелем ВВГнг-LS: скрыто в штробе, открыто по плите перекрытия в гофрированной ПВХ трубе.",
+            "6. Щит должен иметь отдельную шину для подключения защитного проводника.",
+            "7. Все элементы электросетей выполнены с учетом ГОСТ Р 50462-92 (цветовая идентификация жил).",
+            "8. Вся электрическая сеть рассчитана на длительно допустимую нагрузку и проверена по потере напряжения.",
+            "9. Соединение жил в ответвительных коробках методом скрутки не допускается; рекомендуется клеммниками WAGO.",
+            "10. Весь монтаж должен быть выполнен в соответствии с ПУЭ и СП 76.13330.2011.",
+            "",
+            "ВЕДОМОСТЬ ССЫЛОЧНЫХ ДОКУМЕНТОВ:",
+            "ПУЭ  Правила устройства электроустановок. - 7-е изд. - М., 2002.",
+            "СП 31-110-2003  Электрооборудование жилых и общественных зданий. Нормы проектирования",
+            "СП 76.13330.2011  Электротехнические устройства",
+            "СП 52.13330.2010  Естественное и искусственное освещение. Нормы проектирования",
+            "ГОСТ Р 50571.1-2009  Электроустановки зданий",
+            "ГОСТ Р 50571.5.52-2011  Выбор и монтаж электрооборудования",
+            "ГОСТ Р 50462-2009  Идентификация проводников посредством цветов и буквенно-цифровых обозначений"
+        )
+        var yy = M + 40f
+        for (ln in lines) { c2.drawText(ln, M, yy, t2); yy += 24f }
+        c2.drawText((passport.getOrNull(0)?.takeIf { it.isNotBlank() } ?: "ЭОМ") + "   Лист 1.1   Общие данные", pw - 320f, ph - 25f, Paint().apply { color = Color.BLACK; textSize = 12f })
+            document.finishPage(page2)// === Страница 2: однолинейная схема щита ЩР (лист 2.1) ===
+        val pageSch = document.startPage(PdfDocument.PageInfo.Builder(pw, ph, 2).create())
+        val groups = OneLineDiagram.buildGroups(tracks, objects)
+        OneLineDiagram.render(pageSch.canvas, projectName, groups, pw, ph)
+        document.finishPage(pageSch)
+
+// === Страница 1: план ===
+        val page = document.startPage(PdfDocument.PageInfo.Builder(pw, ph, 3).create())
         val c = page.canvas
         val framePaint = Paint().apply { color = Color.BLACK; style = Paint.Style.STROKE; strokeWidth = 2f }
         c.drawRect(M - 15f, M - 15f, W - M + 15f, H - M + 15f, framePaint)
@@ -148,54 +190,13 @@ object PdfExporter {
         val doc = passport.getOrNull(0)?.takeIf { it.isNotBlank() } ?: "ЭОМ"
         val aut = passport.getOrNull(2) ?: ""
         c.drawText(org, sx + 6f, sy + 20f, stPaint)
-        c.drawText("$doc   Лист 2.1   Масштаб 1:100", sx + 6f, sy + 50f, stPaint)
+        c.drawText("$doc   Лист 3.1   Масштаб 1:100", sx + 6f, sy + 50f, stPaint)
         c.drawText(projectName + (if (aut.isNotBlank()) "   Разраб. $aut" else ""), sx + 6f, sy + 80f, stPaint)
         c.drawText("Дата: " + SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date()), sx + sw - 115f, sy + 50f, stPaint)
         document.finishPage(page)
 
         
-        // === Страница 2: однолинейная схема щита ЩР (лист 2.1) ===
-        val pageSch = document.startPage(PdfDocument.PageInfo.Builder(pw, ph, 2).create())
-        val groups = OneLineDiagram.buildGroups(tracks, objects)
-        OneLineDiagram.render(pageSch.canvas, projectName, groups, pw, ph)
-        document.finishPage(pageSch)
-
-// === Страница 2: общие данные ===
-        val page2 = document.startPage(PdfDocument.PageInfo.Builder(pw, ph, 3).create())
-        val c2 = page2.canvas
-        c2.drawRect(M - 15f, M - 15f, W - M + 15f, H - M + 15f, framePaint)
-        val h2 = Paint().apply { color = Color.BLACK; textSize = 22f; isFakeBoldText = true }
-        val t2 = Paint().apply { color = Color.BLACK; textSize = 14f }
-        c2.drawText("ОБЩИЕ ДАННЫЕ", M, M + 5f, h2)
-        val lines = listOf(
-            "ВЕДОМОСТЬ РАБОЧИХ ЧЕРТЕЖЕЙ:",
-            "1.1  Общие данные",
-            "2.1  План расположения ЭО и освещения",
-            "",
-            "ПОЯСНИТЕЛЬНАЯ ЗАПИСКА:",
-            "1. Проект разработан на основании технического задания заказчика.",
-            "2. Согласно СП 31-110-2003 объект относится к III категории по степени обеспечения надежности электроснабжения.",
-            "3. Располагаемые потери напряжения не более 2%.",
-            "4. Групповые сети предусмотрены трехпроводными и пятипроводными с отдельным защитным проводником PE (гл. 7.1 ПУЭ).",
-            "5. Прокладка кабелей выполняется медным кабелем ВВГнг-LS: скрыто в штробе, открыто по плите перекрытия в гофрированной ПВХ трубе.",
-            "6. Щит должен иметь отдельную шину для подключения защитного проводника.",
-            "7. Все элементы электросетей выполнены с учетом ГОСТ Р 50462-92 (цветовая идентификация жил).",
-            "8. Вся электрическая сеть рассчитана на длительно допустимую нагрузку и проверена по потере напряжения.",
-            "9. Соединение жил в ответвительных коробках методом скрутки не допускается; рекомендуется клеммниками WAGO.",
-            "10. Весь монтаж должен быть выполнен в соответствии с ПУЭ и СП 76.13330.2011.",
-            "",
-            "ВЕДОМОСТЬ ССЫЛОЧНЫХ ДОКУМЕНТОВ:",
-            "ПУЭ  Правила устройства электроустановок. - 7-е изд. - М., 2002.",
-            "СП 31-110-2003  Электрооборудование жилых и общественных зданий. Нормы проектирования",
-            "СП 76.13330.2011  Электротехнические устройства",
-            "СП 52.13330.2010  Естественное и искусственное освещение. Нормы проектирования",
-            "ГОСТ Р 50571.1-2009  Электроустановки зданий",
-            "ГОСТ Р 50571.5.52-2011  Выбор и монтаж электрооборудования",
-            "ГОСТ Р 50462-2009  Идентификация проводников посредством цветов и буквенно-цифровых обозначений"
-        )
-        var yy = M + 40f
-        for (ln in lines) { c2.drawText(ln, M, yy, t2); yy += 24f }
-        document.finishPage(page2)
+        
 
         val file = File(context.cacheDir, "GdeSanek_$projectId.pdf")
         FileOutputStream(file).use { document.writeTo(it) }
