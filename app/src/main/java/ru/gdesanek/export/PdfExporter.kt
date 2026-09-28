@@ -54,9 +54,9 @@ object PdfExporter {
         val totalSheets = 9
         val trackSys = OneLineDiagram.trackSystems(tracks, objects)
         val groups = OneLineDiagram.buildGroups(tracks, objects)
-        val rooms = computeRooms(walls, objects, minX, maxX, minY, maxY)
+        val rawRooms = computeRooms(walls, objects, minX, maxX, minY, maxY)
         val nameCnt = mutableMapOf<String, Int>()
-        val rooms = rooms.map { r ->
+        val rooms = rawRooms.map { r ->
             val c2 = (nameCnt[r.name] ?: 0) + 1; nameCnt[r.name] = c2
             if (c2 == 1) r else r.copy(name = r.name + " (" + c2 + ")")
         }
