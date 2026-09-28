@@ -224,8 +224,8 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
             symPaint.strokeWidth = 3.5f
             val k = if (ru.gdesanek.core.ArchTypes.isArch(obj.type) || ru.gdesanek.core.ArchTypes.isFurn(obj.type)) 1f else 0.7f
             canvas.save(); canvas.translate(obj.x, obj.y); canvas.scale(k, k); canvas.translate(-obj.x, -obj.y)
-            if (ru.gdesanek.core.ArchTypes.isArch(obj.type)) GostSymbols.draw(canvas, obj.type, obj.x, obj.y, obj.rotation, symPaint, (hitWall(obj.x, obj.y)?.thickness ?: 100f) / 10f)
-            else GostSymbols.draw(canvas, obj.type, obj.x, obj.y, obj.rotation, symPaint)
+            if (ru.gdesanek.core.ArchTypes.isArch(obj.type)) ru.gdesanek.render.GostElectro.draw(canvas, obj.type, obj.x, obj.y, obj.rotation, symPaint, (hitWall(obj.x, obj.y)?.thickness ?: 100f) / 10f)
+            else ru.gdesanek.render.GostElectro.draw(canvas, obj.type, obj.x, obj.y, obj.rotation, symPaint)
             canvas.restore()
             if (!ru.gdesanek.core.ArchTypes.isArch(obj.type) && !ru.gdesanek.core.ArchTypes.isFurn(obj.type)) {
                 val hh = if (obj.height >= 0) obj.height else SymbolPalette.height(obj.type)
@@ -242,8 +242,8 @@ class PlanView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
             val isF = ru.gdesanek.core.ArchTypes.isFurn(placeType!!)
             val gs = if (isF) PlaceSnap(snap(fingerX), snap(fingerY), 0f) else snapPointForPlace(fingerX, fingerY)
             symPaint.color = SymbolPalette.color(placeType!!); symPaint.alpha = 110
-            if (isF) GostSymbols.draw(canvas, placeType!!, gs.x, gs.y, gs.rot, symPaint)
-            else GostSymbols.draw(canvas, placeType!!, gs.x, gs.y, gs.rot, symPaint, (hitWall(gs.x, gs.y)?.thickness ?: 100f) / 10f)
+            if (isF) ru.gdesanek.render.GostElectro.draw(canvas, placeType!!, gs.x, gs.y, gs.rot, symPaint)
+            else ru.gdesanek.render.GostElectro.draw(canvas, placeType!!, gs.x, gs.y, gs.rot, symPaint, (hitWall(gs.x, gs.y)?.thickness ?: 100f) / 10f)
             symPaint.alpha = 255
         }
         for (p in calibPoints) { canvas.drawLine(p.x - 20f, p.y, p.x + 20f, p.y, calibPaint); canvas.drawLine(p.x, p.y - 20f, p.x, p.y + 20f, calibPaint) }

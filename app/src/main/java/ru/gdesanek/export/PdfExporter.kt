@@ -195,8 +195,8 @@ object PdfExporter {
             if (ArchTypes.isArch(o.type)) {
                 var th = 100f
                 for (wl in walls) { if (distToSeg(o.x, o.y, wl) < 30f) th = wl.thickness }
-                GostSymbols.draw(c, o.type, tx(o.x), ty(o.y), o.rotation, sp, th / 10f)
-            } else GostSymbols.draw(c, o.type, tx(o.x), ty(o.y), o.rotation, sp)
+                ru.gdesanek.render.GostElectro.draw(c, o.type, tx(o.x), ty(o.y), o.rotation, sp, th / 10f)
+            } else ru.gdesanek.render.GostElectro.draw(c, o.type, tx(o.x), ty(o.y), o.rotation, sp)
             val hh = if (o.height >= 0) o.height else (SymbolPalette.height(o.type) ?: -1)
             if (hh >= 0) c.drawText("h=" + hh, tx(o.x) + 8f, ty(o.y) - 8f, lp)
             SymbolPalette.power(o.type)?.let { w -> c.drawText(w.toString() + " Вт", tx(o.x) + 8f, ty(o.y) + 16f, lp) }
