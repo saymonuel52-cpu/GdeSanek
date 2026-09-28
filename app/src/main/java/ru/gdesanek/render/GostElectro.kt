@@ -13,24 +13,25 @@ import ru.gdesanek.core.ArchTypes
  */
 object GostElectro {
 
-    fun draw(c: Canvas, type: String, x: Float, y: Float, rot: Float, p: Paint, thickness: Float = 1f) {
+    fun draw(c: Canvas, type: String, x: Float, y: Float, rot: Float, p: Paint, thickness: Float = 1f, scale: Float = 1f) {
         if (ArchTypes.isArch(type) || ArchTypes.isFurn(type)) {
             GostSymbols.draw(c, type, x, y, rot, p, thickness)
             return
         }
-        val r = 12f
+        val r = 12f * scale
         val t = type.lowercase()
+        val pw = Paint(p); pw.strokeWidth = maxOf(p.strokeWidth, r * 0.13f)
         c.save(); c.translate(x, y); c.rotate(rot)
         when {
-            t.contains("junction") || t.contains("box") -> drawBox(c, p, r)
-            t.contains("motion") || t.contains("sensor") || t.contains("датчик") -> drawSensor(c, p, r)
-            t.startsWith("socket_") -> drawSocket(c, p, r, t)
-            t.startsWith("switch_") -> drawSwitch(c, p, r, t)
-            t.startsWith("lamp_") -> drawLamp(c, p, r, t)
-            t.startsWith("sks_") || t.startsWith("tv_") || t.startsWith("rj45") -> drawWeak(c, p, r, t)
-            t.startsWith("panel_") || t.startsWith("box_") -> drawPanel(c, p, r)
-            t.startsWith("cons_") -> drawFan(c, p, r)
-            else -> c.drawCircle(0f, 0f, r * 0.5f, p)
+            t.contains("junction") || t.contains("box") -> drawBox(c, pw, r)
+            t.contains("motion") || t.contains("sensor") || t.contains("датчик") -> drawSensor(c, pw, r)
+            t.startsWith("socket_") -> drawSocket(c, pw, r, t)
+            t.startsWith("switch_") -> drawSwitch(c, pw, r, t)
+            t.startsWith("lamp_") -> drawLamp(c, pw, r, t)
+            t.startsWith("sks_") || t.startsWith("tv_") || t.startsWith("rj45") -> drawWeak(c, pw, r, t)
+            t.startsWith("panel_") || t.startsWith("box_") -> drawPanel(c, pw, r)
+            t.startsWith("cons_") -> drawFan(c, pw, r)
+            else -> c.drawCircle(0f, 0f, r * 0.5f, pw)
         }
         c.restore()
     }
@@ -44,6 +45,17 @@ object GostElectro {
 
     // Розетка: полукруг хордой вниз + штрихи 45° по числу гнёзд; IP44 — залитый
     private fun drawSocket(c: Canvas, p: Paint, r: Float, t: String) {
+        if (t.contains("block") || t.contains("блок")) {
+            for (k in listOf(-0.55f, 0.55f)) {
+                val d = Path()
+                d.moveTo(k * r - r * 0.45f, 0f)
+                d.arcTo(RectF(k * r - r * 0.45f, -r * 0.45f, k * r + r * 0.45f, r * 0.45f), 180f, 180f)
+                d.close()
+                c.drawPath(d, p)
+                c.drawLine(k * r, -r * 0.45f, k * r + r * 0.4f, -r * 0.85f, p)
+            }
+            return
+        }
         val dome = Path()
         dome.moveTo(-r, 0f)
         dome.arcTo(RectF(-r, -r, r, r), 180f, 180f)
@@ -60,8 +72,9 @@ object GostElectro {
         for (i in 0 until n) {
             val sx = -r * 0.5f + i * r * 0.5f
             val sy = -kotlin.math.sqrt(kotlin.math.max(0f, r * r - sx * sx)) * 0.9f
-            c.drawLine(sx, sy, sx + r * 0.55f, sy - r * 0.55f, p)
+            c.drawLine(sx, sy, sx + r * 0.7f, sy - r * 0.7f, p)
         }
+        if (t.contains("380")) c.drawLine(-r, r * 0.35f, r, r * 0.35f, p)
     }
 
     // Выключатель: круг + ручка 45° с рисками по числу клавиш
@@ -71,7 +84,7 @@ object GostElectro {
         val n = when { t.contains("3") -> 3; t.contains("2") -> 2; else -> 1 }
         for (i in 0 until n) {
             val d = r * 0.55f + i * r * 0.26f
-            c.drawLine(d - r * 0.14f, -d - r * 0.14f, d + r * 0.14f, -d + r * 0.14f, p)
+            c.drawLine(d - r * 0.22f, -d - r * 0.22f, d + r * 0.22f, -d + r * 0.22f, p)
         }
     }
 
