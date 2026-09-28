@@ -33,6 +33,7 @@ import ru.gdesanek.theme.ThemeManager
 import ru.gdesanek.theme.Themes
 import ru.gdesanek.ui.PlanView
 import java.io.File
+import ru.gdesanek.render.GostElectro
 
 class PlanEditorActivity : AppCompatActivity() {
     private lateinit var planView: PlanView
@@ -212,7 +213,7 @@ class PlanEditorActivity : AppCompatActivity() {
         fun catalogButton(label: String, type: String): TextView = TextView(this).apply {
             text = label; setTextColor(theme.textPrimary); textSize = 12f; gravity = Gravity.CENTER
             setBackgroundColor(theme.btnBg); setPadding(18, 12, 18, 12)
-            val bmp = android.graphics.Bitmap.createBitmap(44, 44, android.graphics.Bitmap.Config.ARGB_8888); val bcv = android.graphics.Canvas(bmp); bcv.scale(0.7f, 0.7f, 22f, 22f); val pp = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = ru.gdesanek.render.CategoryPalette.color(type); style = android.graphics.Paint.Style.STROKE; strokeWidth = 4f }; ru.gdesanek.render.ru.gdesanek.render.GostElectro.draw(bcv, type, 22f, 24f, 0f, pp); compoundDrawablePadding = 6; setCompoundDrawablesWithIntrinsicBounds(null, android.graphics.drawable.BitmapDrawable(resources, bmp), null, null)
+            val bmp = android.graphics.Bitmap.createBitmap(44, 44, android.graphics.Bitmap.Config.ARGB_8888); val bcv = android.graphics.Canvas(bmp); bcv.scale(0.7f, 0.7f, 22f, 22f); val pp = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = ru.gdesanek.render.CategoryPalette.color(type); style = android.graphics.Paint.Style.STROKE; strokeWidth = 4f }; ru.gdesanek.render.GostElectro.draw(bcv, type, 22f, 24f, 0f, pp); compoundDrawablePadding = 6; setCompoundDrawablesWithIntrinsicBounds(null, android.graphics.drawable.BitmapDrawable(resources, bmp), null, null)
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginEnd = 6 }
             setOnClickListener {
                 planView.currentTool = PlanView.Tool.PLACE; planView.placeType = type
@@ -405,7 +406,7 @@ class PlanEditorActivity : AppCompatActivity() {
                 text = item.label; textSize = 14f; gravity = Gravity.CENTER; setTextColor(theme.textPrimary)
                 setBackgroundColor(if (item.type == planView.placeType) theme.btnActiveBg else theme.btnBg)
                 setPadding(22, 16, 22, 16)
-                val bmp = android.graphics.Bitmap.createBitmap(44, 44, android.graphics.Bitmap.Config.ARGB_8888); val bcv = android.graphics.Canvas(bmp); bcv.scale(0.7f, 0.7f, 22f, 22f); val pp = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = android.graphics.Color.parseColor("#CFD8DC"); style = android.graphics.Paint.Style.STROKE; strokeWidth = 4f }; ru.gdesanek.render.ru.gdesanek.render.GostElectro.draw(bcv, item.type, 22f, 24f, 0f, pp); compoundDrawablePadding = 6; setCompoundDrawablesWithIntrinsicBounds(null, android.graphics.drawable.BitmapDrawable(resources, bmp), null, null)
+                val bmp = android.graphics.Bitmap.createBitmap(44, 44, android.graphics.Bitmap.Config.ARGB_8888); val bcv = android.graphics.Canvas(bmp); bcv.scale(0.7f, 0.7f, 22f, 22f); val pp = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = android.graphics.Color.parseColor("#CFD8DC"); style = android.graphics.Paint.Style.STROKE; strokeWidth = 4f }; ru.gdesanek.render.GostElectro.draw(bcv, item.type, 22f, 24f, 0f, pp); compoundDrawablePadding = 6; setCompoundDrawablesWithIntrinsicBounds(null, android.graphics.drawable.BitmapDrawable(resources, bmp), null, null)
                 layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginEnd = 6 }
                 setOnClickListener { planView.currentTool = PlanView.Tool.PLACE; planView.placeType = item.type; showWallContext() }
             })
@@ -491,7 +492,7 @@ class PlanEditorActivity : AppCompatActivity() {
                 text = item.label; setTextColor(theme.textPrimary); textSize = 14f; gravity = Gravity.CENTER
                 setBackgroundColor(if (item.type == planView.placeType) theme.btnActiveBg else theme.btnBg)
                 setPadding(22, 16, 22, 16)
-                val bmp = android.graphics.Bitmap.createBitmap(44, 44, android.graphics.Bitmap.Config.ARGB_8888); val bcv = android.graphics.Canvas(bmp); bcv.scale(0.7f, 0.7f, 22f, 22f); val pp = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = ru.gdesanek.render.CategoryPalette.color(item.type); style = android.graphics.Paint.Style.STROKE; strokeWidth = 4f }; ru.gdesanek.render.ru.gdesanek.render.GostElectro.draw(bcv, item.type, 22f, 24f, 0f, pp); compoundDrawablePadding = 6; setCompoundDrawablesWithIntrinsicBounds(null, android.graphics.drawable.BitmapDrawable(resources, bmp), null, null)
+                val bmp = android.graphics.Bitmap.createBitmap(44, 44, android.graphics.Bitmap.Config.ARGB_8888); val bcv = android.graphics.Canvas(bmp); bcv.scale(0.7f, 0.7f, 22f, 22f); val pp = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = ru.gdesanek.render.CategoryPalette.color(item.type); style = android.graphics.Paint.Style.STROKE; strokeWidth = 4f }; ru.gdesanek.render.GostElectro.draw(bcv, item.type, 22f, 24f, 0f, pp); compoundDrawablePadding = 6; setCompoundDrawablesWithIntrinsicBounds(null, android.graphics.drawable.BitmapDrawable(resources, bmp), null, null)
                 layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginEnd = 6 }
                 setOnClickListener { planView.currentTool = PlanView.Tool.PLACE; planView.placeType = item.type; showCatalog() }
             }
