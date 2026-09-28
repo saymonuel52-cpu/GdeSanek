@@ -3,6 +3,7 @@ package ru.gdesanek.db
 import android.content.ContentValues
 import android.content.Context
 import ru.gdesanek.model.Project
+import ru.gdesanek.db.JunctionBoxRepository
 
 class ProjectRepository(context: Context) {
     private val dbHelper = DatabaseHelper(context)
@@ -40,6 +41,7 @@ class ProjectRepository(context: Context) {
         db.delete("walls", "project_id = ?", arrayOf(id.toString()))
         db.delete("objects", "project_id = ?", arrayOf(id.toString()))
         db.delete("tracks", "project_id = ?", arrayOf(id.toString()))
+        JunctionBoxRepository.deleteProject(db, id)
         db.delete("projects", "id = ?", arrayOf(id.toString()))
     }
 
