@@ -50,7 +50,7 @@ object PdfExporter {
         val doc = passport.getOrNull(0)?.takeIf { it.isNotBlank() } ?: "ЭОМ"
         val aut = passport.getOrNull(2) ?: ""
         val authorSuffix = if (aut.isNotBlank()) "   Разраб. $aut" else ""
-        val totalSheets = 8
+        val totalSheets = 9
         val trackSys = OneLineDiagram.trackSystems(tracks, objects)
         val groups = OneLineDiagram.buildGroups(tracks, objects)
         val rooms = computeRooms(walls, objects, minX, maxX, minY, maxY)
@@ -62,7 +62,7 @@ object PdfExporter {
         val tpA = Paint().apply { color = Color.BLACK; textSize = 14f }
         var yA = M + 40f
         cA.drawText("ВЕДОМОСТЬ РАБОЧИХ ЧЕРТЕЖЕЙ:", M, yA, tpA); yA += 24f
-        listOf("1.1  Общие данные", "2.1  Однолинейная схема щита ЩР-1", "3.1  План освещения", "3.2  План розеток и силового оборудования", "3.3  План слаботочных сетей", "3.4  Ведомости выключателей и помещений", "4.1  Спецификация оборудования и материалов", "5.1  Заземление и ДСУП").forEach { cA.drawText(it, M, yA, tpA); yA += 24f }
+        listOf("1.1  Общие данные", "2.1  Однолинейная схема щита ЩР-1", "3.1  План освещения", "3.2  План розеток и силового оборудования", "3.3  План слаботочных сетей", "3.4  Ведомости выключателей и помещений", "4.1  Спецификация оборудования и материалов", "5.1  Заземление и ДСУП", "7.1  Условные обозначения").forEach { cA.drawText(it, M, yA, tpA); yA += 24f }
         yA += 12f
         cA.drawText("ПОЯСНИТЕЛЬНАЯ ЗАПИСКА:", M, yA, tpA); yA += 24f
         listOf("1. Проект разработан на основании технического задания заказчика.", "2. Согласно СП 31-110-2003 объект относится к III категории по степени обеспечения надежности электроснабжения.", "3. Располагаемые потери напряжения не более 2%.", "4. Групповые сети предусмотрены трехпроводными и пятипроводными с отдельным защитным проводником PE (гл. 7.1 ПУЭ).", "5. Прокладка кабелей выполняется медным кабелем ВВГнг-LS: скрыто в штробе, открыто по плите перекрытия в гофрированной ПВХ трубе.", "6. Щит должен иметь отдельную шину для подключения защитного проводника.", "7. Все элементы электросетей выполнены с учетом ГОСТ Р 50462-92 (цветовая идентификация жил).", "8. Вся электрическая сеть рассчитана на длительно допустимую нагрузку и проверена по потере напряжения.", "9. Соединение жил в ответвительных коробках методом скрутки не допускается; рекомендуется клеммниками WAGO.", "10. Весь монтаж должен быть выполнен в соответствии с ПУЭ и СП 76.13330.2011.").forEach { cA.drawText(it, M, yA, tpA); yA += 24f }
@@ -142,6 +142,13 @@ object PdfExporter {
         cH.drawText("ЗАЗЕМЛЕНИЕ И СИСТЕМА ДОПОЛНИТЕЛЬНОГО УРАВНИВАНИЯ ПОТЕНЦИАЛОВ — $projectName", M, M + 8f, titlePaint().apply { textSize = 20f })
         drawGrounding(cH, M, W, H, org, doc, projectName, authorSuffix, totalSheets, aut)
         document.finishPage(pH)
+
+        // === 7.1 УСЛОВНЫЕ ОБОЗНАЧЕНИЯ ===
+        val pI = document.startPage(PdfDocument.PageInfo.Builder(pw, ph, 9).create()); val cI = pI.canvas
+        drawFrame(cI, M, W, H)
+        cI.drawText("УСЛОВНЫЕ ОБОЗНАЧЕНИЯ — $projectName", M, M + 8f, titlePaint().apply { textSize = 20f })
+        drawGostLegend(cI, M, W, H, org, doc, projectName, authorSuffix, totalSheets, aut)
+        document.finishPage(pI)
 
         val file = File(context.cacheDir, "GdeSanek_$projectId.pdf")
         FileOutputStream(file).use { document.writeTo(it) }
@@ -388,6 +395,61 @@ object PdfExporter {
             y5 += 24f
         }
         drawStamp(c, W, H, M, org, doc, "Лист 4.1   Спецификация", projectName, authorSuffix, totalSheets, author)
+    }
+
+    private fun drawGostLegend(c: Canvas, M: Float, W: Float, H: Float, org: String, doc: String, projectName: String, authorSuffix: String, totalSheets: Int, author: String) {
+        val tp = Paint().apply { color = Color.BLACK; textSize = 13f }
+        val tb = Paint().apply { color = Color.BLACK; textSize = 13f; isFakeBoldText = true }
+        val sp = Paint().apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeWidth = 2.5f }
+        val items = listOf(
+            "Розетка 220В 2-полюсная" to "socket_b1",
+            "Розетка 220В сдвоенная (блок)" to "socket_block",
+            "Розетка IP44 (защищённая)" to "socket_ip44",
+            "Розетка 380В 3-фазная" to "socket_380",
+            "Выключатель 1-клавишный" to "switch_1",
+            "Выключатель 2-клавишный" to "switch_2",
+            "Выключатель 3-клавишный" to "switch_3",
+            "Люстра накаливания" to "lamp_lust",
+            "Светильник ЛДС (люминесцентный)" to "lamp_lum",
+            "Бра (настенный светильник)" to "lamp_br",
+            "Спот (точечный светильник)" to "lamp_spot",
+            "Щит силовой / короб" to "panel_shr",
+            "Распаячная коробка" to "junction_box",
+            "Датчик движения" to "sensor_motion",
+            "Вентилятор / вытяжка" to "cons_fan",
+            "Розетка ТВ (антенная)" to "sks_tv",
+            "Розетка RJ45 (интернет)" to "rj45_socket"
+        )
+        var yy = M + 50f
+        c.drawText("Условные графические обозначения по ГОСТ 21.614-88 и ГОСТ 2.721-74", M, yy, tb); yy += 30f
+        val colW = 280f; val rowH = 50f
+        val cols = 3
+        items.chunked(cols).forEach { row ->
+            row.forEachIndexed { i, it ->
+                val x = M + i * colW + 40f
+                ru.gdesanek.render.GostElectro.draw(c, it.second, x, yy + 12f, 0f, sp)
+                c.drawText(it.first, x + 30f, yy + 18f, tp)
+            }
+            yy += rowH
+        }
+        yy += 20f
+        c.drawText("Типы линий на планах:", M, yy, tb); yy += 26f
+        val lineY = yy
+        c.drawLine(M, lineY, M + 80f, lineY, Paint().apply { color = Color.BLACK; strokeWidth = 3f; pathEffect = DashPathEffect(floatArrayOf(14f, 10f), 0f) })
+        c.drawText("Трасса кабеля (скрытая прокладка в штробе)", M + 90f, lineY + 6f, tp); yy += 30f
+        c.drawLine(M, yy, M + 80f, yy, Paint().apply { color = Color.BLACK; strokeWidth = 2f; pathEffect = DashPathEffect(floatArrayOf(8f, 4f, 2f, 4f), 0f) })
+        c.drawText("Трасса кабеля (открытая прокладка в гофре)", M + 90f, yy + 6f, tp); yy += 30f
+        c.drawLine(M, yy, M + 80f, yy, Paint().apply { color = Color.BLACK; strokeWidth = 2.5f })
+        c.drawText("Трасса кабеля (в кабель-канале / лотке)", M + 90f, yy + 6f, tp); yy += 40f
+        c.drawText("Примечания:", M, yy, tb); yy += 24f
+        listOf(
+            "1. Все обозначения соответствуют ГОСТ 21.614-88 (УГО электрооборудования) и ГОСТ 2.721-74 (ЕСКД).",
+            "2. Розетки IP44 применяются во влажных помещениях (санузел, кухня у мойки).",
+            "3. Распаячные коробки ставятся у дверей комнат на высоте 2,5 м от пола.",
+            "4. Трассы кабелей показываются пунктиром с указанием марки и сечения.",
+            "5. Все размеры на планах указаны в миллиметрах, отметки высот — в метрах от уровня пола."
+        ).forEach { c.drawText(it, M, yy, tp); yy += 22f }
+        drawStamp(c, W, H, M, org, doc, "Лист 7.1   Условные обозначения", projectName, authorSuffix, totalSheets, author)
     }
 
     private fun drawGrounding(c: Canvas, M: Float, W: Float, H: Float, org: String, doc: String, projectName: String, authorSuffix: String, totalSheets: Int, author: String) {

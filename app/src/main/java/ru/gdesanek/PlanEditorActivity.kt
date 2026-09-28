@@ -50,6 +50,8 @@ class PlanEditorActivity : AppCompatActivity() {
     private lateinit var theme: AppTheme
     private var projectId = 0L
     private var projectName = "План"
+    private var catalogScrollX = 0
+    private var catalogItemsScrollX = 0
     private var currentCatalogGroup = "Розетки"
     private var currentArchGroup = "Проёмы"
     private val catalogButtons = mutableListOf<TextView>()
@@ -478,7 +480,7 @@ class PlanEditorActivity : AppCompatActivity() {
                 setBackgroundColor(if (g == currentCatalogGroup) theme.btnActiveBg else theme.btnBg)
                 setPadding(20, 12, 20, 12)
                 layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginEnd = 6 }
-                setOnClickListener { currentCatalogGroup = g; showCatalog() }
+                setOnClickListener { catalogScrollX = groupScroll.scrollX; currentCatalogGroup = g; showCatalog() }
             }
             groupRow.addView(b)
         }
@@ -494,7 +496,7 @@ class PlanEditorActivity : AppCompatActivity() {
                 setPadding(22, 16, 22, 16)
                 val bmp = android.graphics.Bitmap.createBitmap(44, 44, android.graphics.Bitmap.Config.ARGB_8888); val bcv = android.graphics.Canvas(bmp); bcv.scale(0.7f, 0.7f, 22f, 22f); val pp = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = ru.gdesanek.render.CategoryPalette.color(item.type); style = android.graphics.Paint.Style.STROKE; strokeWidth = 4f }; ru.gdesanek.render.GostElectro.draw(bcv, item.type, 30f, 34f, 0f, pp, 1f, 1.7f); compoundDrawablePadding = 6; setCompoundDrawablesWithIntrinsicBounds(null, android.graphics.drawable.BitmapDrawable(resources, bmp), null, null)
                 layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginEnd = 6 }
-                setOnClickListener { planView.currentTool = PlanView.Tool.PLACE; planView.placeType = item.type; showCatalog() }
+                setOnClickListener { catalogItemsScrollX = itemScroll.scrollX; planView.currentTool = PlanView.Tool.PLACE; planView.placeType = item.type; showCatalog() }
             }
             itemRow.addView(b)
         }
@@ -503,7 +505,8 @@ class PlanEditorActivity : AppCompatActivity() {
         contextPanel.addView(wrap)
         groupScroll.post {
             val idx = Catalog.groups.indexOf(currentCatalogGroup)
-            if (idx >= 0) { val v = groupRow.getChildAt(idx); if (v != null) groupScroll.scrollTo(Math.max(0, v.left - 60), 0) }
+            groupScroll.post { groupScroll.scrollTo(catalogScrollX, 0) }
+            itemScroll.post { itemScroll.scrollTo(catalogItemsScrollX, 0) }
         }
     }
 
