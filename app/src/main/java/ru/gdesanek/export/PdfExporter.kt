@@ -8,6 +8,7 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.pdf.PdfDocument
 import ru.gdesanek.core.ArchTypes
+import ru.gdesanek.model.Catalog
 import ru.gdesanek.model.CableTrack
 import ru.gdesanek.model.PlanObject
 import ru.gdesanek.model.Wall
@@ -401,34 +402,33 @@ object PdfExporter {
         val tp = Paint().apply { color = Color.BLACK; textSize = 13f }
         val tb = Paint().apply { color = Color.BLACK; textSize = 13f; isFakeBoldText = true }
         val sp = Paint().apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeWidth = 2.5f }
-        val items = listOf(
-            "Розетка 220В 2-полюсная" to "socket_b1",
-            "Розетка 220В сдвоенная (блок)" to "socket_block",
-            "Розетка IP44 (защищённая)" to "socket_ip44",
-            "Розетка 380В 3-фазная" to "socket_380",
-            "Выключатель 1-клавишный" to "switch_1",
-            "Выключатель 2-клавишный" to "switch_2",
-            "Выключатель 3-клавишный" to "switch_3",
-            "Люстра накаливания" to "lamp_lust",
-            "Светильник ЛДС (люминесцентный)" to "lamp_lum",
-            "Бра (настенный светильник)" to "lamp_br",
-            "Спот (точечный светильник)" to "lamp_spot",
-            "Щит силовой / короб" to "panel_shr",
-            "Распаячная коробка" to "junction_box",
-            "Датчик движения" to "sensor_motion",
-            "Вентилятор / вытяжка" to "cons_fan",
-            "Розетка ТВ (антенная)" to "sks_tv",
-            "Розетка RJ45 (интернет)" to "rj45_socket"
-        )
+        // Авто-легенда из каталога: каждая электро-позиция → свой уникальный ГОСТ-знак
+        val items = Catalog.items
+            .filter { !ArchTypes.isArch(it.type) && !ArchTypes.isFurn(it.type) }
+            .map { it.label to it.type }
         var yy = M + 50f
-        c.drawText("Условные графические обозначения по ГОСТ 21.614-88 и ГОСТ 2.721-74", M, yy, tb); yy += 30f
-        val colW = 280f; val rowH = 50f
+        c.drawText("Условные графические обозначения по ГОСТ 21.614-88, 2.721-74, 21.404-85, 21.406-88", M, yy, tb); yy += 30f
+        val colW = 280f; val rowH = 46f
         val cols = 3
+        var currentGroup = ""
+        items.forEach { (label, type) ->
+            val g = Catalog.items.firstOrNull { it.type == type }?.group ?: ""
+            if (g != currentGroup && currentGroup != "") yy += 10f
+            currentGroup = g
+        }
+        currentGroup = ""
         items.chunked(cols).forEach { row ->
+            if (yy > H - M - 120f) { /* если не помещается — останавливаемся */ return@forEach }
             row.forEachIndexed { i, it ->
+                val g = Catalog.items.firstOrNull { ci -> ci.type == it.second }?.group ?: ""
                 val x = M + i * colW + 40f
-                ru.gdesanek.render.GostElectro.draw(c, it.second, x, yy + 12f, 0f, sp)
-                c.drawText(it.first, x + 30f, yy + 18f, tp)
+                if (g != currentGroup && currentGroup != "") {
+                    val tp2 = Paint(tb).apply { textSize = 11f; color = 0xFF616161.toInt() }
+                    c.drawText(g, M + 4f, yy - 2f, tp2)
+                }
+                currentGroup = g
+                ru.gdesanek.render.GostElectro.draw(c, it.second, x, yy + 10f, 0f, sp)
+                c.drawText(it.first, x + 30f, yy + 16f, tp)
             }
             yy += rowH
         }
