@@ -105,11 +105,15 @@ object PdfExporter {
         drawTracks(cD, tracks, trackSys, "socket", tx, ty, mono)
         drawObjects(cD, objects, walls, tx, ty, mono, "socket", trackSys, tracks) { o -> o.type.contains("socket") || o.type.contains("panel") || o.type.contains("cons") }
         drawPrivyazki(cD, objects, walls, tx, ty)
-        rooms.firstOrNull { it.name == "Санузел" }?.let { r ->
+        val wetRoom = rooms.firstOrNull { it.name == "Санузел" }
+        val wetObj = objects.filter { val nn = it.name.lowercase(); nn.contains("стир") || nn.contains("унитаз") || nn.contains("ванн") || nn.contains("душ") }
+        if (wetRoom != null || wetObj.isNotEmpty()) {
+            val wx = wetRoom?.cx ?: wetObj.map { it.x }.average().toFloat()
+            val wy = wetRoom?.cy ?: wetObj.map { it.y }.average().toFloat()
             val dp = Paint().apply { color = Color.DKGRAY; style = Paint.Style.STROKE; strokeWidth = 1.5f }
-            cD.drawRect(tx(r.cx) - 17f, ty(r.cy) - 11f, tx(r.cx) + 17f, ty(r.cy) + 11f, dp)
-            cD.drawText("ДСУП", tx(r.cx) - 14f, ty(r.cy) + 4f, Paint().apply { color = Color.DKGRAY; textSize = 9f })
-            cD.drawText("(лист 5.1)", tx(r.cx) - 17f, ty(r.cy) + 22f, Paint().apply { color = Color.DKGRAY; textSize = 8f })
+            cD.drawRect(tx(wx) - 17f, ty(wy) - 11f, tx(wx) + 17f, ty(wy) + 11f, dp)
+            cD.drawText("ДСУП", tx(wx) - 14f, ty(wy) + 4f, Paint().apply { color = Color.DKGRAY; textSize = 9f })
+            cD.drawText("(лист 5.1)", tx(wx) - 17f, ty(wy) + 22f, Paint().apply { color = Color.DKGRAY; textSize = 8f })
         }
         drawRoomLabels(cD, rooms, tx, ty)
         drawChains(cD, walls, tx, ty, minX, maxX, minY, maxY)
@@ -190,7 +194,7 @@ object PdfExporter {
             for (i in 1 until t.points.size) path.lineTo(tx(t.points[i].x), ty(t.points[i].y))
             c.drawPath(path, tp)
             val mid = t.points[t.points.size / 2]
-            c.drawText("Гр.${idx + 1} ВВГнг-LS " + t.cable, tx(mid.x) + 6f, ty(mid.y) - 10f, lbl)
+            c.drawText("Гр.${idx + 1} ВВГнг-LS " + t.cable, tx(mid.x) + 6f, ty(mid.y) - 10f - (idx % 3) * 14f, lbl)
         }
     }
 
@@ -415,8 +419,8 @@ object PdfExporter {
             .map { it.label to it.type }
         var yy = M + 50f
         c.drawText("Условные графические обозначения по ГОСТ 21.614-88, 2.721-74, 21.404-85, 21.406-88", M, yy, tb); yy += 30f
-        val colW = 280f; val rowH = 46f
-        val cols = 3
+        val colW = 250f; val rowH = 38f
+        val cols = 4
         var currentGroup = ""
         items.forEach { (label, type) ->
             val g = Catalog.items.firstOrNull { it.type == type }?.group ?: ""
@@ -489,7 +493,7 @@ object PdfExporter {
         val gy = ((maxY - minY) / cell).toInt() + 1
         if (gx < 2 || gy < 2) return emptyList()
         val blocked = Array(gy) { BooleanArray(gx) }
-        val thr = 220f
+        val thr = 260f
         for (wl in walls) {
             val wlen = kotlin.math.sqrt((wl.x2 - wl.x1) * (wl.x2 - wl.x1) + (wl.y2 - wl.y1) * (wl.y2 - wl.y1))
             val steps = (wlen / (cell / 2f)).toInt() + 1
@@ -502,7 +506,7 @@ object PdfExporter {
         for (o in objects) {
             if (!o.type.contains("door")) continue
             val ci = ((o.x - minX) / cell).toInt(); val ri = ((o.y - minY) / cell).toInt()
-            for (dr in -2..2) for (dc in -2..2) { val r2 = ri + dr; val c2 = ci + dc; if (r2 in 0 until gy && c2 in 0 until gx) blocked[r2][c2] = true }
+            for (dr in -3..3) for (dc in -3..3) { val r2 = ri + dr; val c2 = ci + dc; if (r2 in 0 until gy && c2 in 0 until gx) blocked[r2][c2] = true }
         }
         for (w in walls) {
             for (p in listOf(w.x1 to w.y1, w.x2 to w.y2)) {

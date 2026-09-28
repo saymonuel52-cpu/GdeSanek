@@ -51,7 +51,14 @@ object OneLineDiagram {
                 ip <= 25f -> "C25/1"
                 else -> "C32/1"
             }
-            val cable = if (hasLight && !hasSocket) "3x1.5" else tr.cable.ifBlank { "3x2.5" }
+            val cable = when {
+                ip <= 10f && hasLight && !hasSocket -> "3x1.5"
+                ip <= 16f -> "3x2.5"
+                ip <= 25f -> "3x4"
+                ip <= 32f -> "3x6"
+                ip <= 40f -> "3x10"
+                else -> "3x16"
+            }
             val wet = mine[idx].any { val n = it.name.lowercase(); n.contains("стир") || n.contains("сан") || n.contains("ван") }
             val rcd = if (hasSocket || hasWeak || wet) "УЗО 25/2 30мА" else "—"
             val suffix = when { hasSocket && !hasLight -> "с"; hasLight && !hasSocket -> "о"; else -> "" }
@@ -133,7 +140,8 @@ object OneLineDiagram {
         val volt = if (threePhase) "~380/220В" else "~220В"
         val meter = if (threePhase) "Меркурий 231" else "Меркурий 201"
         val mainRcd = if (threePhase) "УЗО 40/4" else "УЗО 40/2"
-        val inputCab = if (threePhase) "ВВГнг-LS 5x4" else "ВВГнг-LS 3x4"
+        val inSec = when { ipRas <= 25f -> "4"; ipRas <= 32f -> "6"; ipRas <= 40f -> "10"; ipRas <= 63f -> "16"; else -> "25" }
+        val inputCab = if (threePhase) "ВВГнг-LS 5x$inSec" else "ВВГнг-LS 3x$inSec"
         val boxX = M + 30f; val boxY = M + 60f; val boxW = W - M * 2 - 60f; val boxH = 200f
         val bx = Paint().apply { color = Color.BLACK; style = Paint.Style.STROKE; strokeWidth = 2f }
         canvas.drawRect(boxX, boxY, boxX + boxW, boxY + boxH, bx)
