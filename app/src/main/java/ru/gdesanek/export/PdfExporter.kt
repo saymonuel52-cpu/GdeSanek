@@ -55,6 +55,11 @@ object PdfExporter {
         val trackSys = OneLineDiagram.trackSystems(tracks, objects)
         val groups = OneLineDiagram.buildGroups(tracks, objects)
         val rooms = computeRooms(walls, objects, minX, maxX, minY, maxY)
+        val nameCnt = mutableMapOf<String, Int>()
+        val rooms = rooms.map { r ->
+            val c2 = (nameCnt[r.name] ?: 0) + 1; nameCnt[r.name] = c2
+            if (c2 == 1) r else r.copy(name = r.name + " (" + c2 + ")")
+        }
 
         // === 1.1 ОБЩИЕ ДАННЫЕ ===
         val pA = document.startPage(PdfDocument.PageInfo.Builder(pw, ph, 1).create()); val cA = pA.canvas
@@ -249,6 +254,7 @@ object PdfExporter {
             var bestW: Wall? = null; var bestD = 1e9f
             for (w in walls) { val d = distToSeg(o.x, o.y, w); if (d < bestD) { bestD = d; bestW = w } }
             val w = bestW ?: continue
+            if (bestD > 150f) continue
             val dx = w.x2 - w.x1; val dy = w.y2 - w.y1; val len2 = dx * dx + dy * dy
             val t = if (len2 > 0f) ((o.x - w.x1) * dx + (o.y - w.y1) * dy) / len2 else 0f
             val tc = t.coerceIn(0f, 1f); val fx = w.x1 + tc * dx; val fy = w.y1 + tc * dy
@@ -325,9 +331,10 @@ object PdfExporter {
         switches.forEachIndexed { si, swObj ->
             var bestTr = -1; var bestD = 1e9f
             for (ti in lightTrIdx) { val d = distToTrackPts(swObj.x, swObj.y, tracks[ti]); if (d < bestD) { bestD = d; bestTr = ti } }
+            val swName = swObj.name.ifBlank { Catalog.items.firstOrNull { ci -> ci.type == swObj.type }?.label ?: swObj.type }
             val keys = when { swObj.type.contains("3") -> "3-кл"; swObj.type.contains("2") -> "2-кл"; else -> "1-кл" }
             c.drawRect(swCols[0], yy, swCols[4], yy + 24f, cp)
-            listOf("В${si + 1}", swObj.name.take(30), keys, if (bestTr >= 0) "Гр.${bestTr + 1}" else "—").forEachIndexed { i, v -> c.drawText(v, swCols[i] + 4f, yy + 17f, tp); c.drawLine(swCols[i], yy, swCols[i], yy + 24f, cp) }
+            listOf("В${si + 1}", swName.take(30), keys, if (bestTr >= 0) "Гр.${bestTr + 1}" else "—").forEachIndexed { i, v -> c.drawText(v, swCols[i] + 4f, yy + 17f, tp); c.drawLine(swCols[i], yy, swCols[i], yy + 24f, cp) }
             yy += 24f
         }
         yy += 30f

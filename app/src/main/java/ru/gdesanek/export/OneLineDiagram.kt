@@ -28,7 +28,7 @@ object OneLineDiagram {
         for (o in objects) {
             val idx = assign[o.id] ?: continue
             mine[idx].add(o)
-            powers[idx] += SymbolPalette.power(o.type)?.toFloat() ?: 0f
+            powers[idx] += powerOf(o)
             val t = o.type.lowercase()
             if (t.contains("sks") || t.contains("tv") || t.contains("rj45")) weaks[idx]++
             else if (t.contains("lamp") || t.contains("switch")) lights[idx]++
@@ -38,7 +38,7 @@ object OneLineDiagram {
         val threePhase = totalKw > 5f
         val result = mutableListOf<Group>()
         tracks.forEachIndexed { idx, tr ->
-            val sorted = mine[idx].sortedByDescending { SymbolPalette.power(it.type)?.toFloat() ?: 0f }
+            val sorted = mine[idx].sortedByDescending { powerOf(it) }
             val names = sorted.mapNotNull { it.name.takeIf { n -> n.isNotBlank() } }.distinct().take(2)
             val name = if (names.isEmpty()) "Группа ${idx + 1}" else names.joinToString(", ") + (if (sorted.size > 2) " и др." else "")
             val pKw = powers[idx] / 1000f
@@ -80,6 +80,30 @@ object OneLineDiagram {
                 else sock++
             }
             when { weak > 0 && weak >= light && weak >= sock -> "weak"; light > 0 && light >= sock -> "light"; else -> "socket" }
+        }
+    }
+
+    private fun powerOf(o: PlanObject): Float {
+        SymbolPalette.power(o.type)?.let { return it.toFloat() }
+        val t = o.type.lowercase(); val n = o.name.lowercase()
+        return when {
+            n.contains("380") || t.contains("380") || n.contains("плит") -> 7000f
+            n.contains("стир") -> 2000f
+            n.contains("посудом") -> 2000f
+            n.contains("духов") -> 2500f
+            n.contains("бойлер") || n.contains("нагрев") -> 1500f
+            n.contains("кондиц") || n.contains("сплит") -> 1200f
+            n.contains("вытяж") -> 250f
+            n.contains("насос") -> 600f
+            n.contains("микроволн") || n.contains("свч") -> 1000f
+            n.contains("чайник") -> 1500f
+            n.contains("холодил") -> 300f
+            n.contains("тв") -> 150f
+            n.contains("роутер") -> 20f
+            t.contains("sks") || t.contains("rj45") -> 20f
+            t.contains("socket") -> 100f
+            t.contains("switch") -> 0f
+            else -> 60f
         }
     }
 
